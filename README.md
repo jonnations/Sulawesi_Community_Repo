@@ -3,7 +3,7 @@ Data and Scripts for Sulawesi Murine Community Ecospace Project
 
 This repo contains all the data and scripts for this project. There are many steps involved, from generating data to running predictive models to randomization analyses. Therefore, I will walk through the steps in this README. *Most scripts are heavily annotated*.
 
-*Libraries Used in this Repo*: tidyverse, tidybayes, brms, pacman, purrr, furrr, dispRity, geomorph, PCDimension. 
+*Libraries Used in this Repo*: tidyverse, tidybayes, brms, pacman, purrr, furrr, dispRity, geomorph, PCDimension, phytools, vegan, picante. 
 
  - **Organize and Process Raw Data**
 
@@ -16,7 +16,14 @@ Most of the data in this project arrive here ready to go, including the stable i
 For the Community Ecospace Variance values, all models and predictions are in the `Models_Fitted_Variance.Rmd` script. This includes Cranial shape & size, Dentary shape & size, external measurements, isotopes, and locomotion. The Community Ecospace Density models and predictions are in `Models_Fitted_Density.Rmd`.
 
 
+ - ** Phylogenetic Diversity**
+ 
+ Phylogenetic Diversity is estimated differently than trait data. I did this using picante. It has a built in function for estimating Faith's metric then generating the SES values. Script is called `Phylogenetic_Diversity.Rmd` and the data are in `~Phylogenetic_Diversity/`.
 
+
+ - **Randomization and SES Values**
+ 
+ 
 
 
 * Large Files stored with lfs. see instructions here:https://git-lfs.github.com/
