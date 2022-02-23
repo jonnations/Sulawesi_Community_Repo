@@ -15,3 +15,8 @@ Most of the data in this project arrive here ready to go, including the stable i
  
 For the Community Ecospace Variance values, all models and predictions are in the `Models_Fitted_Variance.Rmd` script. This includes Cranial shape & size, Dentary shape & size, external measurements, isotopes, and locomotion. The Community Ecospace Density models and predictions are in `Models_Fitted_Density.Rmd`.
 
+
+
+
+
+* Large Files stored with lfs. see instructions here:https://git-lfs.github.com/
