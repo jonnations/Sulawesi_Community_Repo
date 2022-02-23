@@ -1,5 +1,5 @@
 ---
-title: "Preparing MorphoDig Landmark Files for Geomorph"
+title: "Preparing MorphoDig Landmark Data"
 author: "Jon Nations"
 date: "23/2/2022"
 output: html_document
@@ -30,11 +30,6 @@ pacman::p_load(geomorph, tidyverse)
 
 
 #### Read in files 
-
-Here we go, reading in the files. This will be heavily annotated
-```{r setup, include=FALSE}
-#knitr::opts_knit$set(root.dir = "/Users/Dicrostonyx/Documents/Projects/Sulawesi/Manuscript/R/landmarks")
-```
 
 ```{r}
 # makes a list of all .txt files in working directory
@@ -67,18 +62,18 @@ That worked perfectly, and it actually put them in alphabetical order too!
 #### Estimate NA values
 
 Nothing works with NA values, so I need to fill in those gaps using `estimate.missing()`
-This has two methods, TPS and Reg. TPS uses the thin-plate spline to interpolate landmarks on a reference specimen to estimate the locations of missing landmarks on a target specimen. Reg is multivariate regression. Here each landmark with missing values is regressed on all other landmarks for the set of complete specimens, and the missing landmark values are then predicted by this linear regression model. 
+This has two methods, TPS and Reg. Reg is multivariate regression. Here each landmark with missing values is regressed on all other landmarks for the set of complete specimens, and the missing landmark values are then predicted by this linear regression model. 
 
-Lets do Reg
+
 ```{r}
 coords <- estimate.missing(coords, method = "Reg")
 ```
 
 
-#### Lets Try a GPA
+#### GPA
 
 Attempting a generalized Procrustes analysis
-There are no curves or semilandmarks, so this is pretty easy. There are some other options but I don't know how those apply
+There are no curves or semilandmarks, so this is pretty easy.
 ```{r}
 gcoords <- gpagen(coords)
 ```
@@ -93,20 +88,14 @@ Here, P doms have the largest, then L mey. H min has the smallest. Things make s
 sort(gcoords$Csize)
 ```
 
-#### PCA plot
+#### PCA
 
-This is what I've been so looking forward to since Spring 2017!
-Need to use the GPA coords here.
-If I need to take a species mean here I can (but not yet)
+Need to use the GPA coords here. This writes the Eigenvalues and varainces into a csv file.
 
 ```{r}
 gm.prcomp(gcoords$coords)
 t <- print(gm.prcomp(gcoords$coords))$PC.summary %>% t() %>%  as_tibble() %>% write_csv("Cranial_PCA_Eigen_Variance.csv")
 ```
-ok, that worked!
-
-Surprised about the variance, as axes 1-5 only get to 50% of the variance...
-Axis 1 is 18%. Axis 2 is 12. Hmmm...
 
 Lets get the scores
 ```{r}
@@ -116,8 +105,6 @@ pc1 <- gm.prcomp(gcoords$coords)
 ```{r}
 pc1$x[,1:5]
 ```
-Hell Yeah! And I'm ready to rock! That's basically the only little tibble I need, along with the centroid scores added in!
-
 
 ### Mesh shape
 
@@ -138,7 +125,7 @@ pcdat <- as.data.frame(pc1$x[,1:36]) %>%
   rownames_to_column() %>% 
   bind_cols(sz) %>%
   rename(Csize = value) %>% 
-  # Changing R marmosurus Csize to 120 to match R xanthurus
+  # Changing R marmosurus Csize to 120 to match R xanthurus due to error in landmark scaling. These two species are often considered a single species, and have very similar cranial sizes.
   mutate(Csize=replace(Csize, rowname=="R_mar_0", 120)) %>% 
   write_csv("PCData_updates_2022.csv")
   
