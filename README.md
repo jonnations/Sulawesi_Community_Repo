@@ -15,15 +15,21 @@ Most of the data in this project arrive here ready to go, including the stable i
  
 For the Community Ecospace Variance values, all models and predictions are in the `Models_Fitted_Variance.Rmd` script. This includes Cranial shape & size, Dentary shape & size, external measurements, isotopes, and locomotion. The Community Ecospace Density models and predictions are in `Models_Fitted_Density.Rmd`.
 
+The density script includes a broken stick estimation. Unlike sum of variance, nearest-neighbor density reqires all the axes together in one estimation. Therefore we can't weight them. In order not to use extraneous PC axes in these analyses, I use a broken stick method to estimate the *significant* axes. In this case it's the first 2 for Cranial and first 3 for Dentary.
 
- - ** Phylogenetic Diversity**
+
+ - **Phylogenetic Diversity**
  
  Phylogenetic Diversity is estimated differently than trait data. I did this using picante. It has a built in function for estimating Faith's metric then generating the SES values. Script is called `Phylogenetic_Diversity.Rmd` and the data are in `~Phylogenetic_Diversity/`.
 
 
  - **Randomization and SES Values**
  
+ The manuscript uses SES values for each community. These are the standard effect sizes - values of trait volumes and densities that account for the size of the community. The text has more details. To do this, I wrote functions that generate 1000 fake communities using the independent swap algorithim. Then we estimate variance values for the traits for each of these communities. We take the mean and sd of these 1000 communities, and then subtract the observed variance value for each of the 1000 draws from the mean, then divide by the sd, resulting in 1000 SES values for each trait for each community. The Ecospace size/variance formulas are in the `Variance_Randomization.Rmd` script, and the Density formulas are in the `Density_randomization.Rmd` script. ***WARNING*** These randomization procedures take a long time! Using 6 cores on my M1 laptop, it can take 10-15 hours to run all of these. 
  
+ For
+
+All of the SES values are saved together in a dataframe called `All_Traits.csv` in the main directory. 
 
 
 * Large Files stored with lfs. see instructions here:https://git-lfs.github.com/

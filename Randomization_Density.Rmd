@@ -1,0 +1,703 @@
+---
+title: "MNND_Randomization With Sampling Probabilities"
+output: html_notebook
+---
+
+Randomization of NMMD values using NO species pools, BUT using sampling probabilities!
+This means that the probability of selecting each species is based on their frequency. 
+Sister to `MNND_Randomization_by_Location.Rmd`. More Details found there
+
+I've optimized the functions using a mix of base R, tidyverse, and the furrr::future_map function
+```{r echo = FALSE}
+pacman::p_load(tidyverse, tidybayes, patchwork, modelr, forcats, picante, furrr, dispRity)
+#supress dplyr messages for summarise()
+options(dplyr.summarise.inform = FALSE, readr.show_types = FALSE)
+
+load("Species_Lists.RData")
+load("Species_Extant.RData")
+
+ldat <- read_csv("Locomotion_Data/Locomotion_List.csv") # List of species modes
+lvdat <- read_csv("Locomotion_Data/All_Locomotor_Var.csv") # variances by community
+sp_ses <- read.csv("Phy_Div/Species_SES.csv") %>% select(!X)
+
+adat <- read_csv("CLEAN_All_Traits.csv") 
+
+# Parallel computing options
+furrr_options(seed = TRUE)
+options(future.rng.onMisuse="ignore")
+plan(multisession, workers = 6)
+
+# Misc. infoprmation
+n_sp <- tibble(com = c("Ambang", "Bawakaraeng", "Buliohuto", "Dako", "Gandangdewata", "Katopasa", "Latimojong", "Nokilalaki", "Torompupu"),
+               num = c(13, 7, 10, 12, 23, 12, 13, 17, 15))
+
+level_order <-  c( "Bawakaraeng", "Buliohuto", "Dako", "Katopasa", "Ambang", "Latimojong", "Torompupu", "Nokilalaki", "Gandangdewata")
+
+```
+
+# Sample Species
+
+New sample species using independent swap algorithm from picante
+very helpful: https://stackoverflow.com/questions/61740025/dplyr-how-to-collapse-binary-and-mutually-exclusive-columns-into-1
+```{r}
+sample_com <- function(com) {
+dlist <- list()
+for (i in 1:100){
+  b <- picante::randomizeMatrix(sp_ses, null.model = "independentswap", iterations = 1000) %>% 
+    as_tibble() %>% 
+    bind_cols(com = c("Ambang", "Bawakaraeng", "Buliohuto", "Dako", "Gandangdewata", "Katopasa", "Latimojong", "Nokilalaki", "Torompupu")) %>% 
+    pivot_longer(cols = -com, names_to = 'species') %>%
+    filter(as.logical(value)) %>%
+    select(-value) %>%
+    filter(com == {{com}}) %>% 
+    select(-com) %>%
+    pull(species)
+  dlist[[i]] <- b
+  }
+dlist
+}
+```
+
+```{r}
+sp_amb <- sample_com("Ambang" )
+sp_baw <- sample_com("Bawakaraeng" )
+sp_bul <- sample_com("Buliohuto" )
+sp_dak <- sample_com("Dako" )
+sp_gan <- sample_com("Gandangdewata" )
+sp_kat <- sample_com("Katopasa")
+sp_lat <- sample_com("Latimojong")
+sp_nok <- sample_com("Nokilalaki")
+sp_tor <- sample_com("Torompupu")
+```
+
+#### MNND Function
+ALong with edits to two DispaRity functions to allow NA
+```{r}
+neighbours2 <- function(matrix, which = min, method = "euclidean") {
+    distances <- as.matrix(check.dist.matrix2(matrix, method = method)[[1]])
+    diag(distances) <- NA
+    return(unname(apply(distances, 1, which, na.rm = TRUE)))
+}
+
+check.dist.matrix2 <- function(matrix, method, just.check = FALSE, ...) {
+    was_dist <- FALSE
+    if(is(matrix, "dist")) {
+        return(list(matrix, "was_dist" = TRUE))
+    }
+    if(dim(matrix)[1] == dim(matrix)[2] &&
+       all(diag(as.matrix(matrix)) == 0) &&
+       all(matrix[upper.tri(matrix)] == matrix[rev(lower.tri(matrix))])) {
+        was_dist <- TRUE
+    }
+    if(just.check) {
+        return(was_dist)
+    } else {
+        if(was_dist) {
+            return(list(stats::as.dist(matrix), "was_dist" = TRUE))
+        } else {
+          #Only change is here: na.rm=TRUE
+            return(list(vegan::vegdist(matrix, method = method, na.rm = TRUE, ...), "was_dist" = FALSE))
+        }
+    }
+}
+
+get_mnni <- function(sp, data, mountain) {
+  data %>% 
+    filter(Species %in% {{sp}}) %>% 
+  split(.$.draw) %>% 
+  map(., ~ .x[ ,-c(1:2)])  %>% 
+  map(~ .x %>%
+        neighbours2() %>%
+        #unique() %>% 
+        mean()
+        ) %>% 
+  unlist() %>% 
+  as_tibble() %>% 
+  sample_n(., size = 100) %>% 
+    add_column(com = {{mountain}})
+}
+```
+
+###Plot Function
+called pses_plot(data, variable, title)
+```{r}
+pses_plot <- function(data, x, title) {
+  data %>% 
+    filter({{x}} > -3) %>%  
+    filter({{x}} < 3) %>% 
+  mutate(com = factor(com, level = level_order)) %>% 
+  ggplot(aes(y = factor(com, level = level_order), x = {{x}}, fill = com)) +
+  stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
+  geom_vline(xintercept = 0, linetype = 2) +
+  geom_vline(xintercept = -1.96, linetype = 3) +
+  geom_vline(xintercept = 1.96, linetype = 3) +
+   labs(title={{title}}, x="Standard Effect Size", y = "", fill = "Mountain") +
+    xlim(c(-3.1, 3.1)) + 
+  theme_bw() + scale_fill_viridis_d(direction = -1, begin = 0, end = 0.9, option = "A") + guides(fill = guide_legend(reverse=T)) + theme(legend.position = "none") 
+}
+```
+
+# Skull Measurements  
+
+#### Cranial Shape NMMI Estimation
+This is using the variance Using PC1 & 2. Broken stick analysis is in `CLEAN_Models_Fitted_Density.Rmd`
+```{r}
+cdat <- read_csv("Cranial_Data/Cranial_36axes_Fitted.csv") %>% 
+  select(c(Species, .draw, cPC1, cPC2)) 
+cskamb <- future_map(sp_amb, ~ get_mnni(.x, cdat, "Ambang"), chunks = 1000) %>% bind_rows()
+cskbaw <- future_map(sp_baw, ~ get_mnni(.x, cdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
+cskbul <- future_map(sp_bul, ~ get_mnni(.x, cdat, "Buliohuto"), chunks = 1000) %>% bind_rows()
+cskdak <- future_map(sp_dak, ~ get_mnni(.x, cdat, "Dako"), chunks = 1000) %>% bind_rows()
+cskgan <- future_map(sp_gan, ~ get_mnni(.x, cdat, "Gandangdewata"), chunks = 1000) %>% bind_rows()
+cskkat <- future_map(sp_kat, ~ get_mnni(.x, cdat, "Katopasa"), chunks = 1000) %>% bind_rows()
+csklat <- future_map(sp_lat, ~ get_mnni(.x, cdat, "Latimojong"), chunks = 1000) %>% bind_rows()
+csknok <- future_map(sp_nok, ~ get_mnni(.x, cdat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
+csktor <- future_map(sp_tor, ~ get_mnni(.x, cdat, "Torompupu"), chunks = 1000) %>% bind_rows()
+
+nn_c_shp_rand <- bind_rows(cskamb, cskbaw, cskbul, cskdak, cskgan, cskkat, csklat, csknok, csktor)
+rm(cskamb, cskbaw, cskbul, cskdak, cskgan, cskkat, csklat, csknok, csktor)
+```
+
+#### Cranial SES
+```{r}
+adat <- nn_c_shp_rand %>% group_by(com) %>% 
+  summarise(mean = mean(value),
+            sd = sd(value)) %>% 
+  as.data.frame() %>% 
+  right_join(adat, by="com") %>%
+  mutate(nnses_c =  (c_nn - mean) / sd) %>% 
+  select(!c(mean, sd))
+
+rm(nn_c_shp_rand )
+
+pses_plot(adat, nnses_c, "Cranial Shape NNI SES")
+```
+
+#### Dentary Shape NMMI Estimation
+Using 20 axes not PCA
+```{r}
+ddat <- read_csv("Dentary_Data/Dentary_20axes_Fitted.csv") %>% 
+  select(c(Species, .draw, dPC1, dPC2, dPC3)) 
+
+dskamb <- future_map(sp_amb, ~ get_mnni(.x, ddat, "Ambang"), chunks = 1000) %>% bind_rows()
+dskbaw <- future_map(sp_baw, ~ get_mnni(.x, ddat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
+dskbul <- future_map(sp_bul, ~ get_mnni(.x, ddat, "Buliohuto"), chunks = 1000) %>% bind_rows()
+dskdak <- future_map(sp_dak, ~ get_mnni(.x, ddat, "Dako"), chunks = 1000) %>% bind_rows()
+dskgan <- future_map(sp_gan, ~ get_mnni(.x, ddat, "Gandangdewata"), chunks = 1000) %>% bind_rows()
+dskkat <- future_map(sp_kat, ~ get_mnni(.x, ddat, "Katopasa"), chunks = 1000) %>% bind_rows()
+dsklat <- future_map(sp_lat, ~ get_mnni(.x, ddat, "Latimojong"), chunks = 1000) %>% bind_rows()
+dsknok <- future_map(sp_nok, ~ get_mnni(.x, ddat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
+dsktor <- future_map(sp_tor, ~ get_mnni(.x, ddat, "Torompupu"), chunks = 1000) %>% bind_rows()
+
+nn_d_shp_rand <- bind_rows(dskamb, dskbaw, dskbul, dskdak, dskgan, dskkat, dsklat, dsknok, dsktor) 
+rm(dskamb, dskbaw, dskbul, dskdak, dskgan, dskkat, dsklat, dsknok, dsktor)
+```
+
+#### Dentary Shape SES
+```{r}
+adat <- nn_d_shp_rand %>% group_by(com) %>% 
+  summarise(mean = mean(value),
+            sd = sd(value)) %>% 
+  as.data.frame() %>% 
+  right_join(adat, by="com") %>%
+  select(!nnses_d) %>% 
+  mutate(nnses_d =  (d_nn - mean) / sd) %>% 
+  select(!c(mean, sd))
+
+rm(nn_d_shp_rand )
+
+pses_plot(adat, nnses_d, "Dentary Shape NNI SES")
+```
+
+#### Cranial Size NMMD Estimation
+```{r}
+cdat <- read_csv("Cranial_Data/Cranial_36axes_Fitted.csv") %>% 
+  select(c(.draw, Species, cCsize))
+
+cszamb <- future_map(sp_amb, ~ get_mnni(.x, cdat, "Ambang"), chunks = 1000) %>% bind_rows()
+cszbaw <- future_map(sp_baw, ~ get_mnni(.x, cdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
+cszbul <- future_map(sp_bul, ~ get_mnni(.x, cdat, "Buliohuto"), chunks = 1000) %>% bind_rows()
+cszdak <- future_map(sp_dak, ~ get_mnni(.x, cdat, "Dako"), chunks = 1000) %>% bind_rows()
+cszgan <- future_map(sp_gan, ~ get_mnni(.x, cdat, "Gandangdewata"), chunks = 1000) %>% bind_rows()
+cszkat <- future_map(sp_kat, ~ get_mnni(.x, cdat, "Katopasa"), chunks = 1000) %>% bind_rows()
+cszlat <- future_map(sp_lat, ~ get_mnni(.x, cdat, "Latimojong"), chunks = 1000) %>% bind_rows()
+csznok <- future_map(sp_nok, ~ get_mnni(.x, cdat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
+csztor <- future_map(sp_tor, ~ get_mnni(.x, cdat, "Torompupu"), chunks = 1000) %>% bind_rows()
+
+nn_c_sz_rand <- bind_rows(cszamb, cszbaw, cszbul, cszdak, cszgan, cszkat, cszlat, csznok, csztor) 
+rm(cszamb, cszbaw, cszbul, cszdak, cszgan, cszkat, cszlat, csznok, csztor)
+```
+
+#### Cranial Size SES
+
+```{r}
+adat <- nn_c_sz_rand %>% group_by(com) %>% 
+  summarise(mean = mean(value),
+            sd = sd(value)) %>% 
+  as.data.frame() %>% 
+  right_join(adat, by="com") %>%
+  mutate(nnses_csize =  (csize_nn - mean) / sd) %>% 
+  select(!c(mean, sd))
+
+rm(nn_c_sz_rand)
+
+pses_plot(adat, nnses_csize, "Cranium size NNI SES")
+```
+
+#### Dentary Size NMMD Estimation
+```{r}
+ddat <- read_csv("Dentary_Data/Dentary_20axes_Fitted.csv") %>% 
+  select(c(.draw, Species, dCsize))
+
+dszamb <- future_map(sp_amb, ~ get_mnni(.x, ddat, "Ambang"), chunks = 1000) %>% bind_rows()
+dszbaw <- future_map(sp_baw, ~ get_mnni(.x, ddat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
+dszbul <- future_map(sp_bul, ~ get_mnni(.x, ddat, "Buliohuto"), chunks = 1000) %>% bind_rows()
+dszdak <- future_map(sp_dak, ~ get_mnni(.x, ddat, "Dako"), chunks = 1000) %>% bind_rows()
+dszgan <- future_map(sp_gan, ~ get_mnni(.x, ddat, "Gandangdewata"), chunks = 1000) %>% bind_rows()
+dszkat <- future_map(sp_kat, ~ get_mnni(.x, ddat, "Katopasa"), chunks = 1000) %>% bind_rows()
+dszlat <- future_map(sp_lat, ~ get_mnni(.x, ddat, "Latimojong"), chunks = 1000) %>% bind_rows()
+dsznok <- future_map(sp_nok, ~ get_mnni(.x, ddat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
+dsztor <- future_map(sp_tor, ~ get_mnni(.x, ddat, "Torompupu"), chunks = 1000) %>% bind_rows()
+
+nn_d_sz_rand <- bind_rows(dszamb, dszbaw, dszbul, dszdak, dszgan, dszkat, dszlat, dsznok, dsztor) 
+rm(dszamb, dszbaw, dszbul, dszdak, dszgan, dszkat, dszlat, dsznok, dsztor)
+```
+
+#### Dentary Size SES
+```{r}
+adat <- nn_d_sz_rand %>% group_by(com) %>% 
+  summarise(mean = mean(value),
+            sd = sd(value)) %>% 
+  as.data.frame() %>% 
+  right_join(adat, by="com") %>%
+  select(!nnses_dsize) %>% 
+  mutate(nnses_dsize =  (dsize_nn - mean) / sd) %>% 
+  select(!c(mean, sd))
+
+rm(nn_d_sz_rand)
+
+pses_plot(adat, nnses_dsize, "Dentary size NNI SES")
+```
+
+## Skull Shape NMMI
+```{r}
+cdat <- read_csv("Cranial_Data/Cranial_36axes_Fitted.csv") %>% 
+  select(c(Species, .draw, cPC1, cPC2)) 
+ddat <- read_csv("Dentary_Data/Dentary_20axes_Fitted.csv") %>% 
+  select(c(Species, .draw, dPC1, dPC2, dPC3))
+skdat <- ddat  %>% #select(!.row) %>% 
+  full_join(cdat, by = c(".draw", "Species"))
+rm(cdat, ddat)
+
+skamb <- future_map(sp_amb, ~ get_mnni(.x, skdat, "Ambang"), chunks = 1000) %>% bind_rows()
+skbaw <- future_map(sp_baw, ~ get_mnni(.x, skdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
+skbul <- future_map(sp_bul, ~ get_mnni(.x, skdat, "Buliohuto"), chunks = 1000) %>% bind_rows()
+skdak <- future_map(sp_dak, ~ get_mnni(.x, skdat, "Dako"), chunks = 1000) %>% bind_rows()
+skgan <- future_map(sp_gan, ~ get_mnni(.x, skdat, "Gandangdewata"), chunks = 1000) %>% bind_rows()
+skkat <- future_map(sp_kat, ~ get_mnni(.x, skdat, "Katopasa"), chunks = 1000) %>% bind_rows()
+sklat <- future_map(sp_lat, ~ get_mnni(.x, skdat, "Latimojong"), chunks = 1000) %>% bind_rows()
+sknok <- future_map(sp_nok, ~ get_mnni(.x, skdat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
+sktor <- future_map(sp_tor, ~ get_mnni(.x, skdat, "Torompupu"), chunks = 1000) %>% bind_rows()
+
+nn_sk_rand <- bind_rows(skamb, skbaw, skbul, skdak, skgan, skkat, sklat, sknok, sktor) 
+rm(skamb, skbaw, skbul, skdak, skgan, skkat, sklat, sknok, sktor)
+```
+
+### Skull Shape SES
+```{r}
+adat <- nn_sk_rand %>% group_by(com) %>% 
+  summarise(mean = mean(value),
+            sd = sd(value)) %>% 
+  as.data.frame() %>% 
+  right_join(adat, by="com") %>%
+  #select(!nnses_sk) %>% 
+  mutate(nnses_sk =  (sk_nn - mean) / sd) %>% 
+  select(!c(mean, sd))
+
+rm(nn_sk_rand )
+```
+
+
+# External Shape
+#### Body Size
+```{r}
+xdat <- read_csv("External_Measurement_Data/External_Fitted.csv") %>% 
+  select(-.row) %>% 
+  select(Species, .draw, HB, lMass)
+
+bszamb <- future_map(sp_amb, ~ get_mnni(.x, xdat, "Ambang"), chunks = 1000) %>% bind_rows()
+bszbaw <- future_map(sp_baw, ~ get_mnni(.x, xdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
+bszbul <- future_map(sp_bul, ~ get_mnni(.x, xdat, "Buliohuto"), chunks = 1000) %>% bind_rows()
+bszdak <- future_map(sp_dak, ~ get_mnni(.x, xdat, "Dako"), chunks = 1000) %>% bind_rows()
+bszgan <- future_map(sp_gan, ~ get_mnni(.x, xdat, "Gandangdewata"), chunks = 1000) %>% bind_rows()
+bszkat <- future_map(sp_kat, ~ get_mnni(.x, xdat, "Katopasa"), chunks = 1000) %>% bind_rows()
+bszlat <- future_map(sp_lat, ~ get_mnni(.x, xdat, "Latimojong"), chunks = 1000) %>% bind_rows()
+bsznok <- future_map(sp_nok, ~ get_mnni(.x, xdat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
+bsztor <- future_map(sp_tor, ~ get_mnni(.x, xdat, "Torompupu"), chunks = 1000) %>% bind_rows()
+
+nn_b_sz_rand <- bind_rows(bszamb, bszbaw, bszbul, bszdak, bszgan, bszkat, bszlat, bsznok, bsztor)
+rm(bszamb, bszbaw, bszbul, bszdak, bszgan, bszkat, bszlat, bsznok, bsztor)
+```
+
+#### Body Size SES
+```{r}
+adat <- nn_b_sz_rand %>% group_by(com) %>% 
+  summarise(mean = mean(value),
+            sd = sd(value)) %>% 
+  as.data.frame() %>% 
+  right_join(adat, by="com") %>%
+  select(!nnses_Bsz) %>% 
+  mutate(nnses_Bsz =  (Bsz_nn - mean) / sd) %>% 
+  select(!c(mean, sd))
+
+rm(nn_b_sz_rand)
+
+pses_plot(adat, nnses_Bsz, "Body Size NNI SES")
+```
+
+
+#### Tail
+```{r}
+xdat <- read_csv("External_Measurement_Data/External_Fitted.csv") %>% 
+  select(-.row) %>%
+  select(Species, .draw, rTail)
+tailamb <- future_map(sp_amb, ~ get_mnni(.x, xdat, "Ambang"), chunks = 1000) %>% bind_rows()
+tailbaw <- future_map(sp_baw, ~ get_mnni(.x, xdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
+tailbul <- future_map(sp_bul, ~ get_mnni(.x, xdat, "Buliohuto"), chunks = 1000) %>% bind_rows()
+taildak <- future_map(sp_dak, ~ get_mnni(.x, xdat, "Dako"), chunks = 1000) %>% bind_rows()
+tailgan <- future_map(sp_gan, ~ get_mnni(.x, xdat, "Gandangdewata"), chunks = 1000) %>% bind_rows
+tailkat <- future_map(sp_kat, ~ get_mnni(.x, xdat, "Katopasa"), chunks = 1000) %>% bind_rows()
+taillat <- future_map(sp_lat, ~ get_mnni(.x, xdat, "Latimojong"), chunks = 1000) %>% bind_rows()
+tailnok <- future_map(sp_nok, ~ get_mnni(.x, xdat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
+tailtor <- future_map(sp_tor, ~ get_mnni(.x, xdat, "Torompupu"), chunks = 1000) %>% bind_rows()
+
+nn_tail_rand <- bind_rows(tailamb, tailbaw, tailbul, taildak, tailgan, tailkat, taillat, tailnok, tailtor)
+rm(tailamb, tailbaw, tailbul, taildak, tailgan, tailkat, taillat, tailnok, tailtor)
+```
+
+#### Tail SES
+```{r}
+adat <- nn_tail_rand %>% group_by(com) %>% 
+  summarise(mean = mean(value),
+            sd = sd(value)) %>% 
+  as.data.frame() %>% 
+  right_join(adat, by="com") %>%
+  mutate(nnses_Tail =  (Tail_nn - mean) / sd) %>% 
+  select(!c(mean, sd))
+
+rm(nn_tail_rand)
+
+pses_plot(adat, nnses_Tail, "Tail NNI SES")
+```
+
+#### Hind Foot
+```{r}
+xdat <- read_csv("External_Measurement_Data/External_Fitted.csv") %>% 
+  select(-.row) %>%
+  select(Species, .draw, rHF)
+hfamb <- future_map(sp_amb, ~ get_mnni(.x, xdat, "Ambang"), chunks = 1000) %>% bind_rows()
+hfbaw <- future_map(sp_baw, ~ get_mnni(.x, xdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
+hfbul <- future_map(sp_bul, ~ get_mnni(.x, xdat, "Buliohuto"), chunks = 1000) %>% bind_rows()
+hfdak <- future_map(sp_dak, ~ get_mnni(.x, xdat, "Dako"), chunks = 1000) %>% bind_rows()
+hfgan <- future_map(sp_gan, ~ get_mnni(.x, xdat, "Gandangdewata"), chunks = 1000) %>% bind_rows
+hfkat <- future_map(sp_kat, ~ get_mnni(.x, xdat, "Katopasa"), chunks = 1000) %>% bind_rows()
+hflat <- future_map(sp_lat, ~ get_mnni(.x, xdat, "Latimojong"), chunks = 1000) %>% bind_rows()
+hfnok <- future_map(sp_nok, ~ get_mnni(.x, xdat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
+hftor <- future_map(sp_tor, ~ get_mnni(.x, xdat, "Torompupu"), chunks = 1000) %>% bind_rows()
+
+nn_hf_rand <- bind_rows(hfamb, hfbaw, hfbul, hfdak, hfgan, hfkat, hflat, hfnok, hftor)
+rm(hfamb, hfbaw, hfbul, hfdak, hfgan, hfkat, hflat, hfnok, hftor)
+```
+
+#### HF SES
+```{r}
+adat <- nn_hf_rand %>% group_by(com) %>% 
+  summarise(mean = mean(value),
+            sd = sd(value)) %>% 
+  as.data.frame() %>% 
+  right_join(adat, by="com") %>%
+  mutate(nnses_HF =  (HF_nn - mean) / sd) %>% 
+  select(!c(mean, sd))
+
+rm(nn_hf_rand)
+
+pses_plot(adat, nnses_HF, "HF NNI SES")
+```
+
+#### Ear
+```{r}
+xdat <- read_csv("External_Measurement_Data/External_Fitted.csv") %>% 
+  select(-.row) %>%
+  select(Species, .draw, rEar)
+earamb <- future_map(sp_amb, ~ get_mnni(.x, xdat, "Ambang"), chunks = 1000) %>% bind_rows()
+earbaw <- future_map(sp_baw, ~ get_mnni(.x, xdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
+earbul <- future_map(sp_bul, ~ get_mnni(.x, xdat, "Buliohuto"), chunks = 1000) %>% bind_rows()
+eardak <- future_map(sp_dak, ~ get_mnni(.x, xdat, "Dako"), chunks = 1000) %>% bind_rows()
+eargan <- future_map(sp_gan, ~ get_mnni(.x, xdat, "Gandangdewata"), chunks = 1000) %>% bind_rows
+earkat <- future_map(sp_kat, ~ get_mnni(.x, xdat, "Katopasa"), chunks = 1000) %>% bind_rows()
+earlat <- future_map(sp_lat, ~ get_mnni(.x, xdat, "Latimojong"), chunks = 1000) %>% bind_rows()
+earnok <- future_map(sp_nok, ~ get_mnni(.x, xdat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
+eartor <- future_map(sp_tor, ~ get_mnni(.x, xdat, "Torompupu"), chunks = 1000) %>% bind_rows()
+
+nn_ear_rand <- bind_rows(earamb, earbaw, earbul, eardak, eargan, earkat, earlat, earnok, eartor)
+rm(earamb, earbaw, earbul, eardak, eargan, earkat, earlat, earnok, eartor)
+```
+
+#### Ear SES
+```{r}
+adat <- nn_ear_rand %>% group_by(com) %>% 
+  summarise(mean = mean(value),
+            sd = sd(value)) %>% 
+  as.data.frame() %>% 
+  right_join(adat, by="com") %>%
+  mutate(nnses_Ear =  (Ear_nn - mean) / sd) %>% 
+  select(!c(mean, sd))
+
+rm(nn_ear_rand)
+
+pses_plot(adat, nnses_Ear, "Ear NNI SES")
+```
+
+#### HB
+```{r}
+xdat <- read_csv("External_Measurement_Data/External_Fitted.csv") %>% 
+  select(-.row) %>%
+  select(Species, .draw, HB)
+hbamb <- future_map(sp_amb, ~ get_mnni(.x, xdat, "Ambang"), chunks = 1000) %>% bind_rows()
+hbbaw <- future_map(sp_baw, ~ get_mnni(.x, xdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
+hbbul <- future_map(sp_bul, ~ get_mnni(.x, xdat, "Buliohuto"), chunks = 1000) %>% bind_rows()
+hbdak <- future_map(sp_dak, ~ get_mnni(.x, xdat, "Dako"), chunks = 1000) %>% bind_rows()
+hbgan <- future_map(sp_gan, ~ get_mnni(.x, xdat, "Gandangdewata"), chunks = 1000) %>% bind_rows
+hbkat <- future_map(sp_kat, ~ get_mnni(.x, xdat, "Katopasa"), chunks = 1000) %>% bind_rows()
+hblat <- future_map(sp_lat, ~ get_mnni(.x, xdat, "Latimojong"), chunks = 1000) %>% bind_rows()
+hbnok <- future_map(sp_nok, ~ get_mnni(.x, xdat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
+hbtor <- future_map(sp_tor, ~ get_mnni(.x, xdat, "Torompupu"), chunks = 1000) %>% bind_rows()
+
+nn_hb_rand <- bind_rows(hbamb, hbbaw, hbbul, hbdak, hbgan, hbkat, hblat, hbnok, hbtor)
+rm(hbamb, hbbaw, hbbul, hbdak, hbgan, hbkat, hblat, hbnok, hbtor)
+```
+
+#### HB SES
+```{r}
+adat <- nn_hb_rand %>% group_by(com) %>% 
+  summarise(mean = mean(value),
+            sd = sd(value)) %>% 
+  as.data.frame() %>% 
+  right_join(adat, by="com") %>%
+  mutate(nnses_HB =  (HB_nn - mean) / sd) %>% 
+  select(!c(mean, sd))
+
+rm(nn_hb_rand )
+
+pses_plot(adat, nnses_HB, "HB NNI SES")
+```
+
+#### Mass
+```{r}
+xdat <- read_csv("External_Measurement_Data/External_Fitted.csv") %>% 
+  select(-.row) %>%
+  select(Species, .draw, lMass)
+massamb <- future_map(sp_amb, ~ get_mnni(.x, xdat, "Ambang"), chunks = 1000) %>% bind_rows()
+massbaw <- future_map(sp_baw, ~ get_mnni(.x, xdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
+massbul <- future_map(sp_bul, ~ get_mnni(.x, xdat, "Buliohuto"), chunks = 1000) %>% bind_rows()
+massdak <- future_map(sp_dak, ~ get_mnni(.x, xdat, "Dako"), chunks = 1000) %>% bind_rows()
+massgan <- future_map(sp_gan, ~ get_mnni(.x, xdat, "Gandangdewata"), chunks = 1000) %>% bind_rows
+masskat <- future_map(sp_kat, ~ get_mnni(.x, xdat, "Katopasa"), chunks = 1000) %>% bind_rows()
+masslat <- future_map(sp_lat, ~ get_mnni(.x, xdat, "Latimojong"), chunks = 1000) %>% bind_rows()
+massnok <- future_map(sp_nok, ~ get_mnni(.x, xdat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
+masstor <- future_map(sp_tor, ~ get_mnni(.x, xdat, "Torompupu"), chunks = 1000) %>% bind_rows()
+
+nn_mass_rand <- bind_rows(massamb, massbaw, massbul, massdak, massgan, masskat, masslat, massnok, masstor)
+rm(massamb, massbaw, massbul, massdak, massgan, masskat, masslat, massnok, masstor)
+```
+
+#### Mass SES
+```{r}
+adat <- nn_mass_rand %>% group_by(com) %>% 
+  summarise(mean = mean(value),
+            sd = sd(value)) %>% 
+  as.data.frame() %>% 
+  right_join(adat, by="com") %>%
+  mutate(nnses_Mass =  (Mass_nn - mean) / sd) %>% 
+  select(!c(mean, sd))
+
+rm(nn_mass_rand)
+
+pses_plot(adat, nnses_Mass, "Mass NNI SES")
+```
+
+#### Body Proportions Raw
+```{r}
+xdat <- read_csv("External_Measurement_Data/External_Fitted.csv") %>% 
+  select(-.row) %>%
+  select(Species, .draw, HB, rTail, rHF, rEar)
+
+x_shpamb <- future_map(sp_amb, ~ get_mnni(.x, xdat, "Ambang"), chunks = 1000) %>% bind_rows()
+x_shpbaw <- future_map(sp_baw, ~ get_mnni(.x, xdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
+x_shpbul <- future_map(sp_bul, ~ get_mnni(.x, xdat, "Buliohuto"), chunks = 1000) %>% bind_rows()
+x_shpdak <- future_map(sp_dak, ~ get_mnni(.x, xdat, "Dako"), chunks = 1000) %>% bind_rows()
+x_shpgan <- future_map(sp_gan, ~ get_mnni(.x, xdat, "Gandangdewata"), chunks = 1000) %>% bind_rows
+x_shpkat <- future_map(sp_kat, ~ get_mnni(.x, xdat, "Katopasa"), chunks = 1000) %>% bind_rows()
+x_shplat <- future_map(sp_lat, ~ get_mnni(.x, xdat, "Latimojong"), chunks = 1000) %>% bind_rows()
+x_shpnok <- future_map(sp_nok, ~ get_mnni(.x, xdat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
+x_shptor <- future_map(sp_tor, ~ get_mnni(.x, xdat, "Torompupu"), chunks = 1000) %>% bind_rows()
+
+nn_x_shp_rand <- bind_rows(x_shpamb, x_shpbaw, x_shpbul, x_shpdak, x_shpgan, x_shpkat, x_shplat, x_shpnok, x_shptor)
+rm(x_shpamb, x_shpbaw, x_shpbul, x_shpdak, x_shpgan, x_shpkat, x_shplat, x_shpnok, x_shptor)
+```
+
+####Body Proportions SES
+
+```{r}
+adat <- nn_x_shp_rand %>% group_by(com) %>% 
+  summarise(mean = mean(value),
+            sd = sd(value)) %>% 
+  as.data.frame() %>% 
+  right_join(adat, by="com") %>%
+  mutate(nnses_ext =  (ext_nn - mean) / sd) %>% 
+  select(!c(mean, sd))
+
+rm(nn_x_shp_rand)
+
+pses_plot(adat, nnses_ext, "Ext NNI SES")
+```
+# Morpho Shape
+
+#### Morpho MNNI
+```{r}
+cdat <- read_csv("Cranial_Data/Cranial_36axes_Fitted.csv") %>% select(-.row) %>%
+  select(c(Species, .draw, cPC1, cPC2))
+ddat <- read_csv("Dentary_Data/Dentary_20axes_Fitted.csv") %>% select(-.row) %>%
+  select(c(Species, .draw, dPC1, dPC2, dPC3)) 
+xdat <- read_csv("External_Measurement_Data/External_Fitted.csv") %>% select(-.row) %>% 
+  select(Species, .draw, HB, lMass, rTail, rEar, rHF)
+skdat <- ddat  %>% full_join(cdat, by = c(".draw", "Species"))
+morphdat <- xdat %>% full_join(skdat, by = c(".draw", "Species"))
+
+rm(cdat, ddat, xdat)
+
+mshpamb <- future_map(sp_amb, ~ get_mnni(.x, morphdat, "Ambang"), chunks = 1000) %>% bind_rows()
+mshpbaw <- future_map(sp_baw, ~ get_mnni(.x, morphdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
+mshpbul <- future_map(sp_bul, ~ get_mnni(.x, morphdat, "Buliohuto"), chunks = 1000) %>% bind_rows()
+mshpdak <- future_map(sp_dak, ~ get_mnni(.x, morphdat, "Dako"), chunks = 1000) %>% bind_rows()
+mshpgan <- future_map(sp_gan, ~ get_mnni(.x, morphdat, "Gandangdewata"), chunks = 1000) %>% bind_rows
+mshpkat <- future_map(sp_kat, ~ get_mnni(.x, morphdat, "Katopasa"), chunks = 1000) %>% bind_rows()
+mshplat <- future_map(sp_lat, ~ get_mnni(.x, morphdat, "Latimojong"), chunks = 1000) %>% bind_rows()
+mshpnok <- future_map(sp_nok, ~ get_mnni(.x, morphdat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
+mshptor <- future_map(sp_tor, ~ get_mnni(.x, morphdat, "Torompupu"), chunks = 1000) %>% bind_rows()
+
+nn_mshp_rand <- bind_rows(mshpamb, mshpbaw, mshpbul, mshpdak, mshpgan, mshpkat, mshplat, mshpnok, mshptor)
+rm(mshpamb, mshpbaw, mshpbul, mshpdak, mshpgan, mshpkat, mshplat, mshpnok, mshptor)
+```
+#### Morpho SES
+```{r}
+adat <- nn_mshp_rand %>% group_by(com) %>% 
+  summarise(mean = mean(value),
+            sd = sd(value)) %>% 
+  as.data.frame() %>% 
+  right_join(adat, by="com") %>%
+  mutate(nnses_morpho =  (morpho_nn - mean) / sd) %>% 
+  select(!c(mean, sd))
+
+#rm(nn_x_shp_rand)
+```
+
+# Isotopes
+### There are some changes here
+I want load in the community group_level fitted values for estimating the random communities. 
+#### Carbon
+```{r}
+idat <- read_csv("Isotope_Data/Isotope_Group_Level_Fitted.csv", col_select = c(Species, .draw, sC13)) 
+
+camb <- future_map(sp_amb, ~ get_mnni(.x, idat, "Ambang"), chunks = 1000) %>%  bind_rows()
+cbaw <- future_map(sp_baw, ~ get_mnni(.x, idat, "Buliohuto"), chunks = 1000) %>%  bind_rows()
+cbul <- future_map(sp_bul, ~ get_mnni(.x, idat, "Bawakaraeng"), chunks = 1000) %>%  bind_rows()
+cdak <- future_map(sp_dak, ~ get_mnni(.x, idat, "Dako"), chunks = 1000) %>%  bind_rows()
+cgan <- future_map(sp_gan, ~ get_mnni(.x, idat, "Gandangdewata"), chunks = 1000) %>%  bind_rows()
+clat <- future_map(sp_lat, ~ get_mnni(.x, idat, "Latimojong"), chunks = 1000) %>%  bind_rows()
+
+nn_car_rand <- bind_rows(camb, cbaw, cbul, cdak, cgan, clat)
+rm(camb, cbaw, cbul, cdak, cgan, clat)
+```
+
+#### Carbon SES
+then I am using the group-level model to generate mean and sd, then subtract from the RAW nn values
+```{r}
+adat <- nn_car_rand %>% group_by(com) %>% 
+  summarise(mean = mean(value),
+            sd = sd(value)) %>% 
+  as.data.frame() %>% 
+  right_join(adat, by="com") %>%
+  mutate(nnses_C13_group =  (C13_nn_group - mean) / sd) %>% 
+  select(!c(mean, sd))
+rm(nn_car_rand)
+```
+
+
+#### Nitrogen
+```{r}
+idat <- read_csv("Isotope_Data/Isotope_Group_Level_Fitted.csv", col_select = c(Species, .draw, sN15)) 
+
+camb <- future_map(sp_amb, ~ get_mnni(.x, idat, "Ambang"), chunks = 1000) %>%  bind_rows()
+cbaw <- future_map(sp_baw, ~ get_mnni(.x, idat, "Buliohuto"), chunks = 1000) %>%  bind_rows()
+cbul <- future_map(sp_bul, ~ get_mnni(.x, idat, "Bawakaraeng"), chunks = 1000) %>%  bind_rows()
+cdak <- future_map(sp_dak, ~ get_mnni(.x, idat, "Dako"), chunks = 1000) %>%  bind_rows()
+cgan <- future_map(sp_gan, ~ get_mnni(.x, idat, "Gandangdewata"), chunks = 1000) %>%  bind_rows()
+clat <- future_map(sp_lat, ~ get_mnni(.x, idat, "Latimojong"), chunks = 1000) %>%  bind_rows()
+
+nn_car_rand <- bind_rows(camb, cbaw, cbul, cdak, cgan, clat)
+rm(camb, cbaw, cbul, cdak, cgan, clat)
+```
+
+#### Nitrogen SES
+then I am using the group-level model to generate mean and sd, then subtract from the group nn values
+```{r}
+adat <- nn_car_rand %>% group_by(com) %>% 
+  summarise(mean = mean(value),
+            sd = sd(value)) %>% 
+  as.data.frame() %>% 
+  right_join(adat, by="com") %>%
+  mutate(nnses_N15_group =  (N15_nn_group - mean) / sd) %>% 
+  select(!c(mean, sd))
+rm(nn_car_rand)
+```
+
+
+#### Realized Niche
+```{r}
+idat <- read_csv("Isotope_Data/Isotope_Group_Level_Fitted.csv", col_select = c(Species, .draw, sN15, sC13)) 
+
+camb <- future_map(sp_amb, ~ get_mnni(.x, idat, "Ambang"), chunks = 1000) %>%  bind_rows()
+cbaw <- future_map(sp_baw, ~ get_mnni(.x, idat, "Buliohuto"), chunks = 1000) %>%  bind_rows()
+cbul <- future_map(sp_bul, ~ get_mnni(.x, idat, "Bawakaraeng"), chunks = 1000) %>%  bind_rows()
+cdak <- future_map(sp_dak, ~ get_mnni(.x, idat, "Dako"), chunks = 1000) %>%  bind_rows()
+cgan <- future_map(sp_gan, ~ get_mnni(.x, idat, "Gandangdewata"), chunks = 1000) %>%  bind_rows()
+clat <- future_map(sp_lat, ~ get_mnni(.x, idat, "Latimojong"), chunks = 1000) %>%  bind_rows()
+
+nn_car_rand <- bind_rows(camb, cbaw, cbul, cdak, cgan, clat)
+rm(camb, cbaw, cbul, cdak, cgan, clat)
+```
+
+#### Realized Niche SES
+```{r}
+adat <- nn_car_rand %>% group_by(com) %>% 
+  summarise(mean = mean(value),
+            sd = sd(value)) %>% 
+  as.data.frame() %>% 
+  right_join(adat, by="com") %>%
+  mutate(nnses_iso_group =  (iso_nn_group - mean) / sd) %>% 
+  select(!c(mean, sd))
+rm(nn_car_rand)
+```
+
+```{r}
+
+pses_plot(adat, nnses_iso_group, "Iso Niche Group")
+pses_plot(adat, nnses_iso, "Iso Niche")
+```
+
+# Write Final data
+```{r}
+adat %>% write_csv("CLEAN_All_Traits.csv")
+```
+
