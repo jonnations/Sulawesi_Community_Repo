@@ -1,0 +1,93 @@
+---
+title: "Figure S1"
+output: html_notebook
+---
+
+Scripts for figure S1. 
+
+```{r}
+pacman::p_load(brms, tidyverse, tidybayes)
+```
+
+## Read Isotope data
+```{r}
+m.iso <- brm(file = "Models/iso_fitted_Com_Grouping")
+iso.fit <- read_csv("Isotope_Data/Isotope_Group_Level_Fitted.csv")
+idat <- read_csv("Isotope_Data/Isotope_Data.csv") %>% 
+  mutate(sN15 = scale2(Corrected_15N),
+         sC13 = scale2(Corrected_13C)) 
+```
+
+When plotting I need to turn these values back into raw values rather than scaled variables. here are the numbers to do that.
+Now I need to turn these values back into raw values to make everything make more sense.
+
+```{r}
+sums <- idat %>% summarise(meanN = mean(Corrected_15N),
+                   sdN = sd(Corrected_15N),
+                   meanC = mean(Corrected_13C),
+                   sdC = sd(Corrected_13C))
+sums
+cmean <- sums$meanC
+nmean <- sums$meanN
+```
+
+## Nitrogen Plot
+```{r}
+order_rank = c("Species Mean", "Ambang", "Bawakaraeng", "Buliohuto", "Dako", "Gandangdewata", "Latimojong")
+
+iso_fit_n <- iso_fit %>% add_column(Community = "Species Mean") %>% mutate(.epred = sN15) %>% as_tibble() %>%  select(c(Community, Species, .epred)) 
+
+Nplot <- epred_draws(m.iso, newdata = idat) %>%  
+  filter(.category == "sN15") %>% 
+  as_tibble() %>% 
+  select(c(Community, Species, .epred)) %>% 
+  bind_rows(iso_fit_n) %>%
+  #meanN = 4.27383, sdN = 2.24117
+  # formula = (value * sd) + mean
+  mutate(rawN = (.epred * 2.24117) + 4.27383) %>% 
+  ggplot(aes(y = Species, x = rawN, fill = Community, alpha = Community)) +
+  stat_halfeye(.width = c(0.74, 0.89)) +
+  #geom_vline(xintercept = 0, linetype = 2) +
+  #Mean vline
+  geom_vline(xintercept = nmean, linetype = 2) +
+   labs(x = expression(delta^15~N), y = NULL, fill = "Mountain") +
+    #xlim(c(-4, 4)) + 
+  theme_bw() + scale_fill_viridis_d(direction = -1, begin = 0, end = 0.9, option = "A") +
+  scale_alpha_manual(values = c(.5, .5, .5, .5, .5, .5, 1), guide = 'none') +
+  guides(fill = guide_legend(reverse=F)) #+ theme(legend.position = "none") 
+Nplot
+```
+
+## Carbon Plot
+
+```{r}
+iso_fit_c <- iso_fit %>% add_column(Community = "Species Mean") %>% mutate(.epred = sC13) %>% as_tibble() %>%  select(c(Community, Species, .epred)) 
+
+Cplot <- epred_draws(m.iso, newdata = idat) %>%  
+  filter( .category == "sC13") %>% 
+  as_tibble() %>% 
+  select(c(Community, Species, .epred)) %>% 
+  bind_rows(iso_fit_c) %>% 
+  # meanC = -24.32979	sdC = 1.291724	
+  mutate(rawC = (.epred * 1.291724) + -24.32979) %>%
+  # Raw Carbon Value plot
+  ggplot(aes(y = Species, x = rawC, fill = Community, alpha = Community)) +
+  stat_halfeye(.width = c(0.74, 0.89)) +
+  #removing standardized intercept line
+  #geom_vline(xintercept = 0, linetype = 2) +
+  #mean intercept line
+  geom_vline(xintercept = cmean, linetype = 2) +
+   labs(x = expression(delta^13~C), y = NULL, fill = "Mountain") +
+    #xlim(c(-4, 4)) + 
+  theme_bw() + scale_fill_viridis_d(direction = -1, begin = 0, end = 0.9, option = "A") +
+  scale_alpha_manual(values = c(.5, .5, .5, .5, .5, .5, 1), guide = 'none') +
+  guides(fill = guide_legend(reverse=F)) #+ theme(legend.position = "none") 
+Cplot
+#ggsave("Plots/group_level_Carbon.pdf", height = 17)
+```
+
+## Save Plot
+```{r}
+Nplot + (Cplot + theme(axis.text.y = element_blank())) + plot_layout(guides = "collect")
+ggsave("Plots/Fig_S1_group_level_Isotopes.pdf", height = 17, width = 14)
+```
