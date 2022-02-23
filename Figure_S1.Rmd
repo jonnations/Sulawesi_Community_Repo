@@ -6,13 +6,14 @@ output: html_notebook
 Scripts for figure S1. 
 
 ```{r}
-pacman::p_load(brms, tidyverse, tidybayes)
+pacman::p_load(brms, tidyverse, tidybayes, patchwork)
+scale2 <- function(x, na.rm = TRUE) (x - mean(x, na.rm = na.rm)) / sd(x, na.rm)
 ```
 
 ## Read Isotope data
 ```{r}
 m.iso <- brm(file = "Models/iso_fitted_Com_Grouping")
-iso.fit <- read_csv("Isotope_Data/Isotope_Group_Level_Fitted.csv")
+iso_fit <- read_csv("Isotope_Data/Isotope_Group_Level_Fitted.csv")
 idat <- read_csv("Isotope_Data/Isotope_Data.csv") %>% 
   mutate(sN15 = scale2(Corrected_15N),
          sC13 = scale2(Corrected_13C)) 
@@ -35,7 +36,7 @@ nmean <- sums$meanN
 ```{r}
 order_rank = c("Species Mean", "Ambang", "Bawakaraeng", "Buliohuto", "Dako", "Gandangdewata", "Latimojong")
 
-iso_fit_n <- iso_fit %>% add_column(Community = "Species Mean") %>% mutate(.epred = sN15) %>% as_tibble() %>%  select(c(Community, Species, .epred)) 
+iso_fit_n <- iso_fit %>% add_column(Community = "Species Estimate") %>% mutate(.epred = sN15) %>% as_tibble() %>%  select(c(Community, Species, .epred)) 
 
 Nplot <- epred_draws(m.iso, newdata = idat) %>%  
   filter(.category == "sN15") %>% 
@@ -61,7 +62,7 @@ Nplot
 ## Carbon Plot
 
 ```{r}
-iso_fit_c <- iso_fit %>% add_column(Community = "Species Mean") %>% mutate(.epred = sC13) %>% as_tibble() %>%  select(c(Community, Species, .epred)) 
+iso_fit_c <- iso_fit %>% add_column(Community = "Species Estimate") %>% mutate(.epred = sC13) %>% as_tibble() %>%  select(c(Community, Species, .epred)) 
 
 Cplot <- epred_draws(m.iso, newdata = idat) %>%  
   filter( .category == "sC13") %>% 
@@ -90,4 +91,5 @@ Cplot
 ```{r}
 Nplot + (Cplot + theme(axis.text.y = element_blank())) + plot_layout(guides = "collect")
 ggsave("Plots/Fig_S1_group_level_Isotopes.pdf", height = 17, width = 14)
+ggsave("Plots/Fig_S1_group_level_Isotopes.png", height = 17, width = 14)
 ```

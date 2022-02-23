@@ -355,7 +355,7 @@ adat <- d_rand %>% group_by(com) %>%
 ```
 
 ```{r}
-adat %>% write_csv("CLEAN_All_Traits.csv")
+adat %>% write_csv("All_Traits.csv")
 rm(d_rand)
 ```
 
@@ -793,28 +793,3 @@ adat <- adat %>%
 ```
 
 
-
-
-# Test Plot
-#### Test_Plot Function
-```{r}
-ses_plot <- function(data, x, title) {
-  data %>% 
-    filter({{x}} > -4) %>%  
-    filter({{x}} < 4) %>% 
-  mutate(com = factor(com, level = level_order)) %>% 
-  ggplot(aes(y = factor(com, level = level_order), x = {{x}}, fill = com)) +
-  stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
-  geom_vline(xintercept = 0, linetype = 2) +
-  geom_vline(xintercept = -1.96, linetype = 3) +
-  geom_vline(xintercept = 1.96, linetype = 3) +
-   labs(title={{title}}, x="Standard Effect Size", y = "", fill = "Mountain") +
-    xlim(c(-4, 4)) + 
-  theme_bw() + scale_fill_viridis_d(direction = -1, begin = 0, end = 0.9, option = "A") + guides(fill = guide_legend(reverse=T)) + theme(legend.position = "none") 
-}
-```
-
-
-```{r}
-ses_plot(adat, ses_vHB, "Head Body")
-```

@@ -1,11 +1,8 @@
 ---
 title: "MNND_Randomization With Sampling Probabilities"
-output: html_notebook
 ---
 
-Randomization of NMMD values using NO species pools, BUT using sampling probabilities!
-This means that the probability of selecting each species is based on their frequency. 
-Sister to `MNND_Randomization_by_Location.Rmd`. More Details found there
+Randomization of NN Density values. 
 
 I've optimized the functions using a mix of base R, tidyverse, and the furrr::future_map function
 ```{r echo = FALSE}
@@ -18,9 +15,10 @@ load("Species_Extant.RData")
 
 ldat <- read_csv("Locomotion_Data/Locomotion_List.csv") # List of species modes
 lvdat <- read_csv("Locomotion_Data/All_Locomotor_Var.csv") # variances by community
-sp_ses <- read.csv("Phy_Div/Species_SES.csv") %>% select(!X)
+#matrix for independent swap
+sp_ses <- read.csv("Phylogenetic_Diversity/Species_SES.csv") %>% select(!X)
 
-adat <- read_csv("CLEAN_All_Traits.csv") 
+adat <- read_csv("All_Traits.csv") 
 
 # Parallel computing options
 furrr_options(seed = TRUE)
@@ -118,29 +116,11 @@ get_mnni <- function(sp, data, mountain) {
 }
 ```
 
-###Plot Function
-called pses_plot(data, variable, title)
-```{r}
-pses_plot <- function(data, x, title) {
-  data %>% 
-    filter({{x}} > -3) %>%  
-    filter({{x}} < 3) %>% 
-  mutate(com = factor(com, level = level_order)) %>% 
-  ggplot(aes(y = factor(com, level = level_order), x = {{x}}, fill = com)) +
-  stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
-  geom_vline(xintercept = 0, linetype = 2) +
-  geom_vline(xintercept = -1.96, linetype = 3) +
-  geom_vline(xintercept = 1.96, linetype = 3) +
-   labs(title={{title}}, x="Standard Effect Size", y = "", fill = "Mountain") +
-    xlim(c(-3.1, 3.1)) + 
-  theme_bw() + scale_fill_viridis_d(direction = -1, begin = 0, end = 0.9, option = "A") + guides(fill = guide_legend(reverse=T)) + theme(legend.position = "none") 
-}
-```
 
 # Skull Measurements  
 
-#### Cranial Shape NMMI Estimation
-This is using the variance Using PC1 & 2. Broken stick analysis is in `CLEAN_Models_Fitted_Density.Rmd`
+#### Cranial Shape NN Estimation
+This is using the variance Using PC1 & 2. Broken stick analysis is in `Models_Fitted_Density.Rmd`
 ```{r}
 cdat <- read_csv("Cranial_Data/Cranial_36axes_Fitted.csv") %>% 
   select(c(Species, .draw, cPC1, cPC2)) 
@@ -170,7 +150,6 @@ adat <- nn_c_shp_rand %>% group_by(com) %>%
 
 rm(nn_c_shp_rand )
 
-pses_plot(adat, nnses_c, "Cranial Shape NNI SES")
 ```
 
 #### Dentary Shape NMMI Estimation
@@ -241,7 +220,6 @@ adat <- nn_c_sz_rand %>% group_by(com) %>%
 
 rm(nn_c_sz_rand)
 
-pses_plot(adat, nnses_csize, "Cranium size NNI SES")
 ```
 
 #### Dentary Size NMMD Estimation
@@ -276,7 +254,6 @@ adat <- nn_d_sz_rand %>% group_by(com) %>%
 
 rm(nn_d_sz_rand)
 
-pses_plot(adat, nnses_dsize, "Dentary size NNI SES")
 ```
 
 ## Skull Shape NMMI
@@ -352,7 +329,6 @@ adat <- nn_b_sz_rand %>% group_by(com) %>%
 
 rm(nn_b_sz_rand)
 
-pses_plot(adat, nnses_Bsz, "Body Size NNI SES")
 ```
 
 
@@ -386,8 +362,6 @@ adat <- nn_tail_rand %>% group_by(com) %>%
   select(!c(mean, sd))
 
 rm(nn_tail_rand)
-
-pses_plot(adat, nnses_Tail, "Tail NNI SES")
 ```
 
 #### Hind Foot
@@ -421,7 +395,6 @@ adat <- nn_hf_rand %>% group_by(com) %>%
 
 rm(nn_hf_rand)
 
-pses_plot(adat, nnses_HF, "HF NNI SES")
 ```
 
 #### Ear
@@ -454,8 +427,6 @@ adat <- nn_ear_rand %>% group_by(com) %>%
   select(!c(mean, sd))
 
 rm(nn_ear_rand)
-
-pses_plot(adat, nnses_Ear, "Ear NNI SES")
 ```
 
 #### HB
@@ -488,8 +459,6 @@ adat <- nn_hb_rand %>% group_by(com) %>%
   select(!c(mean, sd))
 
 rm(nn_hb_rand )
-
-pses_plot(adat, nnses_HB, "HB NNI SES")
 ```
 
 #### Mass
@@ -522,8 +491,6 @@ adat <- nn_mass_rand %>% group_by(com) %>%
   select(!c(mean, sd))
 
 rm(nn_mass_rand)
-
-pses_plot(adat, nnses_Mass, "Mass NNI SES")
 ```
 
 #### Body Proportions Raw
@@ -559,7 +526,6 @@ adat <- nn_x_shp_rand %>% group_by(com) %>%
 
 rm(nn_x_shp_rand)
 
-pses_plot(adat, nnses_ext, "Ext NNI SES")
 ```
 # Morpho Shape
 
@@ -599,7 +565,7 @@ adat <- nn_mshp_rand %>% group_by(com) %>%
   mutate(nnses_morpho =  (morpho_nn - mean) / sd) %>% 
   select(!c(mean, sd))
 
-#rm(nn_x_shp_rand)
+rm(nn_x_shp_rand)
 ```
 
 # Isotopes
@@ -690,14 +656,8 @@ adat <- nn_car_rand %>% group_by(com) %>%
 rm(nn_car_rand)
 ```
 
-```{r}
-
-pses_plot(adat, nnses_iso_group, "Iso Niche Group")
-pses_plot(adat, nnses_iso, "Iso Niche")
-```
-
 # Write Final data
 ```{r}
-adat %>% write_csv("CLEAN_All_Traits.csv")
+adat %>% write_csv("All_Traits.csv")
 ```
 

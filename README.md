@@ -1,7 +1,7 @@
 # Sulawesi_Community_Repo
 Data and Scripts for Sulawesi Murine Community Ecospace Project
 
-This repo contains all the data and scripts for this project. There are many steps involved, from generating data to running predictive models to randomization analyses. Therefore, I will walk through the steps in this README. *Most scripts are heavily annotated*.
+This repo contains all the data and scripts for this project. There are many steps involved, from generating data to running predictive models to randomization analyses. I will walk through the steps in this README. *Most individual .Rmd scripts are heavily annotated*.
 
 *Libraries Used in this Repo*: tidyverse, tidybayes, brms, pacman, purrr, furrr, dispRity, geomorph, PCDimension, phytools, vegan, picante. 
 
