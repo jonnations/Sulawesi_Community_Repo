@@ -288,8 +288,7 @@ rm(adat, isodat)
 
 Separate Models, no SE in model because they are not distributions.
 ```{r}
-locdat <- read_csv("Locomotion_Data/All_Locomotor_var.csv") %>% 
-  rename(nsp = "nspec")
+locdat <- read_csv("Locomotion_Data/All_Locomotor_var.csv") 
 ```
 
 
@@ -297,7 +296,7 @@ locdat <- read_csv("Locomotion_Data/All_Locomotor_var.csv") %>%
 l.1 <- brm(data = locdat, 
            formula = vloc ~ nsp,
            prior = c(prior(normal(0, 0.5), class = b),
-                     prior(normal(0, 1), class = Intercept),
+                     prior(normal(0, 0.5), class = Intercept),
                      prior(normal(0, 0.5), class = sigma)),
            iter = 4000, 
            warmup = 2000, 
@@ -395,6 +394,7 @@ p2 <- bind_cols((cleanup(p.2) %>% rename(b_lower = "Q5.5",
 
 all_fin <- bind_rows(p1, p2, all_fin)
 ```
+
 ```{r}
 all_fin %>%  write_csv("Regression_Results.csv")
 ```
