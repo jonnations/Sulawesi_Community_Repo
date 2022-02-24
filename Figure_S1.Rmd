@@ -1,6 +1,6 @@
 ---
 title: "Figure S1"
-output: html_notebook
+
 ---
 
 Scripts for figure S1. 
