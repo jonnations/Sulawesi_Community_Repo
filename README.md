@@ -1,7 +1,5 @@
 # Sulawesi_Community_Repo
-#################
-######## AS OF 24 FEB, ALL VAR AND RANDO SCRIPTS WORK. LACKING  PLOTTING SCRIPTS, AND CLADE ECOSPACE SCRIPTS.
-########################
+
 Data and Scripts for Sulawesi Murine Community Ecospace Project
 
 This repo contains all the data and scripts for this project. There are many steps involved, from generating data to running predictive models to randomization analyses. I will walk through the steps in this README. *Most individual .Rmd scripts are heavily annotated*.
