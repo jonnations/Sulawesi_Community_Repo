@@ -74,7 +74,7 @@ very helpful: https://stackoverflow.com/questions/61740025/dplyr-how-to-collapse
 ```{r}
 sample_com <- function(com) {
 dlist <- list()
-for (i in 1:100){
+for (i in 1:2){
   b <- picante::randomizeMatrix(sp_ses, null.model = "independentswap", iterations = 1000) %>% 
     as_tibble() %>% 
     bind_cols(com = c("Ambang", "Bawakaraeng", "Buliohuto", "Dako", "Gandangdewata", "Katopasa", "Latimojong", "Nokilalaki", "Torompupu")) %>% 
@@ -600,12 +600,85 @@ adat <- m_rand %>% group_by(com) %>%
 
 #### Add Data to file
 ```{r}
-adat <- adat %>% bind_cols(morpho_dat)
 
-#adat %>% write_csv("CLEAN_All_Traits.csv")
+adat %>% write_csv("All_Traits.csv")
 
 rm(camb, cbaw, cbul, cdak, ckat, cgan, clat, cnok, ctor, c_rand)
 ```
+
+# Isotope Randomization
+
+#### Isotope Randomization function
+
+
+```{r}
+get_ivar <- function(sp, data, mountain) {
+  data %>% 
+    filter(Species %in% {{sp}}) %>% 
+  split(.$.draw) %>% 
+  map(., ~ .x[ ,-c(1:2)]) %>% 
+  map(~ .x %>%
+        summarise(
+            vC13 = var(sC13), 
+            vN15 = var(sN15), 
+            vIso = (var(sC13) +  var(sN15)) / 2)) %>%
+  bind_rows() %>% 
+  as_tibble() %>% 
+  sample_n(., size = 100) %>% 
+    add_column(com = {{mountain}})
+}
+```
+
+#### Isotope calculation
+```{r}
+iamb <- future_map(sp_amb, ~ get_ivar(.x, ifit, "Ambang"       ), chunks = 1000) %>% bind_rows()
+ibaw <- future_map(sp_baw, ~ get_ivar(.x, ifit, "Bawakaraeng"  ), chunks = 1000) %>% bind_rows()
+ibul <- future_map(sp_bul, ~ get_ivar(.x, ifit, "Buliohuto"    ), chunks = 1000) %>% bind_rows()
+idak <- future_map(sp_dak, ~ get_ivar(.x, ifit, "Dako"         ), chunks = 1000) %>% bind_rows()
+igan <- future_map(sp_gan, ~ get_ivar(.x, ifit, "Gandangdewata"), chunks = 1000) %>% bind_rows()
+ilat <- future_map(sp_lat, ~ get_ivar(.x, ifit, "Latimojong"   ), chunks = 1000) %>% bind_rows()
+
+i_rand <- bind_rows(iamb, ibaw, ibul, idak, igan, ilat) 
+
+df2 <- 
+i_rand %>% 
+  group_by(com) %>% 
+  summarise(mC = mean(vC13),
+            sdC = sd(vC13),
+            mN = mean(vN15),
+            sdN = sd(vN15),
+            mI = mean(vIso),
+            sdI = sd(vIso)) %>% 
+  as.data.frame()
+```
+
+
+#### Isotope SES
+```{r}
+adat <- 
+  i_rand %>% group_by(com) %>% 
+  group_by(com) %>% 
+  summarise(mC = mean(vC13),
+            sdC = sd(vC13),
+            mN = mean(vN15),
+            sdN = sd(vN15),
+            mI = mean(vIso),
+            sdI = sd(vIso)) %>% 
+  as.data.frame() %>% 
+  right_join(adat, by="com") %>%
+  mutate(ses_vC13 =  (vC13_group - mC) / sdC,
+         ses_vN15 =  (vN15_group - mN) / sdN,
+         ses_vIso =  (iso_var - mI) / sdI) %>% 
+  select(!c(mC , sdC, mN , sdN, mI , sdI))
+```
+
+```{r}
+ adat  %>% 
+ write_csv("All_Traits.csv")
+
+```
+
+
 
 # Locomotion Randomization
 ```{r}
@@ -655,141 +728,5 @@ locvar$ses_loc_prob = df5$ses_loc_prob
 write_csv(locvar, "Locomotion_Data/All_Locomotor_var.csv")
 ```
 
-```{r}
-  locvar %>% 
-  ggplot(aes(y = ses_loc_prob, x = nspec, color = com)) +
- geom_point(size = 8) +
-  theme_bw() + scale_color_viridis_d(direction = -1, begin = 0, end = 0.95) + guides(color = guide_legend(reverse=T)) + theme(legend.position = "none") 
-
-```
-
-# Isotope Randomization
-
-#### Isotope Randomization function
-
-
-```{r}
-get_ivar <- function(sp, data, mountain) {
-  data %>% 
-    filter(Species %in% {{sp}}) %>% 
-  split(.$.draw) %>% 
-  map(., ~ .x[ ,-c(1:2)]) %>% 
-  map(~ .x %>%
-        summarise(
-            vC13 = var(sC13), 
-            vN15 = var(sN15), 
-            vIso = (var(sC13) +  var(sN15)) / 2)) %>%
-  bind_rows() %>% 
-  as_tibble() %>% 
-  sample_n(., size = 100) %>% 
-    add_column(com = {{mountain}})
-}
-```
-
-```{r}
-iamb <- future_map(sp_amb, ~ get_ivar(.x, ifit, "Ambang"       ), chunks = 1000) %>% bind_rows()
-ibaw <- future_map(sp_baw, ~ get_ivar(.x, ifit, "Bawakaraeng"  ), chunks = 1000) %>% bind_rows()
-ibul <- future_map(sp_bul, ~ get_ivar(.x, ifit, "Buliohuto"    ), chunks = 1000) %>% bind_rows()
-idak <- future_map(sp_dak, ~ get_ivar(.x, ifit, "Dako"         ), chunks = 1000) %>% bind_rows()
-igan <- future_map(sp_gan, ~ get_ivar(.x, ifit, "Gandangdewata"), chunks = 1000) %>% bind_rows()
-ilat <- future_map(sp_lat, ~ get_ivar(.x, ifit, "Latimojong"   ), chunks = 1000) %>% bind_rows()
-
-i_rand <- bind_rows(iamb, ibaw, ibul, idak, igan, ilat) 
-
-df2 <- 
-i_rand %>% 
-  group_by(com) %>% 
-  summarise(mC = mean(vC13),
-            sdC = sd(vC13),
-            mN = mean(vN15),
-            sdN = sd(vN15),
-            mI = mean(vIso),
-            sdI = sd(vIso)) %>% 
-  as.data.frame()
-```
-
-#### Add Data to FIle
-hashed out, only needs to be done once
-and be careful before saving
-CHECK HERE AND ADD ISO TO ADAT
-```{r}
-iso_dat$.draw = rep(1:4000, 6)
-
-adat <- adat %>%  
-  select(!c(ses_vC13_group, ses_vN15_group, ses_vIso_group)) %>%
-  full_join(iso_dat, by = c(".draw", "com"))
-
-
- #adat  %>% 
- #write_csv("All_Traits.csv")
-
-```
-
-# Isotope SES
-## Using MEAN values from community multilevel model for each community
-#### USE THESE VALUES
-```{r}
-idat <- adat %>% 
-  select(vC13_group, vN15_group, iso_var_group, com) 
-
-sesamb  <- idat %>% 
-  filter(com == "Ambang") %>% 
-  mutate(ses_vC13_group =  (vC13_group      - df2[1,2] ) / df2[1,3] ,
-         ses_vN15_group =  (vN15_group      - df2[1,4] ) / df2[1,5]  ,
-         ses_vIso_group =  (iso_var_group   - df2[1,6] ) / df2[1,7]  )
-
-sesbaw  <- idat %>% 
-  filter(com == "Bawakaraeng") %>% 
-  mutate(ses_vC13_group =  (vC13_group      - df2[2,2] ) / df2[2,3] ,
-         ses_vN15_group =  (vN15_group      - df2[2,4] ) / df2[2,5]  ,
-         ses_vIso_group =  (iso_var_group   - df2[2,6] ) / df2[2,7]  )
-
-sesbul  <- idat %>% 
-  filter(com == "Buliohuto") %>% 
-  mutate(ses_vC13_group =  (vC13_group      - df2[3,2] ) / df2[3,3] ,
-         ses_vN15_group =  (vN15_group      - df2[3,4] ) / df2[3,5]  ,
-         ses_vIso_group =  (iso_var_group   - df2[3,6] ) / df2[3,7]  )
-
-sesdak  <- idat %>% 
-  filter(com == "Dako") %>% 
-  mutate(ses_vC13_group =  (vC13_group      - df2[4,2] ) / df2[4,3] ,
-         ses_vN15_group =  (vN15_group      - df2[4,4] ) / df2[4,5]  ,
-         ses_vIso_group =  (iso_var_group   - df2[4,6] ) / df2[4,7]  )
-
-sesgan  <- idat %>% 
-  filter(com == "Gandangdewata") %>% 
-  mutate(ses_vC13_group =  (vC13_group      - df2[5,2] ) / df2[5,3] ,
-         ses_vN15_group =  (vN15_group      - df2[5,4] ) / df2[5,5]  ,
-         ses_vIso_group =  (iso_var_group   - df2[5,6] ) / df2[5,7]  )
-
-seslat  <- idat %>% 
-  filter(com == "Latimojong") %>% 
-  mutate(ses_vC13_group =  (vC13_group     - df2[6,2] ) / df2[6,3] ,
-         ses_vN15_group =  (vN15_group     - df2[6,4] ) / df2[6,5]  ,
-         ses_vIso_group =  (iso_var_group  - df2[6,6] ) / df2[6,7]  )
-  
-iso_dat <- 
-  bind_rows(sesamb, sesbaw, sesbul, sesdak, sesgan, seslat) %>% 
-  select(c(ses_vC13_group, ses_vN15_group, ses_vIso_group, com))
-
-```
-
-
-#### Add Data to FIle
-hashed out, only needs to be done once
-and be careful before saving
-CHECK HERE AND ADD ISO TO ADAT
-```{r}
-iso_dat2$.draw = rep(1:4000, 6)
-
-adat <- adat %>%  
-  #select(!c(ses_vC13_group, ses_vN15_group, ses_vIso_group)) %>%
-  full_join(iso_dat2, by = c(".draw", "com"))
-
-
- adat  %>% 
- write_csv("All_Traits.csv")
-
-```
 
 

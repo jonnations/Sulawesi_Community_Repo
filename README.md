@@ -3,7 +3,7 @@ Data and Scripts for Sulawesi Murine Community Ecospace Project
 
 This repo contains all the data and scripts for this project. There are many steps involved, from generating data to running predictive models to randomization analyses. I will walk through the steps in this README. *Most individual .Rmd scripts are heavily annotated*.
 
-*Libraries Used in this Repo*: tidyverse, tidybayes, brms, pacman, purrr, furrr, dispRity, geomorph, PCDimension, phytools, vegan, picante. 
+*Libraries Used in this Repo*: tidyverse, tidybayes, brms, pacman, purrr, furrr, dispRity, geomorph, PCDimension, phytools, vegan, picante, and patchwork. 
 
  - **Organize and Process Raw Data**
 
@@ -25,7 +25,7 @@ The density script includes a broken stick estimation. Unlike sum of variance, n
 
  - **Randomization and SES Values**
  
- The manuscript uses SES values for each community. These are the standard effect sizes - values of trait volumes and densities that account for the size of the community. The text has more details. To do this, I wrote functions that generate 1000 fake communities using the independent swap algorithim. Then we estimate variance values for the traits for each of these communities. We take the mean and sd of these 1000 communities, and then subtract the observed variance value for each of the 1000 draws from the mean, then divide by the sd, resulting in 1000 SES values for each trait for each community. The Ecospace size/variance formulas are in the `Variance_Randomization.Rmd` script, and the Density formulas are in the `Density_randomization.Rmd` script. ***WARNING*** These randomization procedures take a long time! Using 6 cores on my M1 laptop, it can take 10-15 hours to run all of these. 
+ The manuscript uses SES values for each trait for each community. These are the standard effect sizes - values of trait volumes and densities that account for the size of the community. The text has more details, but it's pretty standard practice. To do this, I wrote functions that generate 1000 fake communities using the independent swap algorithim. Then we estimate variance values for the traits for each of these communities. We take the mean and sd of these 1000 communities, and then subtract the observed variance value for each of the 1000 draws from the mean, then divide by the sd, resulting in 1000 SES values for each trait for each community. The Ecospace size/variance formulas are in the `Variance_Randomization.Rmd` script, and the Density formulas are in the `Density_randomization.Rmd` script. ***WARNING*** These randomization procedures take a long time! Using 6 cores on my M1 laptop, it can take 10-15 hours to run all of these. 
  
 
 All of the SES values are saved together in a dataframe called `All_Traits.csv` in the main directory. 
