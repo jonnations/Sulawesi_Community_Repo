@@ -1,12 +1,12 @@
 # Sulawesi_Community_Repo
 #################
-######## AS OF 23 FEB, ALL VAR AND RANDO SCRIPTS WORK. LACKING REGRESSION SCRIPTS, PLOTTING SCRIPTS, AND CLADE ECOSPACE SCRIPTS.
+######## AS OF 24 FEB, ALL VAR AND RANDO SCRIPTS WORK. LACKING  PLOTTING SCRIPTS, AND CLADE ECOSPACE SCRIPTS.
 ########################
 Data and Scripts for Sulawesi Murine Community Ecospace Project
 
 This repo contains all the data and scripts for this project. There are many steps involved, from generating data to running predictive models to randomization analyses. I will walk through the steps in this README. *Most individual .Rmd scripts are heavily annotated*.
 
-*Libraries Used in this Repo*: tidyverse, tidybayes, brms, pacman, purrr, furrr, dispRity, geomorph, PCDimension, phytools, vegan, picante, modelr, cmdstanr, and patchwork. 
+*Libraries Used in this Repo*: tidyverse, tidybayes, brms, pacman, purrr, furrr, dispRity, geomorph, PCDimension, phytools, vegan, picante, modelr, cmdstanr, ggstar, and patchwork. 
 
 This repo is meant to work in a certain order. All of the Predicted Data and Randomization Data winds up in a dataframe called `All_Traits.csv', which builds on itself. If working through it, please follow the order below. 
 
@@ -36,6 +36,10 @@ The density script includes a broken stick estimation. Unlike sum of variance, n
  - **Regression Analyses**
  
  The script `Regression_Analyses.Rmd` contains regression analyses for all SES variables. Each model uses n-species as the predictor, and ecospace volume or density, including the standard error of the measurement, as the response. More details are in the text. The continuous traits are in the first portion, followed by the discrete locomotion, and the phylogenetic diversity estimations (neither are probability distributions).
+ 
+
+ - **Plots**
+ Figures 3, 4, 5, S1, S2, and S3 were made in R. The scripts are in this Repo. Figure 5 has some minor modifications done in afdesign, such as moving the legend a bit. Otherwise, they are all the same as these scripts produce.
  
 
 All of the Predicted and SES values are saved together in a dataframe called `All_Traits.csv` in the main directory. 

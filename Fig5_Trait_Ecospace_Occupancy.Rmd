@@ -1,0 +1,461 @@
+---
+title: "Trait Occupancy Figures"
+author: "Jon Nations"
+date: "11/22/2021"
+output: html_document
+---
+
+# Ecospace Occupancy
+
+These scrips produce figure 5, and help demonstrate differences in ecospace occupancy between clades and traits.
+
+I did some minor modifications to figure 5 in afdesign, such as moving the legend around a bit.
+
+```{r}
+pacman::p_load(tidyverse, tidybayes, patchwork, modelr, ggstar)
+scale2 <- function(x, na.rm = TRUE) (x - mean(x, na.rm = na.rm)) / sd(x, na.rm)
+scale3 <- function(x, na.rm = TRUE) (x - mean(x, na.rm = na.rm))
+load("Species_Lists.Rdata")
+load("Species_Extant.Rdata")
+level_order <-  c( 'Bawakaraeng', 'Buliohuto','Dako', "Katopasa", "Ambang", "Latimojong", "Torompupu", "Nokilalaki", "Gandangdewata")
+level_order2 <-  c( 'Bawakaraeng', 'Buliohuto','Dako',  "Ambang", "Latimojong", "Gandangdewata")
+
+# Clades
+echiothrix <- c("Echiothrix_centrosa", "Echiothrix_leucura",  "Gracillimus_radix", "Hyorhinomys_steumpkei", "Melasmothrix_naso",  "Paucidentomys_vermidax", "Sommeromys_macrorhinos", 
+"Tateomys_macrocercus", "Tateomys_rhinogradoides", "Waiomys_mamasae")
+bunomys <- c("Bunomys_andrewsi", "Bunomys_chrysocomus", "Bunomys_coelestis", "Bunomys_fratrorum", "Bunomys_penitus", "Bunomys_prolatus", "Bunomys_torajae", "Eropeplus_canus", "Lenomys_meyeri", "Paruromys_dominator", "Taeromys_callitrichus", "Taeromys_celebensis", "Taeromys_hamatus", "Taeromys_sp_katopasa", "Taeromys_tarae")
+maxomys <- c("Crunomys_celebensis", "Maxomys_dollmani", "Maxomys_hellwaldii", "Maxomys_musschenbroekii", "Maxomys_wattsi")
+margaretamys <- c("Margaretamys_elegans", "Margaretamys_parvus")
+rattus <- c("Rattus_botanus", "Rattus_facetus", "Rattus_hoffmani", "Rattus_marmosurus", "Rattus_mollicomulus", "Rattus_xanthurus")
+haeromys <- c("Haeromys_minahassae")
+```
+
+
+
+# Cranium
+Here I am going to ad a new column called "clade" then color the points by it.
+```{r}
+
+pre.cranium_t <- read_csv("Cranial_Data/Cranial_36axes_Fitted.csv") %>% select(1:7) %>%
+  filter(Species %in% ext_sp) %>% 
+  mutate(Clade = case_when(Species %in% unlist(bunomys) ~ "Bunomys (15)",
+                           Species %in% unlist(echiothrix) ~ "Echiothrix (10)",
+                           Species %in% unlist(maxomys) ~ "Maxomys (5)",
+                           Species %in% unlist(margaretamys) ~ "Margaretamys (2)",
+                           Species %in% unlist(rattus) ~ "Rattus (6)",
+                           TRUE ~ "Haeromys (1)"))
+
+
+get_cran_means <- function(sp, data, mountain) {
+data %>% 
+  filter(Species %in% {{sp}}) %>%
+  group_by(Species) %>%
+    summarise(cPC1 = mean (cPC1),
+           cPC2 = mean(cPC2)) %>% 
+    add_column(Mountain = {{mountain}})
+}
+
+cambt <- get_cran_means(spamb, pre.cranium_t, "Ambang")
+cbawt <- get_cran_means(spbaw, pre.cranium_t, "Bawakaraeng") 
+cbult <- get_cran_means(spbul, pre.cranium_t, "Buliohuto") 
+cdakt <- get_cran_means(spdak, pre.cranium_t, "Dako")
+cgant <- get_cran_means(spgan, pre.cranium_t, "Gandangdewata")
+ckatt <- get_cran_means(spkat, pre.cranium_t, "Katopasa")
+clatt <- get_cran_means(splat, pre.cranium_t, "Latimojong")
+cnokt <- get_cran_means(spnok, pre.cranium_t, "Nokilalaki")
+ctort <- get_cran_means(sptor, pre.cranium_t, "Torompupu")
+com_means <- bind_rows(cambt, cbawt, cbult, cdakt, cgant, ckatt, clatt, cnokt, ctort) 
+rm(cambt, cbawt, cbult, cdakt, cgant, ckatt, clatt, cnokt, ctort)
+
+get_cran_means2 <- function(sp, data, mountain) {
+data %>% 
+  filter(Species %in% {{sp}},
+         .draw == (1:100)) %>%
+    add_column(Mountain = {{mountain}})
+}
+
+cambt <- get_cran_means2(spamb, pre.cranium_t, "Ambang")
+cbawt <- get_cran_means2(spbaw, pre.cranium_t, "Bawakaraeng") 
+cbult <- get_cran_means2(spbul, pre.cranium_t, "Buliohuto") 
+cdakt <- get_cran_means2(spdak, pre.cranium_t, "Dako")
+cgant <- get_cran_means2(spgan, pre.cranium_t, "Gandangdewata")
+ckatt <- get_cran_means2(spkat, pre.cranium_t, "Katopasa")
+clatt <- get_cran_means2(splat, pre.cranium_t, "Latimojong")
+cnokt <- get_cran_means2(spnok, pre.cranium_t, "Nokilalaki")
+ctort <- get_cran_means2(sptor, pre.cranium_t, "Torompupu")
+com_means2 <- bind_rows(cambt, cbawt, cbult, cdakt, cgant, ckatt, clatt, cnokt, ctort) 
+rm(cambt, cbawt, cbult, cdakt, cgant, ckatt, clatt, cnokt, ctort)
+
+hull_com <- com_means %>% 
+  mutate(Mountain = factor(Mountain, level = level_order)) %>% 
+  group_by(Mountain) %>% 
+  slice(chull(cPC1, cPC2))
+
+hull_com2 <- com_means2 %>% 
+  mutate(Mountain = factor(Mountain, level = level_order)) %>% 
+  group_by(Mountain, .draw) %>% 
+  slice(chull(cPC1, cPC2))
+
+c_plot2 <- pre.cranium_t %>% 
+  group_by(Species) %>% 
+  slice_sample(n = 100) %>% 
+  mutate(mPC1 = mean(cPC1),
+         mPC2 = mean(cPC2)) %>% 
+ggplot() +
+ geom_polygon(data = hull_com, alpha = 0, size = 1, aes(y = cPC2, x = cPC1, col = Mountain, fill = Mountain), show.legend = FALSE) +
+   geom_polygon(data = hull_com2, alpha = 0, size = 0.05, aes(y = cPC2, x = cPC1, col = Mountain, fill = Mountain), show.legend = FALSE) +
+    scale_fill_viridis_d(direction = -1, begin = 0.2, end = 0.98, option = "B") + 
+  scale_color_viridis_d(direction = -1, begin = 0.2, end = 0.98,  option = "B") + 
+  ggnewscale::new_scale_fill() +
+    geom_star(aes(y = mPC2, x = mPC1,
+                #fill = Clade,
+                starshape = Clade, starstroke = 1), size=4) +
+  scale_fill_viridis_d(direction = -1, begin = 0.2, end = 0.98, option = "G") +
+   labs(title="Cranial Shape Morphospace",x="Cranial PC1", y = " Cranial PC2") +
+  theme_classic() +
+  guides(#fill = guide_legend(reverse=T), 
+         color = guide_legend(reverse=T)
+         ) +
+  theme(legend.position = c(0.14, 0.85),
+        legend.key.size = unit(1.3, 'cm'),
+        legend.text = element_text(size=9),
+        legend.title = element_text(size=13))
+#ggsave("ecospace_size_cranium.png")
+c_plot2
+
+#adat <- read_csv("All_Traits.csv")
+c_plot3 <- read_csv("All_Traits.csv") %>% select(com, ses_vsk) %>% 
+  mutate(com = factor(com, level = level_order)) %>% 
+  mutate(com = recode(com,
+                      'Ambang' = 'Ambang (13)',
+                      'Bawakaraeng' = 'Bawakaraeng (7)',
+                      'Buliohuto' = 'Buliohuto (10)',
+                      'Dako' = 'Dako (12)',
+                      'Gandangdewata' = 'Gandang Dewata (23)',
+                      'Katopasa' = 'Katopasa (12)',
+                      'Latimojong' = 'Latimojong (13)',
+                      'Nokilalaki' = 'Nokilalaki (17)',
+                      'Torompupu' = 'Torompupu (15)')) %>%
+  ggplot(aes(x = ses_vsk, y = com, fill = com)) + 
+  geom_vline(xintercept = 0, 
+             linetype="dotted",  
+             size=0.4) +
+  stat_halfeye(show.legend = F) +
+  scale_y_discrete(position = "right") + 
+  labs(y="", x = "Cranial Variance SES") +
+  scale_fill_viridis_d(direction = -1, begin = 0.2, end = 0.98, option = "B") + theme_classic() +
+  theme(panel.grid.major.y = element_line( size=.1, color="black" ),
+        axis.text.y = element_text(size = 7.5, angle = 20))
+c_plot3
+
+ c_plot2 + c_plot3 + plot_layout(widths = c(2, 0.5))
+ #ggsave("Cranial_Morphospace_and_variance.png", height = 7, width = 10)
+```
+
+
+It seems that much of the volume is driven by the presence of Echiothrix clade and Haeromys, at least for the cranial measurements. For the other traits, such as tail, nitrogen, and locomotor, this may not be the case, and this could be quite informative. 
+
+Try the same thing for Isotopes
+# Isotopes
+Using the group-level fitted values
+
+
+```{r}
+pre.iso <- read_csv("Isotope_Data/Isotope_Group_Level_Fitted.csv") %>% 
+  mutate(Clade = case_when(Species %in% unlist(bunomys) ~ "Bunomys (15)",
+                           Species %in% unlist(echiothrix) ~ "Echiothrix (10)",
+                           Species %in% unlist(maxomys) ~ "Maxomys (5)",
+                           Species %in% unlist(margaretamys) ~ "Margaretamys (2)",
+                           Species %in% unlist(rattus) ~ "Rattus (6)",
+                           TRUE ~ "Haeromys (1)"))
+
+### Functions
+
+get_iso_means <- function(sp, data, mountain) {
+data %>% filter(Species %in% {{sp}}) %>% group_by(Species) %>% summarise(sN15 = mean (sN15),
+                                             sC13 = mean(sC13)) %>%
+    add_column(Mountain = {{mountain}}) %>% 
+  slice(chull(sN15, sC13))
+}
+
+get_iso_means2 <- function(sp, data, mountain) {
+data %>%  filter(Species %in% {{sp}}) %>% filter( .draw == (1:100)) %>% add_column(Mountain = {{mountain}})
+}
+
+
+dambt <- get_iso_means(spamb, pre.iso,"Ambang")
+dbawt <- get_iso_means(spbaw, pre.iso, "Bawakaraeng") 
+dbult <- get_iso_means(spbul, pre.iso, "Buliohuto") 
+ddakt <- get_iso_means(spdak, pre.iso, "Dako")
+dgant <- get_iso_means(spgan, pre.iso, "Gandangdewata")
+dlatt <- get_iso_means(spkat, pre.iso, "Latimojong")
+com_means <- bind_rows(dambt, dbawt, dbult, ddakt, dgant, dlatt) 
+rm(dambt, dbawt, dbult, ddakt, dgant, dlatt)
+
+dambt2 <- get_iso_means2(spamb, pre.iso,"Ambang")
+dbawt2 <- get_iso_means2(spbaw, pre.iso, "Bawakaraeng") 
+dbult2 <- get_iso_means2(spbul, pre.iso, "Buliohuto") 
+ddakt2 <- get_iso_means2(spdak, pre.iso, "Dako")
+dgant2 <- get_iso_means2(spgan, pre.iso, "Gandangdewata")
+dlatt2 <- get_iso_means2(spkat, pre.iso, "Latimojong")
+com_means2 <- bind_rows(dambt2, dbawt2, dbult2, ddakt2, dgant2, dlatt2) 
+rm(dambt2, dbawt2, dbult2, ddakt2, dgant2, dlatt2)
+
+
+hull_com <- com_means  %>% 
+  mutate(Mountain = factor(Mountain, level = level_order2))
+
+hull_com2 <- com_means2 %>% 
+  mutate(Mountain = factor(Mountain, level = level_order2)) %>% 
+  group_by(Mountain, .draw) %>% 
+  slice(chull(sN15, sC13))
+
+
+i_plot2 <- pre.iso %>% 
+  group_by(Species) %>% 
+  slice_sample(n = 100) %>% 
+  mutate(mN15 = mean(sN15),
+         mC13 = mean(sC13)) %>% 
+  #mutate(com = factor(com, level = level_order)) %>% 
+#ggplot(aes(y = sC13, x = sN15)) +
+  ggplot() +
+ geom_polygon(data = hull_com, alpha = 0, size = 1, aes(y = sC13, x = sN15, col = Mountain, fill = Mountain), show.legend = FALSE) +
+   geom_polygon(data = hull_com2, alpha = 0, size = 0.05, aes(y = sC13, x = sN15, col = Mountain, fill = Mountain), show.legend = FALSE) +
+    scale_fill_viridis_d(direction = -1, begin = 0.2, end = 0.98, option = "B") + 
+  scale_color_viridis_d(direction = -1, begin = 0.2, end = 0.98,  option = "B") + 
+  ggnewscale::new_scale_fill() +
+    geom_star(aes(y = mC13, x = mN15,
+                #fill = Clade,
+                starshape = Clade,starstroke = 1), size=4) +
+  scale_fill_viridis_d(direction = -1, begin = 0.2, end = 0.98, option = "G") +
+   labs(title="Isospace",
+        x = expression(delta^15~N),
+        y = expression(delta^13~C)) +
+  xlim(-2.59, 2.49) + ylim(-2.35, 2.35) +
+  theme_classic() +
+  guides(#fill = guide_legend(reverse=T), 
+         color = guide_legend(reverse=T)
+         ) +
+  theme(legend.position = c(0.14, 0.85),
+        legend.key.size = unit(1.3, 'cm'),
+        legend.text = element_text(size=9),
+        legend.title = element_text(size=13))
+
+i_plot2
+
+i_plot3 <- read_csv("All_Traits.csv") %>% select(com, ses_vIso_group) %>% drop_na() %>% 
+  mutate(com = factor(com, level = level_order2)) %>% 
+  mutate(com = recode(com,
+                      'Ambang' = 'Ambang (13)',
+                      'Bawakaraeng' = 'Bawakaraeng (7)',
+                      'Buliohuto' = 'Buliohuto (10)',
+                      'Dako' = 'Dako (12)',
+                      'Gandangdewata' = 'Gandang Dewata (23)',
+                      'Katopasa' = 'Katopasa (12)',
+                      'Latimojong' = 'Latimojong (13)',
+                      'Nokilalaki' = 'Nokilalaki (17)',
+                      'Torompupu' = 'Torompupu (15)')) %>%
+  ggplot(aes(x = ses_vIso_group, y = com, fill = com)) + 
+  geom_vline(xintercept = 0, 
+             linetype="dotted",  
+             size=0.4) +
+  stat_halfeye(show.legend = F) +
+  scale_y_discrete(position = "right") + 
+  labs(y="", x = "Isospace Variance SES") +
+  scale_fill_viridis_d(direction = -1, begin = 0.2, end = 0.98, option = "B") + theme_classic() +
+  theme(panel.grid.major.y = element_line( size=.1, color="black" ),
+        axis.text.y = element_text(size = 7.5, angle = 20))
+i_plot3
+
+ i_plot2 + i_plot3 + plot_layout(widths = c(2, 0.5))
+ #ggsave("Isospace_and_variance.png", height = 7, width = 10)
+```
+Different thing with Isotopes
+
+# External
+
+### HF and Tail
+```{r}
+pre.ext <- read_csv("External_Measurement_Data/External_Fitted.csv") %>% 
+  mutate(Clade = case_when(Species %in% unlist(bunomys) ~ "Bunomys (15)",
+                           Species %in% unlist(echiothrix) ~ "Echiothrix (10)",
+                           Species %in% unlist(maxomys) ~ "Maxomys (5)",
+                           Species %in% unlist(margaretamys) ~ "Margaretamys (2)",
+                           Species %in% unlist(rattus) ~ "Rattus (6)",
+                           TRUE ~ "Haeromys (1)"))
+
+### Functions
+
+get_ext_means <- function(sp, data, mountain) {
+data %>% filter(Species %in% {{sp}}) %>% group_by(Species) %>% 
+    summarise(mHB = mean(HB),
+              mTail = mean(rTail),
+              mHF = mean(rHF),
+              mEar = mean(rEar),
+              mMass = mean(lMass),
+              mExt = mean((HB + rTail + rHF + rEar + lMass)/5),
+              ) %>%
+    add_column(Mountain = {{mountain}})
+}
+
+get_ext_means2 <- function(sp, data, mountain) {
+data %>%  filter(Species %in% {{sp}}) %>% filter( .draw == (1:100)) %>% add_column(Mountain = {{mountain}})
+}
+
+
+eambt <- get_ext_means(spamb, pre.ext,"Ambang")
+ebawt <- get_ext_means(spbaw, pre.ext, "Bawakaraeng") 
+ebult <- get_ext_means(spbul, pre.ext, "Buliohuto") 
+edakt <- get_ext_means(spdak, pre.ext, "Dako")
+egant <- get_ext_means(spgan, pre.ext, "Gandangdewata")
+ekatt <- get_ext_means(spkat, pre.ext, "Katopasa")
+elatt <- get_ext_means(splat, pre.ext, "Latimojong")
+enokt <- get_ext_means(spnok, pre.ext, "Nokilalaki")
+etort <- get_ext_means(sptor, pre.ext, "Torompupu")
+com_means <- bind_rows(eambt, ebawt, ebult, edakt, egant, ekatt, elatt, enokt, etort) 
+rm(eambt, ebawt, ebult, edakt, egant, ekatt, elatt, enokt, etort)
+
+eambt <- get_ext_means2(spamb, pre.ext,"Ambang")
+ebawt <- get_ext_means2(spbaw, pre.ext, "Bawakaraeng") 
+ebult <- get_ext_means2(spbul, pre.ext, "Buliohuto") 
+edakt <- get_ext_means2(spdak, pre.ext, "Dako")
+egant <- get_ext_means2(spgan, pre.ext, "Gandangdewata")
+ekatt <- get_ext_means2(spkat, pre.ext, "Katopasa")
+elatt <- get_ext_means2(splat, pre.ext, "Latimojong")
+enokt <- get_ext_means2(spnok, pre.ext, "Nokilalaki")
+etort <- get_ext_means2(sptor, pre.ext, "Torompupu")
+com_means2 <- bind_rows(eambt, ebawt, ebult, edakt, egant, ekatt, elatt, enokt, etort) 
+rm(eambt, ebawt, ebult, edakt, egant, ekatt, elatt, enokt, etort)
+
+
+hull_com <- com_means %>% 
+  mutate(Mountain = factor(Mountain, level = level_order)) %>% 
+  group_by(Mountain) %>% 
+  slice(chull(mHF, mTail))
+
+hull_com2 <- com_means2 %>% 
+  mutate(Mountain = factor(Mountain, level = level_order)) %>% 
+  group_by(Mountain, .draw) %>% 
+  slice(chull(rHF, rTail))
+
+
+e_plot1 <- pre.ext %>% 
+  group_by(Species) %>% 
+  mutate(mHF = mean(rHF),
+         mTail = mean(rTail)) %>%
+  slice_sample(n = 100) %>%
+  #mutate(com = factor(com, level = level_order)) %>% 
+#ggplot(aes(y = sC13, x = sN15)) +
+  ggplot() +
+ geom_polygon(data = hull_com, alpha = 0, size = 1, aes(y = mTail, x = mHF, col = Mountain, fill = Mountain), show.legend = FALSE) +
+   geom_polygon(data = hull_com2, alpha = 0, size = 0.05, aes(y = rTail, x = rHF, col = Mountain, fill = Mountain), show.legend = FALSE) +
+    scale_fill_viridis_d(direction = -1, begin = 0.2, end = 0.98, option = "B") + 
+  scale_color_viridis_d(direction = -1, begin = 0.2, end = 0.98,  option = "B") + 
+  ggnewscale::new_scale_fill() +
+    geom_star(aes(y = mTail, x = mHF,
+                #fill = Clade,
+                starshape = Clade,starstroke = 1), size=4) +
+  scale_fill_viridis_d(direction = -1, begin = 0.2, end = 0.98, option = "G") +
+   labs(title="Hind Foot & Tail Morphospace",x="Relative Hind Foot Length (mean)", y = "Relative Tail Length (mean)") +
+  xlim(-2.5, 2.9) +
+  theme_classic() +
+  guides(#fill = guide_legend(reverse=T), 
+         color = guide_legend(reverse=T),
+         legend.key = element_rect(colour = NA, fill = NA)) +
+  theme(legend.position = c(0.14, 0.85),
+        legend.key.size = unit(1.3, 'cm'),
+        legend.text = element_text(size=9),
+        legend.title = element_text(size=13))
+
+e_plot1
+
+e_plot2 <- read_csv("All_Traits.csv") %>% select(com, ses_vHF) %>% drop_na() %>% 
+  mutate(com = factor(com, level = level_order)) %>% 
+  mutate(com = recode(com,
+                      'Ambang' = 'Ambang (13)',
+                      'Bawakaraeng' = 'Bawakaraeng (7)',
+                      'Buliohuto' = 'Buliohuto (10)',
+                      'Dako' = 'Dako (12)',
+                      'Gandangdewata' = 'Gandang Dewata (23)',
+                      'Katopasa' = 'Katopasa (12)',
+                      'Latimojong' = 'Latimojong (13)',
+                      'Nokilalaki' = 'Nokilalaki (17)',
+                      'Torompupu' = 'Torompupu (15)')) %>%
+  ggplot(aes(x = ses_vHF, y = com, fill = com)) + 
+  geom_vline(xintercept = 0, 
+             linetype="dotted",  
+             size=0.4) +
+  stat_halfeye(show.legend = F) +
+  scale_y_discrete(position = "right") + 
+  labs(y="", x = "Hind Foot Variance SES") +
+  scale_fill_viridis_d(direction = -1, begin = 0.2, end = 0.98, option = "B") + theme_classic() + theme(axis.text.y=element_blank(),
+                                                                                                        panel.grid.major.y = element_line( size=.1, color="black" ))
+e_plot2
+
+e_plot3 <- read_csv("All_Traits.csv") %>% select(com, ses_vTail) %>% drop_na() %>% 
+  mutate(com = factor(com, level = level_order)) %>% 
+  mutate(com = recode(com,
+                      'Ambang' = 'Ambang (13)',
+                      'Bawakaraeng' = 'Bawakaraeng (7)',
+                      'Buliohuto' = 'Buliohuto (10)',
+                      'Dako' = 'Dako (12)',
+                      'Gandangdewata' = 'Gandang Dewata (23)',
+                      'Katopasa' = 'Katopasa (12)',
+                      'Latimojong' = 'Latimojong (13)',
+                      'Nokilalaki' = 'Nokilalaki (17)',
+                      'Torompupu' = 'Torompupu (15)')) %>%
+  ggplot(aes(x = ses_vTail, y = com, fill = com)) +
+  geom_vline(xintercept = 0, 
+             linetype="dotted",  
+             size=0.4) +
+  stat_halfeye(show.legend = F) +
+  scale_y_discrete(position = "right") + 
+  labs(y="", x = "Tail Variance SES") +
+  scale_fill_viridis_d(direction = -1, begin = 0.2, end = 0.98, option = "B") + theme_classic() +
+  theme(panel.grid.major.y = element_line( size=.1, color="black" ),
+        axis.text.y = element_text(size = 7.5, angle = 20))
+e_plot3
+
+ (e_plot1 + e_plot2 + e_plot3) + plot_layout(widths = c(2, 0.5, 0.5))
+ #ggsave("HIndfoot_Tail_variance.png", height = 7, width = 10)
+```
+
+```{r}
+library(patchwork)
+
+(c_plot2 | i_plot2) #+ plot_layout(guides = "collect")
+#ggsave("Cran_morpho_isospace_plots.pdf", height = 7, width =15)
+```
+
+# Plot Together
+```{r}
+epl <- e_plot1 + e_plot2 + e_plot3 + plot_layout(widths = c(2, 0.5, 0.5))
+
+cpl <- c_plot2 + c_plot3 + guide_area() + plot_layout(widths = c(2, 0.5 ,0.275))
+
+ipl <- i_plot2 + i_plot3 + plot_spacer() + plot_layout(widths = c(2, 0.5, 0.275))
+
+epl / cpl / ipl + plot_layout(guides = "collect")
+
+#ggsave("Var_plpt_test_plots.png", height = 20, width =14)
+```
+
+## Plot Layout
+```{r}
+layout <- "
+AAAAAABBBB#
+AAAAAABBBB#
+CCCCCCDDDGG
+CCCCCCDDDGG
+EEEEEEFFFGG
+EEEEEEFFF##
+"
+
+e4 <- e_plot2 + e_plot3
+
+e_plot1 + e4 +  c_plot2 + c_plot3 +  i_plot2 + i_plot3 + guide_area() +
+  plot_layout(design = layout, guides = "collect", tag_level = 'new') + plot_annotation(tag_levels = list(c('A', '', '', 'B', '', 'C')))
+
+ggsave("Plots/Fig5.png", height = 13, width =9)
+#ggsave("Plots/Fig5.pdf", height = 13, width =9)
+```
