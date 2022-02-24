@@ -39,7 +39,7 @@ The density script includes a broken stick estimation. Unlike sum of variance, n
  
 
  - **Plots**
- Figures 3, 4, 5, S1, S2, and S3 were made in R. The scripts are in this Repo. Figure 5 has some minor modifications done in afdesign, such as moving the legend a bit. Otherwise, they are all the same as these scripts produce.
+ Figures 3, 4, 5, S1, S2, and S3 were made in R. The scripts are in this Repo. Figure 5 has some minor modifications done in afdesign, such as moving the legend a bit. Otherwise, they are all the same as these scripts produce. Fig S3 in particular has a lot of analyses that lead up to it. All of these are in the plotting script.
  
 
 All of the Predicted and SES values are saved together in a dataframe called `All_Traits.csv` in the main directory. 
