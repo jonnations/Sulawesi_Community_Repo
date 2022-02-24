@@ -760,7 +760,7 @@ rm(nn_amb, nn_baw, nn_bul, nn_dak, nn_gan, nn_kat, nn_lat, nn_nok, nn_tor)
 
 # Calculate SES
 ```{r}
-rdlnn2 <- nn_rand %>% group_by(com) %>% 
+rdlnn <- nn_rand %>% group_by(com) %>% 
   summarise(mean = mean(value),
             sd = sd(value)) %>% 
   as.data.frame() %>% 
@@ -768,5 +768,11 @@ rdlnn2 <- nn_rand %>% group_by(com) %>%
   mutate(nnses_loc =  (nn_rda - mean) /sd) %>% 
   select(!c(mean, sd)) %>% 
   write_csv("Locomotion_Data/NN_NNSES_Locomotor.csv")
-
 ```
+While we are here, we should add all the Locomotor results into one df
+```{r}
+read_csv("Locomotion_Data/All_Locomotor_var.csv") %>% 
+  right_join(rdlnn, by = 'com') %>% 
+  write_csv("Locomotion_Data/All_Locomotor_var.csv")
+```
+
