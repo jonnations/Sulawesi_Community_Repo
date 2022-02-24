@@ -18,6 +18,8 @@ load("Species_Extant.RData")
 scale2 <- function(x, na.rm = TRUE) (x - mean(x, na.rm = na.rm)) / sd(x, na.rm)
 level_order <-  c( 'Bawakaraeng', 'Buliohuto','Dako', "Katopasa", "Ambang", "Latimojong", "Torompupu", "Nokilalaki", "Gandangdewata")
 level_order_iso <-  c( 'Bawakaraeng', 'Buliohuto','Dako',  "Ambang", "Latimojong",  "Gandangdewata")
+
+adat <- read_csv("All_Traits.csv")
 ```
 
 These scripts use the package `furrr` which is a multi-threading version of `purrr`. It incorperates the `futures` package to run on as many cores as you choose. Here I am selecting 6 cores on my laptop.
@@ -136,6 +138,11 @@ tor_nni <- get_mnni(cf, sptor) %>%  mutate(com = "Torompupu" )
 nn_cran <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni) %>% rename(c_nn = value)
 ```
 
+```{r}
+dd <- nn_cran %>% select(c_nn)
+adat <- adat  %>% bind_cols(dd)
+```
+
 test plot
 ```{r}
 myx <- "Mean Nearest Neighbor Distance"
@@ -168,17 +175,9 @@ tor_nni <- get_mnni(cf, sptor) %>%  mutate(com = "Torompupu" )
 
 nn_csize <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni) %>% rename(csize_nn = value)
 
-myx <- "Mean Nearest Neighbor Distance"
+dd <- nn_csize %>% select(csize_nn)
+adat <- adat  %>% bind_cols(dd)
 
-
-nn_csize %>% 
-  mutate(com = factor(com, level = level_order)) %>% 
- ggplot(aes(y = factor(com, level = level_order), x =1/csize_nn, fill = com)) +
-  stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
-   labs(title="Cranial size", y = "", fill = "Mountain") +
-  xlab(bquote(.(myx)^-1)) +
-  xlim(1.25, 9.5) +
-  theme_bw() + scale_fill_viridis_d(direction = -1, begin = 0, end = 0.9,  option = "A")  + guides(fill = guide_legend(reverse=T)) + theme(legend.position = "none") 
 ```
 
 
@@ -223,20 +222,11 @@ myx <- "Mean Nearest Neighbor Distance"
 nn_dent <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni) %>% rename(d_nn = value)
 
 dd <- nn_dent %>% select(d_nn)
-adat <- adat %>% select(!d_nn) %>% bind_cols(dd)
+adat <- adat  %>% bind_cols(dd)
 #adat %>% write_csv("CLEAN_All_Traits.csv")
 ```
 
-```{r}
-nn_dent %>% 
-  filter(d_nn >= 0.3) %>% 
-  mutate(com = factor(com, level = level_order)) %>% 
- ggplot(aes(y = factor(com, level = level_order), x =1/d_nn, fill = com)) +
-  stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
-   labs(title="Broken Stick: PC's 1-3", y = "", fill = "Mountain") +
-  xlab(bquote(.(myx)^-1)) +
-  theme_bw() + scale_fill_viridis_d(direction = -1, begin = 0, end = 0.9, option = "A") + guides(fill = guide_legend(reverse=T)) + theme(legend.position = "none") 
-```
+
 Very similar to cranial!
 
 ## Dentary Size Estimate
@@ -258,38 +248,12 @@ nn_dsize <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_
 
 
 dd <- nn_dsize %>% select(dsize_nn)
-adat <- adat %>% select(!dsize_nn) %>% bind_cols(dd)
+adat <- adat  %>% bind_cols(dd)
 #adat %>% write_csv("CLEAN_All_Traits.csv")
 ```
 
 
-```{r}
-nn_dsize %>% 
-  mutate(com = factor(com, level = level_order)) %>% 
- ggplot(aes(y = factor(com, level = level_order), x = 1/dsize_nn, fill = com)) +
-  stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
-   labs(title="Dentary size",x="Mean Nearest Neighbor Distance", y = "", fill = "Mountain") +
-     labs(title="Dentary Centroid Size", y = "", fill = "Mountain") +
-  xlim(1.5, 11.2) +
-  xlab(bquote(.(myx)^-1)) +
-  theme_bw() + scale_fill_viridis_d(direction = -1, begin = 0, end = 0.9, option ="A") + guides(fill = guide_legend(reverse=T)) + theme(legend.position = "none") 
-```
 
-
-# Add Skull Results to DF
-Add these updated results to the clean traits df
-```{r}
-#all_var <- read_csv("CLEAN_All_Traits.csv") %>%
-  select(!c(c_nn, d_nn, csize_nn, dsize_nn))   
-
-all_var <- 
-  all_var %>% 
-  bind_cols(nn_cran[,1]) %>% 
-  bind_cols(nn_dent[,1]) %>% 
-  bind_cols(nn_csize[,1]) %>%
-  bind_cols(nn_dsize[,1]) 
-#write_csv(all_var, "CLEAN_All_Traits.csv")
-```
 
 #Skull Nearest Neighbor
 How do I do this?
@@ -348,6 +312,9 @@ tor_nni <- get_mnni(df, sptor) %>%  mutate(com = "Torompupu" )
 
 nn_HB <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni) %>% rename(HB_nn = value)
 
+dd <- nn_HB %>% select(HB_nn)
+adat <- adat %>% bind_cols(dd)
+
 nn_HB %>% 
   mutate(com = factor(com, level = level_order)) %>% 
  ggplot(aes(y = factor(com, level = level_order), x = 1/HB_nn, fill = com)) +
@@ -373,6 +340,9 @@ nok_nni <- get_mnni(df, spnok) %>%  mutate(com = "Nokilalaki" )
 tor_nni <- get_mnni(df, sptor) %>%  mutate(com = "Torompupu" )
 
 nn_Tail <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni) %>% rename(Tail_nn = value)
+
+dd <- nn_Tail %>% select(Tail_nn)
+adat <- adat %>% bind_cols(dd)
 ```
 
 ## HF NN
@@ -391,6 +361,9 @@ nok_nni <- get_mnni(df, spnok) %>%  mutate(com = "Nokilalaki" )
 tor_nni <- get_mnni(df, sptor) %>%  mutate(com = "Torompupu" )
 
 nn_HF <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni) %>% rename(HF_nn = value)
+
+dd <- nn_HF %>% select(HF_nn)
+adat <- adat %>% bind_cols(dd)
 ```
 
 
@@ -410,6 +383,9 @@ nok_nni <- get_mnni(df, spnok) %>%  mutate(com = "Nokilalaki" )
 tor_nni <- get_mnni(df, sptor) %>%  mutate(com = "Torompupu" )
 
 nn_Ear <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni) %>% rename(Ear_nn = value)
+
+dd <- nn_Ear %>% select(Ear_nn)
+adat <- adat %>% bind_cols(dd)
 ```
 
 ## Mass NN
@@ -428,6 +404,9 @@ nok_nni <- get_mnni(df, spnok) %>%  mutate(com = "Nokilalaki" )
 tor_nni <- get_mnni(df, sptor) %>%  mutate(com = "Torompupu" )
 
 nn_Mass <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni) %>% rename(Mass_nn = value)
+
+dd <- nn_Mass %>% select(Mass_nn)
+adat <- adat %>% bind_cols(dd)
 ```
 
 
@@ -447,6 +426,9 @@ nok_nni <- get_mnni(df, spnok) %>%  mutate(com = "Nokilalaki" )
 tor_nni <- get_mnni(df, sptor) %>%  mutate(com = "Torompupu" )
 
 nn_Bsz <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni) %>% rename(Bsz_nn = value)
+
+dd <- nn_Bsz %>% select(Bsz_nn)
+adat <- adat %>% bind_cols(dd)
 ```
 
 ## All External NN
@@ -466,22 +448,9 @@ nok_nni <- get_mnni(df, spnok) %>%  mutate(com = "Nokilalaki" )
 tor_nni <- get_mnni(df, sptor) %>%  mutate(com = "Torompupu" )
 
 nn_ext <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni) %>% rename(ext_nn = value)
-```
 
-#### Add Ext Results to DF
-Add these to the clean df
-```{r}
-all_var <- 
-  all_var %>% 
-  bind_cols(nn_Ear[,1]) %>% 
-  bind_cols(nn_HB[,1]) %>% 
-  bind_cols(nn_Mass[,1]) %>%
-  bind_cols(nn_Tail[,1]) %>%
-  bind_cols(nn_HF[,1]) %>%
-  bind_cols(nn_Bsz[,1]) %>%
-  bind_cols(nn_ext[,1])# %>%
-  
-write_csv(all_var, "CLEAN_All_Traits.csv")
+dd <- nn_ext %>% select(ext_nn)
+adat <- adat %>% bind_cols(dd)
 ```
 
 # Morpho NN
@@ -506,14 +475,17 @@ nok_nni <- get_mnni(df, spnok) %>%  mutate(com = "Nokilalaki" )
 tor_nni <- get_mnni(df, sptor) %>%  mutate(com = "Torompupu" )
 
 nn_morph <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni) %>% rename(morpho_nn = value)
+
+dd <- nn_morph %>% select(morpho_nn)
+adat <- adat %>% bind_cols(dd)
+
+
 rm(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni)
 ```
 
 
 ```{r}
-dd <- nn_morph %>% select(morpho_nn)
-adat <- adat %>% bind_cols(dd)
-#adat %>% write_csv("CLEAN_All_Traits.csv")
+adat %>% write_csv("All_Traits.csv")
 ```
 
 # Isotope GROUP Nearest Neighbor
@@ -585,119 +557,7 @@ adat <- adat  %>%
   full_join(nn_i, by = c(".draw", "com"))
 ```
 
+#Write All Data
 ```{r}
-#adat %>% write_csv("CLEAN_All_Traits.csv")
+adat %>% write_csv("All_Traits.csv")
 ```
-
-
-
-
-# Isotope Nearest Neighbor 
-Not Using THis
-
-#### Set Up fitted values
-This will go just like the others, but I first need to scale all values by community, then run a model, get the fitted values, then proceed as usual. This is one way of accounting for the background variation in the communities isotopic values
-```{r}
-idat <- read_csv("Isotope_Data/Isotope_Data.csv") %>% 
-  # group by location, scale by location, then ungroup
-  group_by(Location) %>% 
-  mutate(sbN15 = scale2(Corrected_15N),
-         sbC13 = scale2(Corrected_13C)) %>% 
-  ungroup()
-
-imod <- bf(sbN15 ~ 0 + (1|Species)) + 
-          bf(sbC13 ~ 0 + (1|Species))  +
-          set_rescor(FALSE)
-
-m.iso <- brm(imod,
-          data =  idat,
-          family = gaussian(),
-          iter = 5000,
-          warmup = 4000,
-          refresh = 0,
-          cores = 4,
-          #DEFAULT PRIORS ARE GOOD HERE!
-          control = list(adapt_delta = .99,
-                         max_treedepth = 12),
-          file = "Models/iso_fitted_scaled_by_com")
-
-pre.iso <- idat %>%
-  data_grid(Species) %>%
-  add_fitted_draws(m.iso) %>% 
-  spread(.category, .value) %>% 
-  select(!c(.chain, .iteration))
-
-pre.iso %>% write_csv("Isotope_Data/Isotope_Scale_by_Location_Fitted.csv")
-```
-
-
-
-## N15 NN
-```{r}
-isof <- pre.iso %>% 
-  select(c(Species, .draw, sbN15)) 
-
-amb_nni <- get_mnni(isof, spamb) %>%  mutate(com = "Ambang" )
-baw_nni <- get_mnni(isof, spbaw) %>%  mutate(com = "Bawakaraeng" )
-bul_nni <- get_mnni(isof, spbul) %>%  mutate(com = "Buliohuto" )
-dak_nni <- get_mnni(isof, spdak) %>%  mutate(com = "Dako" )
-gan_nni <- get_mnni(isof, spgan) %>%  mutate(com = "Gandangdewata" )
-lat_nni <- get_mnni(isof, splat) %>%  mutate(com = "Latimojong" )
-
-nn_N15 <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, lat_nni) %>% rename(N15_nn = value)
-
-nn_N15 %>% 
-  mutate(com = factor(com, level = level_order)) %>% 
- ggplot(aes(y = factor(com, level = level_order), x =N15_nn, fill = com)) +
-  stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
-   labs(title="N15 community scaled",x="Mean Nearest Neighbor Distance", y = "", fill = "Mountain") +
-  theme_bw() + scale_fill_viridis_d(direction = -1, begin = 0, end = 0.95) + guides(fill = guide_legend(reverse=T)) + theme(legend.position = "none") 
-```
-
-## C13 NN
-```{r}
-isof <- pre.iso %>% 
-  select(c(Species, .draw, sbC13)) 
-
-amb_nni <- get_mnni(isof, spamb) %>%  mutate(com = "Ambang" )
-baw_nni <- get_mnni(isof, spbaw) %>%  mutate(com = "Bawakaraeng" )
-bul_nni <- get_mnni(isof, spbul) %>%  mutate(com = "Buliohuto" )
-dak_nni <- get_mnni(isof, spdak) %>%  mutate(com = "Dako" )
-gan_nni <- get_mnni(isof, spgan) %>%  mutate(com = "Gandangdewata" )
-lat_nni <- get_mnni(isof, splat) %>%  mutate(com = "Latimojong" )
-
-nn_C13 <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, lat_nni) %>% rename(C13_nn = value)
-```
-
-## Iso NN
-```{r}
-isof <- pre.iso %>% 
-  select(c(Species, .draw, sbC13, sbN15)) 
-
-amb_nni <- get_mnni(isof, spamb) %>%  mutate(com = "Ambang" )
-baw_nni <- get_mnni(isof, spbaw) %>%  mutate(com = "Bawakaraeng" )
-bul_nni <- get_mnni(isof, spbul) %>%  mutate(com = "Buliohuto" )
-dak_nni <- get_mnni(isof, spdak) %>%  mutate(com = "Dako" )
-gan_nni <- get_mnni(isof, spgan) %>%  mutate(com = "Gandangdewata" )
-lat_nni <- get_mnni(isof, splat) %>%  mutate(com = "Latimojong" )
-
-nn_iso <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, lat_nni) %>% rename(iso_nn = value)
-```
-
-#Add Iso Results to DF
-
-```{r}
-adat <- read_csv("CLEAN_All_Traits.csv") %>% select(!c(N15_nn, C13_nn, iso_nn))
-
-  iso_nn <- 
-  nn_N15 %>% 
-  bind_cols(nn_C13[,1]) %>% 
-  bind_cols(nn_iso[,1]) 
-iso_nn$.draw = rep(1:4000, 6)
-
-adat <- adat %>%  
-  full_join(iso_nn, by = c(".draw", "com"))
-
-#write_csv(adat, "CLEAN_All_Traits.csv")
-```
-

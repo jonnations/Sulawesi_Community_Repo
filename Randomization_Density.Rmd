@@ -40,7 +40,7 @@ very helpful: https://stackoverflow.com/questions/61740025/dplyr-how-to-collapse
 ```{r}
 sample_com <- function(com) {
 dlist <- list()
-for (i in 1:2){
+for (i in 1:1000){
   b <- picante::randomizeMatrix(sp_ses, null.model = "independentswap", iterations = 1000) %>% 
     as_tibble() %>% 
     bind_cols(com = c("Ambang", "Bawakaraeng", "Buliohuto", "Dako", "Gandangdewata", "Katopasa", "Latimojong", "Nokilalaki", "Torompupu")) %>% 
@@ -179,13 +179,11 @@ adat <- nn_d_shp_rand %>% group_by(com) %>%
             sd = sd(value)) %>% 
   as.data.frame() %>% 
   right_join(adat, by="com") %>%
-  select(!nnses_d) %>% 
+  #select(!nnses_d) %>% 
   mutate(nnses_d =  (d_nn - mean) / sd) %>% 
   select(!c(mean, sd))
 
 rm(nn_d_shp_rand )
-
-pses_plot(adat, nnses_d, "Dentary Shape NNI SES")
 ```
 
 #### Cranial Size NMMD Estimation
@@ -248,7 +246,7 @@ adat <- nn_d_sz_rand %>% group_by(com) %>%
             sd = sd(value)) %>% 
   as.data.frame() %>% 
   right_join(adat, by="com") %>%
-  select(!nnses_dsize) %>% 
+  #select(!nnses_dsize) %>% 
   mutate(nnses_dsize =  (dsize_nn - mean) / sd) %>% 
   select(!c(mean, sd))
 
@@ -323,7 +321,7 @@ adat <- nn_b_sz_rand %>% group_by(com) %>%
             sd = sd(value)) %>% 
   as.data.frame() %>% 
   right_join(adat, by="com") %>%
-  select(!nnses_Bsz) %>% 
+  #select(!nnses_Bsz) %>% 
   mutate(nnses_Bsz =  (Bsz_nn - mean) / sd) %>% 
   select(!c(mean, sd))
 
