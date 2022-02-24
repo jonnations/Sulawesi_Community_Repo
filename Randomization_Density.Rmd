@@ -6,7 +6,7 @@ Randomization of NN Density values.
 
 I've optimized the functions using a mix of base R, tidyverse, and the furrr::future_map function
 ```{r echo = FALSE}
-pacman::p_load(tidyverse, tidybayes, patchwork, modelr, forcats, picante, furrr, dispRity)
+pacman::p_load(tidyverse, tidybayes, patchwork, modelr, forcats, picante, furrr, dispRity, vegan)
 #supress dplyr messages for summarise()
 options(dplyr.summarise.inform = FALSE, readr.show_types = FALSE)
 
@@ -40,7 +40,7 @@ very helpful: https://stackoverflow.com/questions/61740025/dplyr-how-to-collapse
 ```{r}
 sample_com <- function(com) {
 dlist <- list()
-for (i in 1:1000){
+for (i in 1:2){
   b <- picante::randomizeMatrix(sp_ses, null.model = "independentswap", iterations = 1000) %>% 
     as_tibble() %>% 
     bind_cols(com = c("Ambang", "Bawakaraeng", "Buliohuto", "Dako", "Gandangdewata", "Katopasa", "Latimojong", "Nokilalaki", "Torompupu")) %>% 
@@ -627,7 +627,7 @@ rm(nn_car_rand)
 ```
 
 
-#### Realized Niche
+#### Isotopic Niche
 ```{r}
 idat <- read_csv("Isotope_Data/Isotope_Group_Level_Fitted.csv", col_select = c(Species, .draw, sN15, sC13)) 
 
@@ -642,7 +642,7 @@ nn_car_rand <- bind_rows(camb, cbaw, cbul, cdak, cgan, clat)
 rm(camb, cbaw, cbul, cdak, cgan, clat)
 ```
 
-#### Realized Niche SES
+#### Isotopic Niche SES
 ```{r}
 adat <- nn_car_rand %>% group_by(com) %>% 
   summarise(mean = mean(value),
@@ -659,3 +659,114 @@ rm(nn_car_rand)
 adat %>% write_csv("All_Traits.csv")
 ```
 
+# Locomotor NN SES
+This is a little different. 
+
+It makes a matrix with 4 locomotor columns, and binary data for each row(species)
+
+This method is only used for the NN  and NNSES as Var works fine for 
+```{r}
+load("Species_Lists.Rdata")
+load("Species_Extant.RData")
+level_order <-  c( 'Bawakaraeng', 'Buliohuto','Dako', "Katopasa", "Ambang", "Latimojong", "Torompupu", "Nokilalaki", "Gandangdewata")
+locdat <- read_csv("Locomotion_Data/Locomotion_List.csv")
+d_locdat <- read_csv("Locomotion_Data/Locomotion_Dummy.csv")
+
+```
+
+### RDA Nearest Neighbor
+
+Estimating an RDA from the dummy variable matrix
+
+```{r}
+d1 <- d_locdat %>% select(!Species)%>% rda(.)
+r.d1  <- d1$CA$u %>% as_tibble() %>% bind_cols(d_locdat[,1])
+
+rdl_nn <- function(sp, com){
+  r.d1 %>% 
+  filter(Species %in% {{sp}}) %>% select(!Species) %>%
+  neighbours(which = mean) %>%
+        unique() %>% 
+        mean() %>% 
+    as_tibble() %>% 
+    add_column(com = {{com}})
+}
+
+nnamb <- rdl_nn(spamb, "Ambang")
+nnbaw <- rdl_nn(spbaw, "Bawakaraeng")
+nnbul <- rdl_nn(spbul, "Buliohuto")
+nndak <- rdl_nn(spdak, "Dako")
+nngan <- rdl_nn(spgan, "Gandangdewata")
+nnkat <- rdl_nn(spkat, "Katopasa")
+nnlat <- rdl_nn(splat, "Latimojong")
+nnnok <- rdl_nn(spnok, "Nokilalaki")
+nntor <- rdl_nn(sptor, "Torompupu")
+
+rdlnn<- bind_rows(nnamb,nnbaw,nnbul,nndak,nngan,nnkat, nnlat, nnnok, nntor) %>% rename(nn_rda = value)
+rdlnn
+rm(nnamb,nnbaw,nnbul,nndak,nngan,nnkat, nnlat, nnnok, nntor)
+```
+
+
+### Estimate Simulated NN values 
+
+All in one go. 
+```{r}
+nn_summary <- function( sp, com) {
+  dlist <- list()
+# Then estimate variance of 1000 random samples of species
+for (i in 1:500){
+    b <- picante::randomizeMatrix(sp_ses, null.model = "independentswap", iterations = 1000) %>% 
+    as_tibble() %>% 
+    bind_cols(com = c("Ambang", "Bawakaraeng", "Buliohuto", "Dako", "Gandangdewata", "Katopasa", "Latimojong", "Nokilalaki", "Torompupu")) %>% 
+    pivot_longer(cols = -com, names_to = 'species') %>%
+    filter(as.logical(value)) %>%
+    select(-value) %>%
+    filter(com == {{com}}) %>% 
+    select(-com) %>%
+    pull(species)
+  
+  dat1 <- r.d1 %>% 
+  filter(Species %in% b) %>%
+  select(!Species) %>% 
+  neighbours(which = mean) %>%
+    #unique() %>%
+    mean() %>%
+    as_tibble() %>% 
+    add_column(com = {{com}})
+  #
+   dlist[[i]] <- dat1
+  #return(b)
+}
+  bind_rows(dlist)
+}
+```
+
+```{r}
+nn_amb <-nn_summary( spamb, "Ambang")
+nn_baw <-nn_summary( spbaw, "Buliohuto")
+nn_bul <-nn_summary( spbul, "Bawakaraeng")
+nn_dak <-nn_summary( spdak, "Dako")
+nn_gan <-nn_summary( spgan, "Gandangdewata")
+nn_kat <-nn_summary( spkat, "Katopasa")
+nn_lat <-nn_summary( splat, "Latimojong")
+nn_nok <-nn_summary( spnok, "Nokilalaki")
+nn_tor <-nn_summary( sptor, "Torompupu")
+
+
+nn_rand <- bind_rows(nn_amb, nn_baw, nn_bul, nn_dak, nn_gan, nn_kat, nn_lat, nn_nok, nn_tor) 
+rm(nn_amb, nn_baw, nn_bul, nn_dak, nn_gan, nn_kat, nn_lat, nn_nok, nn_tor)
+```
+
+# Calculate SES
+```{r}
+rdlnn2 <- nn_rand %>% group_by(com) %>% 
+  summarise(mean = mean(value),
+            sd = sd(value)) %>% 
+  as.data.frame() %>% 
+  right_join(rdlnn, by = 'com') %>% 
+  mutate(nnses_loc =  (nn_rda - mean) /sd) %>% 
+  select(!c(mean, sd)) %>% 
+  write_csv("Locomotion_Data/NN_NNSES_Locomotor.csv")
+
+```

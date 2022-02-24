@@ -6,7 +6,7 @@ Data and Scripts for Sulawesi Murine Community Ecospace Project
 
 This repo contains all the data and scripts for this project. There are many steps involved, from generating data to running predictive models to randomization analyses. I will walk through the steps in this README. *Most individual .Rmd scripts are heavily annotated*.
 
-*Libraries Used in this Repo*: tidyverse, tidybayes, brms, pacman, purrr, furrr, dispRity, geomorph, PCDimension, phytools, vegan, picante, and patchwork. 
+*Libraries Used in this Repo*: tidyverse, tidybayes, brms, pacman, purrr, furrr, dispRity, geomorph, PCDimension, phytools, vegan, picante, modelr, cmdstanr, and patchwork. 
 
 This repo is meant to work in a certain order. All of the Predicted Data and Randomization Data winds up in a dataframe called `All_Traits.csv', which builds on itself. If working through it, please follow the order below. 
 
