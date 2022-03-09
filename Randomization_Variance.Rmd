@@ -114,13 +114,13 @@ get_xvar <- function(sp, data, mountain) {
   map(., ~ .x[ ,-c(1:2)]) %>% 
   map(~ .x %>%
         summarise(
-            v_HB = var(HB), 
-            v_HF = var(rHF), 
-            v_Tail = var(rTail), 
-            v_Ear = var(rEar),
-            v_Mass = var(lMass),
-            v_Bsz = (var(HB) +  var(lMass)) / 2,
-            v_Ext = (var(HB) + var(rHF) + var(rTail) + var(rEar) + var(lMass)) / 5)) %>%
+            vHB = var(HB), 
+            vHF = var(rHF), 
+            vTail = var(rTail), 
+            vEar = var(rEar),
+            vMass = var(lMass),
+            vBsz = (var(HB) +  var(lMass)) / 2,
+            vExt = (var(HB) + var(rHF) + var(rTail) + var(rEar) + var(lMass)) / 5)) %>%
   bind_rows() %>% 
   as_tibble() %>% 
   sample_n(., size = 100) %>% 
@@ -147,20 +147,20 @@ x_rand <- bind_rows(xamb, xbaw, xbul, xdak, xgan, xkat, xlat, xnok, xtor)
 ```{r}
 adat2 <- 
   x_rand %>% group_by(com) %>% 
-  summarise(mHB =   mean(v_HB),
-            sdHB =    sd(v_HB),
-            mHF =   mean(v_HF),
-            sdHF =    sd(v_HF),
-            mTail = mean(v_Tail),
-            sdTail =  sd(v_Tail),
-            mEar =  mean(v_Ear),
-            sdEar =   sd(v_Ear),
-            mMass = mean(v_Mass),
-            sdMass =  sd(v_Mass),
-            mBsz =  mean(v_Bsz),
-            sdBsz =   sd(v_Bsz),
-            mExt =  mean(v_Ext),
-            sdExt =   sd(v_Ext)) %>% 
+  summarise(mHB =   mean(vHB),
+            sdHB =    sd(vHB),
+            mHF =   mean(vHF),
+            sdHF =    sd(vHF),
+            mTail = mean(vTail),
+            sdTail =  sd(vTail),
+            mEar =  mean(vEar),
+            sdEar =   sd(vEar),
+            mMass = mean(vMass),
+            sdMass =  sd(vMass),
+            mBsz =  mean(vBsz),
+            sdBsz =   sd(vBsz),
+            mExt =  mean(vExt),
+            sdExt =   sd(vExt)) %>% 
   as.data.frame() %>% 
   right_join(adat, by="com") %>%
   mutate(ses_vHB =  (vHB - mHB) / sdHB,
@@ -180,7 +180,7 @@ This is hashed out because it only should be done once, and data needs to be loo
 
 
 ```{r}
-adat2 %>% write_csv("All_Traits2.csv")
+adat %>% write_csv("All_Traits.csv")
 rm(x_rand, xamb, xbaw, xbul, xdak, xgan, xkat, xlat, xnok, xtor)
 ```
 
@@ -198,47 +198,47 @@ get_cvar <- function(sp, data, mountain) {
   map(., ~ .x[ ,-c(1:2)]) %>% 
   map(~ .x %>%
         summarise(
-           v_cPC1 = (var(cPC1)   * 0.2041), 
-           v_cPC2 = (var(cPC2)   * 0.1479), 
-           v_cPC3 = (var(cPC3)   * 0.0644), 
-           v_cPC4 = (var(cPC4)   * 0.0604), 
-           v_cPC5 = (var(cPC5)   * 0.0434), 
-           v_cPC6 = (var(cPC6)   * 0.0381), 
-           v_cPC7 = (var(cPC7)   * 0.0367), 
-           v_cPC8 = (var(cPC8)   * 0.0334), 
-           v_cPC9 = (var(cPC9)   * 0.0302), 
-           v_cPC10 = (var(cPC10) * 0.0273), 
-           v_cPC11 = (var(cPC11) * 0.0233), 
-           v_cPC12 = (var(cPC12) * 0.0207), 
-           v_cPC13 = (var(cPC13) * 0.0179), 
-           v_cPC14 = (var(cPC14) * 0.0170), 
-           v_cPC15 = (var(cPC15) * 0.0162), 
-           v_cPC16 = (var(cPC16) * 0.0152), 
-           v_cPC17 = (var(cPC17) * 0.0142), 
-           v_cPC18 = (var(cPC18) * 0.0123), 
-           v_cPC19 = (var(cPC19) * 0.0117), 
-           v_cPC20 = (var(cPC20) * 0.0105), 
-           v_cPC21 = (var(cPC21) * 0.0098), 
-           v_cPC22 = (var(cPC22) * 0.0095), 
-           v_cPC23 = (var(cPC23) * 0.0090), 
-           v_cPC24 = (var(cPC24) * 0.0080), 
-           v_cPC25 = (var(cPC25) * 0.0078), 
-           v_cPC26 = (var(cPC26) * 0.0075), 
-           v_cPC27 = (var(cPC27) * 0.0072), 
-           v_cPC28 = (var(cPC28) * 0.0069), 
-           v_cPC29 = (var(cPC29) * 0.0063), 
-           v_cPC30 = (var(cPC30) * 0.0059), 
-           v_cPC31 = (var(cPC31) * 0.0054), 
-           v_cPC32 = (var(cPC32) * 0.0052), 
-           v_cPC33 = (var(cPC33) * 0.0051), 
-           v_cPC34 = (var(cPC34) * 0.0046),
-           v_cPC35 = (var(cPC35) * 0.0043),
-           v_cPC36 = (var(cPC36) * 0.0038),
-           v_cCsize = (var(cCsize)))) %>% 
+           vcPC1 = (var(cPC1)   * 0.2041), 
+           vcPC2 = (var(cPC2)   * 0.1479), 
+           vcPC3 = (var(cPC3)   * 0.0644), 
+           vcPC4 = (var(cPC4)   * 0.0604), 
+           vcPC5 = (var(cPC5)   * 0.0434), 
+           vcPC6 = (var(cPC6)   * 0.0381), 
+           vcPC7 = (var(cPC7)   * 0.0367), 
+           vcPC8 = (var(cPC8)   * 0.0334), 
+           vcPC9 = (var(cPC9)   * 0.0302), 
+           vcPC10 = (var(cPC10) * 0.0273), 
+           vcPC11 = (var(cPC11) * 0.0233), 
+           vcPC12 = (var(cPC12) * 0.0207), 
+           vcPC13 = (var(cPC13) * 0.0179), 
+           vcPC14 = (var(cPC14) * 0.0170), 
+           vcPC15 = (var(cPC15) * 0.0162), 
+           vcPC16 = (var(cPC16) * 0.0152), 
+           vcPC17 = (var(cPC17) * 0.0142), 
+           vcPC18 = (var(cPC18) * 0.0123), 
+           vcPC19 = (var(cPC19) * 0.0117), 
+           vcPC20 = (var(cPC20) * 0.0105), 
+           vcPC21 = (var(cPC21) * 0.0098), 
+           vcPC22 = (var(cPC22) * 0.0095), 
+           vcPC23 = (var(cPC23) * 0.0090), 
+           vcPC24 = (var(cPC24) * 0.0080), 
+           vcPC25 = (var(cPC25) * 0.0078), 
+           vcPC26 = (var(cPC26) * 0.0075), 
+           vcPC27 = (var(cPC27) * 0.0072), 
+           vcPC28 = (var(cPC28) * 0.0069), 
+           vcPC29 = (var(cPC29) * 0.0063), 
+           vcPC30 = (var(cPC30) * 0.0059), 
+           vcPC31 = (var(cPC31) * 0.0054), 
+           vcPC32 = (var(cPC32) * 0.0052), 
+           vcPC33 = (var(cPC33) * 0.0051), 
+           vcPC34 = (var(cPC34) * 0.0046),
+           vcPC35 = (var(cPC35) * 0.0043),
+           vcPC36 = (var(cPC36) * 0.0038),
+           vcCsize = (var(cCsize)))) %>% 
     bind_rows() %>% 
     as_tibble() %>%
-    mutate(vc = v_cPC1 + v_cPC2 + v_cPC3 + v_cPC4 + v_cPC5 + v_cPC6 + v_cPC7 + v_cPC8 + v_cPC9 + v_cPC10 + v_cPC11 + v_cPC12 + v_cPC13 + v_cPC14 + v_cPC15 + v_cPC16 + v_cPC17 + v_cPC18 + v_cPC19 + v_cPC20 + v_cPC21 + v_cPC22 + v_cPC23 + v_cPC24 + v_cPC25 + v_cPC26 + v_cPC27 + v_cPC28 + v_cPC29 + v_cPC30 + v_cPC31 + v_cPC32 + v_cPC33 + v_cPC34 + v_cPC35 + v_cPC36) %>%  
-      select(vc, v_cCsize) %>%
+    mutate(vc = vcPC1 + vcPC2 + vcPC3 + vcPC4 + vcPC5 + vcPC6 + vcPC7 + vcPC8 + vcPC9 + vcPC10 + vcPC11 + vcPC12 + vcPC13 + vcPC14 + vcPC15 + vcPC16 + vcPC17 + vcPC18 + vcPC19 + vcPC20 + vcPC21 + vcPC22 + vcPC23 + vcPC24 + vcPC25 + vcPC26 + vcPC27 + vcPC28 + vcPC29 + vcPC30 + vcPC31 + vcPC32 + vcPC33 + vcPC34 + vcPC35 + vcPC36) %>%  
+      select(vc, vcCsize) %>%
   sample_n(., size = 100) %>% 
     add_column(com = {{mountain}})
 }
@@ -263,13 +263,13 @@ rm(camb, cbaw, cbul, cdak, cgan, ckat, clat, cnok, ctor)
 
 # Cranium SES
 ```{r}
-adat3 <- c_rand %>% group_by(com) %>% 
+adat <- c_rand %>% group_by(com) %>% 
   summarise(vmean = mean(vc),
             vsd = sd(vc),
-            vSmean = mean(v_cCsize),
-            vSsd = sd(v_cCsize)) %>% 
+            vSmean = mean(vcCsize),
+            vSsd = sd(vcCsize)) %>% 
   as.data.frame() %>% 
-  right_join(adat2, by="com") %>%
+  right_join(adat, by="com") %>%
   mutate(ses_cv_wei =  (cv_wei - vmean) / vsd,
          ses_vcCsize =  (vcCsize - vSmean) / vSsd) %>% 
   select(!c(vmean, vsd, vSmean, vSsd))
@@ -281,7 +281,7 @@ adat3 <- c_rand %>% group_by(com) %>%
 #### Add data to file
 This is hashed out because it only should be done once, and data needs to be looked at to confirm that it is correct and safe to add. Definitely inspect before saving!!!
 ```{r}
-adat3 %>% write_csv("All_Traits2.csv")
+adat %>% write_csv("All_Traits.csv")
 rm(c_rand)
 ```
 
@@ -296,31 +296,31 @@ get_dvar <- function(sp, data, mountain) {
   split(.$.draw) %>% 
   map(., ~ .x[ ,-c(1:2)]) %>% 
   map(~ .x %>%
-        summarise(v_dPC1  = (var(dPC1)  * 0.2821), 
-                  v_dPC2  = (var(dPC2)  * 0.1529), 
-                  v_dPC3  = (var(dPC3)  * 0.1424), 
-                  v_dPC4  = (var(dPC4)  * 0.0693), 
-                  v_dPC5  = (var(dPC5)  * 0.0548), 
-                  v_dPC6  = (var(dPC6)  * 0.0393), 
-                  v_dPC7  = (var(dPC7)  * 0.0345), 
-                  v_dPC8  = (var(dPC8)  * 0.0269), 
-                  v_dPC9  = (var(dPC9)  * 0.0241), 
-                  v_dPC10 = (var(dPC10) * 0.0212), 
-                  v_dPC11 = (var(dPC11) * 0.0173), 
-                  v_dPC12 = (var(dPC12) * 0.0164), 
-                  v_dPC13 = (var(dPC13) * 0.0126), 
-                  v_dPC14 = (var(dPC14) * 0.0117), 
-                  v_dPC15 = (var(dPC15) * 0.0102), 
-                  v_dPC16 = (var(dPC16) * 0.0097), 
-                  v_dPC17 = (var(dPC17) * 0.0089), 
-                  v_dPC18 = (var(dPC18) * 0.0082), 
-                  v_dPC19 = (var(dPC19) * 0.0066), 
-                  v_dPC20 = (var(dPC20) * 0.0059),
-                  v_dCsize = var(dCsize))) %>%
+        summarise(vdPC1  = (var(dPC1)  * 0.2821), 
+                  vdPC2  = (var(dPC2)  * 0.1529), 
+                  vdPC3  = (var(dPC3)  * 0.1424), 
+                  vdPC4  = (var(dPC4)  * 0.0693), 
+                  vdPC5  = (var(dPC5)  * 0.0548), 
+                  vdPC6  = (var(dPC6)  * 0.0393), 
+                  vdPC7  = (var(dPC7)  * 0.0345), 
+                  vdPC8  = (var(dPC8)  * 0.0269), 
+                  vdPC9  = (var(dPC9)  * 0.0241), 
+                  vdPC10 = (var(dPC10) * 0.0212), 
+                  vdPC11 = (var(dPC11) * 0.0173), 
+                  vdPC12 = (var(dPC12) * 0.0164), 
+                  vdPC13 = (var(dPC13) * 0.0126), 
+                  vdPC14 = (var(dPC14) * 0.0117), 
+                  vdPC15 = (var(dPC15) * 0.0102), 
+                  vdPC16 = (var(dPC16) * 0.0097), 
+                  vdPC17 = (var(dPC17) * 0.0089), 
+                  vdPC18 = (var(dPC18) * 0.0082), 
+                  vdPC19 = (var(dPC19) * 0.0066), 
+                  vdPC20 = (var(dPC20) * 0.0059),
+                  vdCsize = var(dCsize))) %>%
     bind_rows() %>% 
     as_tibble() %>%
-    mutate(vd = v_dPC1 + v_dPC2 + v_dPC3 + v_dPC4 + v_dPC5 + v_dPC6 + v_dPC7 + v_dPC8 + v_dPC9 + v_dPC10 + v_dPC11 + v_dPC12 + v_dPC13 + v_dPC14 + v_dPC15 + v_dPC16 + v_dPC17 + v_dPC18 + v_dPC19 + v_dPC20 ) %>%  
-      select(vd, v_dCsize) %>%
+    mutate(vd = vdPC1 + vdPC2 + vdPC3 + vdPC4 + vdPC5 + vdPC6 + vdPC7 + vdPC8 + vdPC9 + vdPC10 + vdPC11 + vdPC12 + vdPC13 + vdPC14 + vdPC15 + vdPC16 + vdPC17 + vdPC18 + vdPC19 + vdPC20 ) %>%  
+      select(vd, vdCsize) %>%
   sample_n(., size = 100) %>% 
     add_column(com = {{mountain}})
 }
@@ -342,20 +342,20 @@ rm(damb, dbaw, dbul, ddak, dgan, dkat, dlat, dnok, dtor)
 ```
 # Dentry SES
 ```{r}
-adat4 <- d_rand %>% group_by(com) %>% 
+adat <- d_rand %>% group_by(com) %>% 
   summarise(mean_d = mean(vd),
             sd_d = sd(vd),
-            mean_sd = mean(v_dCsize),
-            sd_sd = sd(v_dCsize)) %>% 
+            mean_sd = mean(vdCsize),
+            sd_sd = sd(vdCsize)) %>% 
   as.data.frame() %>% 
-  right_join(adat3, by="com") %>%
+  right_join(adat, by="com") %>%
   mutate(ses_dv_wei =  (dv_wei - mean_d) / sd_d,
          ses_vdCsize = (vdCsize - mean_sd) / sd_sd) %>% 
   select(!c(mean_d, sd_d, mean_sd, sd_sd))
 ```
 
 ```{r}
-adat4 %>% write_csv("All_Traits2.csv")
+adat %>% write_csv("All_Traits.csv")
 rm(d_rand)
 ```
 
@@ -473,7 +473,7 @@ adat <- sk_rand %>% group_by(com) %>%
 ```
 
 ```{r}
-#adat %>% write_csv("CLEAN_All_Traits.csv")
+adat5 %>% write_csv("All_Traits.csv")
 ```
 
 
@@ -601,7 +601,7 @@ adat <- m_rand %>% group_by(com) %>%
 #### Add Data to file
 ```{r}
 
-adat %>% write_csv("All_Traits.csv")
+adat6 %>% write_csv("All_Traits.csv")
 
 rm(camb, cbaw, cbul, cdak, ckat, cgan, clat, cnok, ctor, c_rand)
 ```

@@ -14,7 +14,7 @@ Making a big html table of the median and 89% CIs of the v, vses, nn and nnses o
 ```{r}
 pacman::p_load(tidyverse,tidybayes, kableExtra)
 
-dat <- read_csv('CLEAN_All_Traits.csv')
+dat <- read_csv('All_Traits.csv')
 ```
 
 
@@ -52,7 +52,7 @@ I Think it works best to make 4 dataframes, then add the columns together by tra
 vdat <- 
   dat %>% select(com, contains("v"), ext_scaled) %>% 
   select(!contains("ses")) %>% 
-  select(!c(all_var, vN15, vC13, iv_sum, iv_scaled, iso_var)) %>% 
+  #select(!c(vN15, vC13, iso_var)) %>% 
   group_by(com) %>% 
   summarise_at(vars(1:16),
                list(u89 = ~quantile(., c(0.945), na.rm = TRUE),
@@ -82,11 +82,11 @@ vdf <- bind_cols(nam, trt, df2) %>%
                         "sk_var" = "Head Shape",
                         "dv_wei" = "Dentary Shape",
                         'cv_wei' = 'Cranium Shape',
-                        'iso_var_group' = "Isospace" ,
+                        'iso_var' = "Isospace" ,
                         'morpho_var' = "Morphology",
                         'vBsz' = "Body Size",
-                        'vC13_group' = "Carbon13",
-                        'vN15_group' = 'Nitrogen15',
+                        'vC13' = "Carbon13",
+                        'vN15' = 'Nitrogen15',
                         'vdCsize' = 'Dentary Size',
                         'vcCsize' = 'Cranium Size',
                         'vEar' = 'Ear Length',
@@ -292,13 +292,13 @@ tabl <- vdf %>%
   select(!c(comb.x, comb.y)) %>%
   arrange(comb, Trait, Community)
 
-tabl %>% write_csv("Table_S1_output1.csv")
+tabl %>% write_csv("Table_S1_output.csv")
 ```
 
 Added Phylogenetic Diversity and Locomotor Variance/density manually. Read this back in. Also changing the Isotope NA values to just an NA so it prints better. Then I need to drop_na in the Vses column to eliminate the non-important coms. 
 
 ```{r}
-tabl <- read_csv("Table_S1_output2.csv") %>%
+tabl <- read_csv("Table_S1_output.csv") %>%
   mutate_if(is.numeric, ~round(., 2)) %>% 
   mutate_at(vars(3:6), ~ifelse(. == 'NaN (NA, NA)', NA, .)) %>% 
   drop_na(Volume)
