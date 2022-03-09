@@ -342,20 +342,20 @@ rm(damb, dbaw, dbul, ddak, dgan, dkat, dlat, dnok, dtor)
 ```
 # Dentry SES
 ```{r}
-adat <- d_rand %>% group_by(com) %>% 
+adat4 <- d_rand %>% group_by(com) %>% 
   summarise(mean_d = mean(vd),
             sd_d = sd(vd),
-            mean_sd = mean(vdCsize),
-            sd_sd = sd(vdCsize)) %>% 
+            mean_sd = mean(v_dCsize),
+            sd_sd = sd(v_dCsize)) %>% 
   as.data.frame() %>% 
-  right_join(adat, by="com") %>%
+  right_join(adat3, by="com") %>%
   mutate(ses_dv_wei =  (dv_wei - mean_d) / sd_d,
          ses_vdCsize = (vdCsize - mean_sd) / sd_sd) %>% 
   select(!c(mean_d, sd_d, mean_sd, sd_sd))
 ```
 
 ```{r}
-adat %>% write_csv("All_Traits.csv")
+adat4 %>% write_csv("All_Traits2.csv")
 rm(d_rand)
 ```
 
