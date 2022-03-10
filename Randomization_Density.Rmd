@@ -40,7 +40,7 @@ very helpful: https://stackoverflow.com/questions/61740025/dplyr-how-to-collapse
 ```{r}
 sample_com <- function(com) {
 dlist <- list()
-for (i in 1:2){
+for (i in 1:100){
   b <- picante::randomizeMatrix(sp_ses, null.model = "independentswap", iterations = 1000) %>% 
     as_tibble() %>% 
     bind_cols(com = c("Ambang", "Bawakaraeng", "Buliohuto", "Dako", "Gandangdewata", "Katopasa", "Latimojong", "Nokilalaki", "Torompupu")) %>% 
@@ -592,7 +592,7 @@ adat <- nn_car_rand %>% group_by(com) %>%
             sd = sd(value)) %>% 
   as.data.frame() %>% 
   right_join(adat, by="com") %>%
-  mutate(nnses_C13_group =  (C13_nn_group - mean) / sd) %>% 
+  mutate(nnses_C13 =  (C13_nn - mean) / sd) %>% 
   select(!c(mean, sd))
 rm(nn_car_rand)
 ```
@@ -621,7 +621,7 @@ adat <- nn_car_rand %>% group_by(com) %>%
             sd = sd(value)) %>% 
   as.data.frame() %>% 
   right_join(adat, by="com") %>%
-  mutate(nnses_N15_group =  (N15_nn_group - mean) / sd) %>% 
+  mutate(nnses_N15 =  (N15_nn - mean) / sd) %>% 
   select(!c(mean, sd))
 rm(nn_car_rand)
 ```
@@ -649,7 +649,7 @@ adat <- nn_car_rand %>% group_by(com) %>%
             sd = sd(value)) %>% 
   as.data.frame() %>% 
   right_join(adat, by="com") %>%
-  mutate(nnses_iso_group =  (iso_nn_group - mean) / sd) %>% 
+  mutate(nnses_iso =  (iso_nn - mean) / sd) %>% 
   select(!c(mean, sd))
 rm(nn_car_rand)
 ```
