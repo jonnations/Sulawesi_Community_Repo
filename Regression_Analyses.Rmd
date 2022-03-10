@@ -34,9 +34,9 @@ I need to make 2 tibbles, one with the iso traits (6 coms), and one without(9 co
 ```{r}
 keepcoms <- c('Bawakaraeng', 'Buliohuto','Dako', "Ambang", "Latimojong", "Gandangdewata")
 
-isodat <- dat %>% select(c(com, ses_vIso_group, ses_vC13_group, ses_vN15_group, nnses_C13_group, nnses_N15_group, nnses_iso_group)) %>% filter(com %in% keepcoms)
+isodat <- dat %>% select(c(com, ses_vIso, ses_vC13, ses_vN15, nnses_C13, nnses_N15, nnses_iso)) %>% filter(com %in% keepcoms)
 
-adat <- dat %>% select(!c(ses_vIso_group, ses_vC13_group, ses_vN15_group, nnses_C13_group, nnses_N15_group, nnses_iso_group)) 
+adat <- dat %>% select(!c(ses_vIso, ses_vC13, ses_vN15, nnses_C13, nnses_N15, nnses_iso)) 
 
 rm(dat)
 ```
@@ -150,12 +150,12 @@ plan(multisession, workers = 6)
 
 ```{r echo = T, results = 'hide'}
 ttt <- ttt %>% mutate(fits = future_map(d, ~update(fit, newdata = .x, refresh = 0)))
-write_rds(ttt, "Models/All_Regression_Models_List.rds")
+write_rds(ttt, "Models/All_Regression_Models_List2.rds")
 ```
 
 ### Cleanup
 ```{r}
-ttt <- readRDS("Models/All_Regression_Models_List.rds")
+ttt <- readRDS("Models/All_Regression_Models_List2.rds")
 b <- ttt %>%  mutate(beta = map(fits, cleanup)) %>%
                 unnest(beta) %>% 
                 rename(b_lower = "Q5.5",
@@ -278,7 +278,7 @@ iso_fin <- bind_cols(b, i, s, r, rsm)
 
 #### Combine Iso and All fits together
 ```{r}
-all_fin <- bind_rows(fin, iso_fin) %>% write_csv("Regression_Results.csv")
+all_fin <- bind_rows(fin, iso_fin) %>% write_csv("Regression_Results2.csv")
 
 rm(adat, isodat)
 ```
