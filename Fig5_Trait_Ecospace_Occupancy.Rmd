@@ -162,6 +162,7 @@ Using the group-level fitted values
 
 ```{r}
 pre.iso <- read_csv("Isotope_Data/Isotope_Group_Level_Fitted.csv") %>% 
+   filter(Species != "Rattus_exulans") %>% 
   mutate(Clade = case_when(Species %in% unlist(bunomys) ~ "Bunomys (15)",
                            Species %in% unlist(echiothrix) ~ "Echiothrix (10)",
                            Species %in% unlist(maxomys) ~ "Maxomys (5)",
@@ -277,6 +278,7 @@ Different thing with Isotopes
 ### HF and Tail
 ```{r}
 pre.ext <- read_csv("External_Measurement_Data/External_Fitted.csv") %>% 
+   filter(Species != "Margaretamys_beccarii") %>% 
   mutate(Clade = case_when(Species %in% unlist(bunomys) ~ "Bunomys (15)",
                            Species %in% unlist(echiothrix) ~ "Echiothrix (10)",
                            Species %in% unlist(maxomys) ~ "Maxomys (5)",
