@@ -136,5 +136,72 @@ ylim(-2.5, 2.5) +
          color = guide_legend(override.aes = list(size = 1)))
 ```
 
+## Net Relatedness Index
+Sample codes here : `https://pedrohbraga.github.io/CommunityPhylogenetics-Workshop/CommunityPhylogenetics-Workshop.html#between-assemblage-phylogenetic-structure`
 
-                                                       
+"Negative NRI values indicate phylogenetic overdispersion, i.e. co-occurring taxa is less closely related than expected by a given null model; while positive NRI values represent phylogenetic clustering, i.e. co-occurring taxa are more closely related than expected by a null model."
+
+
+*Important* : NRI is obtained by multiplying the standardized effect size mean phylogenetic (pairwise) distances (calculated via a null model of interest) by −1.
+```{r}
+set.seed(111)
+sesmpd <- ses.mpd(sp_ses, cophenetic.phylo(tr), null.model="independentswap", runs=100, iterations = 1000) %>% 
+  as_tibble() %>% 
+  arrange(ntaxa) %>% 
+  add_column(com = level_order) %>% 
+  select(-runs) %>% 
+  mutate(NRI = -1 * mpd.obs.z)
+
+sesmpd
+```
+
+
+## Nearest Taxon Index
+                          
+"Another way to assess the phylogenetic structure of communities is through the calculation of the nearest taxon index (NTI). NTI differs from NRI by being based on the mean nearest neighbour phylogenetic distance (MNTD), instead of the overall mean pairwise distances (MPD).
+MNTD is obtained by calculating the mean phylogenetic distance of each taxon of a given community to its nearest neighbour in a tree. By doing this, one can observe that NTI is more sensitive to the clustering or overdispersion patterns happening closer to the tips of a tree, while NRI represents an overall pattern of structuring across the whole phylogenetic tree."
+
+```{r}
+sesmntd <- ses.mntd(sp_ses, cophenetic.phylo(tr), null.model="independentswap", runs=100, iterations = 1000) %>% 
+  as_tibble() %>% 
+  arrange(ntaxa) %>% 
+  add_column(com = level_order) %>% 
+  select(-runs) %>% 
+  mutate(NTI = -1 * mntd.obs.z)
+
+sesmntd
+```
+
+## Phylogenetic Beta Diversity
+Not really important!
+
+```{r}
+ps <- phylosor(sp_ses, tr)
+ps2 <- phylosor.rnd(sp_ses, tr, cstSor=FALSE, null.model = "independentswap",runs = 100)
+```
+
+THis function comes from:
+https://pedrohbraga.github.io/CommunityPhylogenetics-Workshop/CommunityPhylogenetics-Workshop.html#between-assemblage-phylogenetic-structure
+```{r}
+psses <- ses.PBD(obs = ps,
+                           rand = ps2)
+
+psses
+```
+So Katopasa and Gandang are very similar, while Gandang and Noki are very dissimilar!?! High values = dissimilar, low = similar.
+```{r}
+psses.m <- ps 
+# assign SES_PhyloSor value to each cell
+for(i in 1:length(ps)) {psses.m[i] <- psses$pbd.ses[i]}
+
+# plot heatmap using ggplot this time!
+library(ggplot2)
+library(reshape2)
+psses.m %>% as.matrix() %>% melt() %>% # manipulate data into a format that works for ggplot
+  ggplot() + 
+  geom_tile(aes(x = Var1, y = Var2, fill = value)) + # create the heatmap
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red") + # create a diverging color palette
+  xlab("sites") + ylab("sites") + labs(fill = "SES_PhyloSor") + # edit axis and legend titles
+  theme(axis.text.x = element_text(angle = 90)) # rotates x axis labels
+```
+
