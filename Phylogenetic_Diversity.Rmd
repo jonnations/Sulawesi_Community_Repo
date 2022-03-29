@@ -127,13 +127,14 @@ sespd
 ```
 
 ```{r}
-sespd %>% mutate(com = factor(com, level = level_order)) %>% ggplot(aes(x = ntaxa, y=pd_ses, color = com, fill = com)) + 
+p1 <- sespd %>% mutate(com = factor(com, level = level_order)) %>% ggplot(aes(x = ntaxa, y=pd_ses, color = com, fill = com)) + 
 #geom_point(size = 10) + 
-geom_jitter(size = 10, width = 1.25, alpha = 0.85) +
+geom_jitter(size = 5, width = 1.25, alpha = 0.85) +
 ylim(-2.5, 2.5) + 
-  geom_hline(yintercept = 0) + scale_color_viridis_d(direction = -1, begin = 0, end = 0.95,  option = "A") + theme_classic() + 
+  geom_hline(yintercept = 0) + scale_color_viridis_d(direction = -1, begin = 0, end = 0.95,  option = "A") + theme_classic() + ggtitle("Phylo Div") +
   guides(fill = guide_legend(reverse=T), color = guide_legend(reverse=T),
          color = guide_legend(override.aes = list(size = 1)))
+p1
 ```
 
 ## Net Relatedness Index
@@ -144,17 +145,35 @@ Sample codes here : `https://pedrohbraga.github.io/CommunityPhylogenetics-Worksh
 
 *Important* : NRI is obtained by multiplying the standardized effect size mean phylogenetic (pairwise) distances (calculated via a null model of interest) by −1.
 ```{r}
-set.seed(111)
+set.seed(123)
 sesmpd <- ses.mpd(sp_ses, cophenetic.phylo(tr), null.model="independentswap", runs=100, iterations = 1000) %>% 
   as_tibble() %>% 
   arrange(ntaxa) %>% 
   add_column(com = level_order) %>% 
   select(-runs) %>% 
-  mutate(NRI = -1 * mpd.obs.z)
+  mutate(NRI = -1 * mpd.obs.z) %>% 
+  select(ntaxa, mpd.obs.p, com, NRI)
 
 sesmpd
 ```
+Species in Gandang are much less related than expected by chance, while species in Kato and Bawa are much more related than expected by chance. The rest are kinda mishmashed. This means that species in Totompupu, Nokilalaki, and Gandang are phylogenetically overdispersed and demonstrate trait overdispersion. 
 
+```{r}
+p2 <- sesmpd %>% mutate(com = factor(com, level = level_order)) %>% ggplot(aes(x = ntaxa, y=NRI, color = com, fill = com)) + 
+#geom_point(size = 10) + 
+geom_jitter(size = 5, width = 1.25, alpha = 0.85) +
+ylim(-2.5, 2.5) + 
+  geom_hline(yintercept = 0) + scale_color_viridis_d(direction = -1, begin = 0, end = 0.95,  option = "A") + ggtitle("Net Relatedness") + theme_classic() + 
+  guides(fill = guide_legend(reverse=T), color = guide_legend(reverse=T),
+         color = guide_legend(override.aes = list(size = 1)))
+
+p2
+```
+
+```{r}
+library(patchwork)
+p1 + p2 + plot_layout(guides = 'collect') + plot_annotation(title ='These Are Just Opposites! Overdispersion in the Species-Rich Communities')
+```
 
 ## Nearest Taxon Index
                           
@@ -162,15 +181,20 @@ sesmpd
 MNTD is obtained by calculating the mean phylogenetic distance of each taxon of a given community to its nearest neighbour in a tree. By doing this, one can observe that NTI is more sensitive to the clustering or overdispersion patterns happening closer to the tips of a tree, while NRI represents an overall pattern of structuring across the whole phylogenetic tree."
 
 ```{r}
+set.seed(123)
 sesmntd <- ses.mntd(sp_ses, cophenetic.phylo(tr), null.model="independentswap", runs=100, iterations = 1000) %>% 
   as_tibble() %>% 
   arrange(ntaxa) %>% 
   add_column(com = level_order) %>% 
   select(-runs) %>% 
-  mutate(NTI = -1 * mntd.obs.z)
+  mutate(NTI = -1 * mntd.obs.z) %>% 
+  select(ntaxa, mntd.obs.p, com, NTI)
 
 sesmntd
 ```
+Different Story here! Very closely related taxa live in Gandang and Torompupu and Dako, while distantly related taxa live in Kato and Bawa
+
+
 
 ## Phylogenetic Beta Diversity
 Not really important!
