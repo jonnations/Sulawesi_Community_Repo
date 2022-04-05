@@ -20,7 +20,7 @@ p1 <- fin %>%
   #scale_color_manual(values = cols) +
   scale_color_viridis_c(direction = -1, begin = 0.17, end = 0.71, option = "B") +
   geom_vline(xintercept = 0, linetype = 2 ) + 
-  geom_pointrange(size = 1.5, show.legend = F) +
+  geom_pointrange(size = 1.25, show.legend = F) +
   labs(x = expression(beta), y="") +
   xlim(-.13, .33) +
   ggtitle("Ecospace Variance") +
@@ -33,7 +33,7 @@ p2 <- fin %>%
                             )) +
   scale_color_manual(values = cols) +
   #geom_vline(xintercept = 0, linetype = 2 ) +
-  geom_pointrange(size = 1.5) +
+  geom_pointrange(size = 1) +
   labs(x = bquote("Bayesian"~ R^2), y = "") +
   xlim(0,1) +
   #ggtitle("Trait Space SES - Total Species Pool") +
@@ -50,7 +50,7 @@ p3 <- fin %>%
   #scale_color_manual(values = cols) +
   scale_color_viridis_c(direction = -1,  option = "B", end = 0.9) +
   geom_vline(xintercept = 0, linetype = 2 ) + 
-  geom_pointrange(size = 1.5, show.legend = F) +
+  geom_pointrange(size = 1.25, show.legend = F) +
   xlim(-.13, .33) +
   labs(x = expression(beta), y="") +
   ggtitle("Individual Trait Variance") +
@@ -63,7 +63,7 @@ p4 <- fin %>%
                             )) +
   scale_color_manual(values = cols) +
   #geom_vline(xintercept = 0, linetype = 2 ) +
-  geom_pointrange(size = 1.5) +
+  geom_pointrange(size = 1) +
   labs(x = bquote("Bayesian"~ R^2), y = "") +
   xlim(0,1) + 
   #ggtitle("Trait Space SES - Total Species Pool") +
@@ -93,7 +93,7 @@ p1 <- fin %>%
   #scale_color_manual(values = cols) +
   scale_color_viridis_c(direction = -1, begin = 0.17, end = 0.82, option = "B") +
   geom_vline(xintercept = 0, linetype = 2 ) + 
-  geom_pointrange(size = 1.5, show.legend = F) +
+  geom_pointrange(size = 1.25, show.legend = F) +
   labs(x = expression(beta), y="") +
   xlim(-.23, .43) +
   ggtitle("Ecospace NN Distance") +
@@ -106,7 +106,7 @@ p2 <- fin %>%
                             )) +
   scale_color_manual(values = cols) +
   #geom_vline(xintercept = 0, linetype = 2 ) +
-  geom_pointrange(size = 1.5) +
+  geom_pointrange(size = 1) +
   labs(x = bquote("Bayesian"~ R^2), y = "") +
   xlim(0,1) +
   #ggtitle("Trait Space SES - Total Species Pool") +
@@ -123,7 +123,7 @@ p3 <- fin %>%
   #scale_color_manual(values = cols) +
   scale_color_viridis_c(direction = -1, option = "B", end = 0.9) +
   geom_vline(xintercept = 0, linetype = 2 ) + 
-  geom_pointrange(size = 1.5, show.legend = F) +
+  geom_pointrange(size = 1.25, show.legend = F) +
   xlim(-.23, .43) +
   labs(x = expression(beta), y="") +
   ggtitle("Individual Trait NN Distance") +
@@ -136,7 +136,7 @@ p4 <- fin %>%
                             )) +
   scale_color_manual(values = cols) +
   #geom_vline(xintercept = 0, linetype = 2 ) +
-  geom_pointrange(size = 1.5) +
+  geom_pointrange(size = 1) +
   labs(x = bquote("Bayesian"~ R^2), y = "") +
   xlim(0,1) + 
   #ggtitle("Trait Space SES - Total Species Pool") +
