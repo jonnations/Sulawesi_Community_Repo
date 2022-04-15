@@ -23,7 +23,7 @@ p1 <- fin %>%
   geom_pointrange(size = 1.25, show.legend = F) +
   labs(x = expression(beta), y="") +
   xlim(-.13, .33) +
-  ggtitle("Ecospace Variance") +
+  ggtitle("Combined Trait Variance") +
   theme_classic() 
 
 p2 <- fin %>% 
@@ -96,7 +96,7 @@ p1 <- fin %>%
   geom_pointrange(size = 1.25, show.legend = F) +
   labs(x = expression(beta), y="") +
   xlim(-.23, .43) +
-  ggtitle("Ecospace NN Distance") +
+  ggtitle("Combined Trait NN Distance") +
   theme_classic()
 
 p2 <- fin %>% 
