@@ -1,6 +1,6 @@
 ---
 title: "Clade Disparity"
-output: html_notebook
+#output: html_notebook
 ---
 # Figure S3
 Measuring the disparity of clades. There are a lot of analyses leading Up to this plot. Everything from start to finish is here.
@@ -62,17 +62,19 @@ c5 <- get_cran(rattus, cran, "Rattus")
 c6 <- get_cran(haeromys,  cran, "Haeromys")
 cct <- bind_rows(c1, c2, c3, c4, c5, c6)
 write_csv(cct, "Cranial_Data/Clade_Cranial_Variance_Weighted.csv")
+
+ords = c("Echiothrix", "Maxomys", "Bunomys", "Margaretamys", "Rattus", "Haeromys")
 ```
 
 ```{r}
 p1 <- cct %>% 
-ggplot(aes(y = factor(clade), x = cv_wei)) +
+ggplot(aes(y = factor(clade, levels = rev(ords)), x = cv_wei)) +
   stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
   labs(x="Sum of Variance", y = "", fill = "Clade") +
   theme_classic() + theme(legend.position = "none",
                      panel.grid.major.y = element_line( size=.1, color="black" ))
 
-p2 <- cct %>% ggplot(aes(y = factor(clade), x = cPC_wei, fill = Species)) +
+p2 <- cct %>% ggplot(aes(y = factor(clade, levels = rev(ords)), x = cPC_wei, fill = Species)) +
   scale_fill_manual(values = c(rep("grey", 39))) +
   stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
   geom_vline(xintercept = 0, linetype = 2, size = 0.2) +
@@ -119,14 +121,14 @@ write_csv(cct, "Dentary_Data/Clade_Dentary_Variance_Weighted.csv")
 ```
 
 ```{r}
-p3 <- ddt %>% ggplot(aes(y = factor(clade), x = dv_wei)) +
+p3 <- ddt %>% ggplot(aes(y = factor(clade, levels = rev(ords)), x = dv_wei)) +
   stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
   labs(x="Sum of Variance", y = "", fill = "Clade") +
   theme_classic() + theme(legend.position = "none",
                      panel.grid.major.y = element_line( size=.1, color="black" ))
 
 p4 <- ddt %>%  
-  ggplot(aes(y = factor(clade), x = dPC_wei, fill = Species)) +
+  ggplot(aes(y = factor(clade, levels = rev(ords)), x = dPC_wei, fill = Species)) +
   scale_fill_manual(values = c(rep("grey", 39))) +
   stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
   geom_vline(xintercept = 0, linetype = 2, size = 0.2) +
@@ -175,14 +177,14 @@ write_csv(eet, "External_Measurement_Data/Clade_External_Variance_Fitted.csv")
 ```
 
 ```{r}
-p5 <- eet %>% ggplot(aes(y = factor(clade), x = vTail)) +
+p5 <- eet %>% ggplot(aes(y = factor(clade, levels = rev(ords)), x = vTail)) +
   stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
   labs(x="Sum of Variance", y = "", fill = "Clade") +
   theme_classic() + theme(legend.position = "none",
                      panel.grid.major.y = element_line( size=.1, color="black" ))
 
 p6 <- eet %>% 
-  ggplot(aes(y = factor(clade), x = rTail, fill = Species)) +
+  ggplot(aes(y = factor(clade, levels = rev(ords)), x = rTail, fill = Species)) +
   scale_fill_manual(values = c(rep("grey", 39))) +
   stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
   geom_vline(xintercept = 0, linetype = 2, size = 0.2) +
@@ -196,14 +198,14 @@ p5 + p6 + plot_layout(widths = c(1,2)) + plot_annotation(title = "Tail Disparity
 ```
 
 ```{r}
-p7 <- eet %>% ggplot(aes(y = factor(clade), x = vHB)) +
+p7 <- eet %>% ggplot(aes(y = factor(clade, levels = rev(ords)), x = vHB)) +
   stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
   labs(x="Sum of Variance", y = "", fill = "Clade") +
   theme_classic() + theme(legend.position = "none",
                      panel.grid.major.y = element_line( size=.1, color="black" ))
 
 p8 <- eet %>% 
-  ggplot(aes(y = factor(clade), x = HB, fill = Species)) +
+  ggplot(aes(y = factor(clade, levels = rev(ords)), x = HB, fill = Species)) +
   scale_fill_manual(values = c(rep("grey", 39))) +
   stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
   geom_vline(xintercept = 0, linetype = 2, size = 0.2) +
@@ -217,14 +219,14 @@ p7 + p8 + plot_layout(widths = c(1,2)) + plot_annotation(title = "Head-Body Leng
 ```
 
 ```{r}
-p9 <- eet %>% ggplot(aes(y = factor(clade), x = vHF)) +
+p9 <- eet %>% ggplot(aes(y = factor(clade, levels = rev(ords)), x = vHF)) +
   stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
   labs(x="Sum of Variance", y = "", fill = "Clade") +
   theme_classic() + theme(legend.position = "none",
                      panel.grid.major.y = element_line( size=.1, color="black" ))
 
 p10 <- eet %>% 
-  ggplot(aes(y = factor(clade), x = rHF, fill = Species)) +
+  ggplot(aes(y = factor(clade, levels = rev(ords)), x = rHF, fill = Species)) +
   scale_fill_manual(values = c(rep("grey", 39))) +
   stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
   geom_vline(xintercept = 0, linetype = 2, size = 0.2) +
@@ -273,14 +275,14 @@ write_csv(ist, "Isotope_Data/Clade_Isotope_Fitted.csv")
 
 
 ```{r}
-p11 <- ist %>% ggplot(aes(y = factor(clade), x = vN15)) +
+p11 <- ist %>% ggplot(aes(y = factor(clade, levels = rev(ords)), x = vN15)) +
   stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
   labs(x="Sum of Variance", y = "", fill = "Clade") +
   theme_classic() + theme(legend.position = "none",
                      panel.grid.major.y = element_line( size=.1, color="black" ))
 
 p12 <- ist %>% 
-  ggplot(aes(y = factor(clade), x = sN15, fill = Species)) +
+  ggplot(aes(y = factor(clade, levels = rev(ords)), x = sN15, fill = Species)) +
   scale_fill_manual(values = c(rep("grey", 39))) +
   stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
   geom_vline(xintercept = 0, linetype = 2, size = 0.2) +
@@ -348,7 +350,7 @@ ldat <- read_csv("Locomotion_Data/Clade_Locomotion_Var.csv")
 ```{r}
 vplot <- function(var, xlab){
 dat %>% 
-    ggplot(aes(y = factor(clade), x = {{var}})) +
+    ggplot(aes(y = factor(clade, levels = rev(ords)), x = {{var}})) +
   stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
   labs(x={xlab}, y = "") +
   theme_classic() + theme(legend.position = "none",
@@ -357,7 +359,7 @@ dat %>%
 
 splot <- function(var, xlab){
   dat %>% 
-    ggplot(aes(y = factor(clade), x = {{var}}, fill = Species)) +
+    ggplot(aes(y = factor(clade, levels = rev(ords)), x = {{var}}, fill = Species)) +
     scale_fill_manual(values = c(rep("grey", 39))) +
     stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
   geom_vline(xintercept = 0, linetype = 2, size = 0.2) +
@@ -404,7 +406,7 @@ s11 <-  splot(rEar, "Ear Length")
 # Locomotor Var
 ```{r}
 p12 <- lst %>% select(vloc, clade) %>% 
-  ggplot(aes(y = clade, x = vloc)) +
+  ggplot(aes(y = factor(clade, levels = rev(ords)), x = vloc)) +
   geom_point(shape = 15, size = 10,
              position = position_nudge(y = .28), color = "grey30") +
   geom_point(shape = 15, size = 10,
@@ -425,7 +427,7 @@ s12 <- lst %>%
          mlt = rep(c(-0.13,0, 0.13), length.out = 39),
          Loc = as.numeric(Loc),
          Loc2 = Loc+mlt) %>% 
-    ggplot(aes(x = clade, y = Loc2)) + 
+    ggplot(aes(x = factor(clade, levels = rev(ords)), y = Loc2)) + 
   geom_dotplot(binaxis='y', 
                position = "dodge", 
                binwidth = 0.13, 
@@ -462,7 +464,7 @@ UVVWXX
 p1 + s1 + p2 + s2 + p3 + s3 + p4 + s4 + p5 +s5 + p6 + s6 + p7 + s7 + p8 + s8 + p9 + s9 + p10 + s10 + p11 + s11 + p12 + s12 +
   plot_layout(design = layout, tag_level = 'new') + plot_annotation(tag_levels = list(c('A', '', 'B', '', 'C', '', 'D', '', 'E', '', 'F', '', 'G', '', 'H', '', 'I', '', 'J', '', 'K', '', 'L', '')))
 
-ggsave("Plots/FigS3_Clade_Var_Plots.pdf", height = 23.25, width =12)
+ggsave("Plots/FigS3_Clade_Var_Plots_2.pdf", height = 23.25, width =12)
 #without ear and loc
 #ggsave("Clade_Var_Plots.pdf", height = 19.25, width =12)
 ```
