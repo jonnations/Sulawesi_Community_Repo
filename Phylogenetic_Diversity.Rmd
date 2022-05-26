@@ -3,7 +3,13 @@ title: "Phylogenetic Diversity"
 ---
 
 # Phylogenetic Diversity
-Estimating Phylognetic Diversity for each assembly using picante::pd and pd.ses
+Estimating Phylognetic Diversity for each assembly using picante::pd and pd.ses. This is Faith's metric of PD. 
+
+First I need to select only Sulawesi species from the large murine phylogeny. Then I need to add in the 4 missing species. 
+
+Once this is done, I can calculate the phylogenetic diversity and the pd standardized effect size for each community. 
+
+*Haeromys minahassae* is an interesting case as it is distantly related to all other species, and looks like an "outgroup" in this tree. I need to see if the effect is large.
 
 Load tree
 ```{r}
@@ -122,7 +128,7 @@ write.tree(tr, file = "Phylogenetic_Diversity/Clean_Sulawesi_Tree.tre")
 ```{r}
 set.seed(111)
 sespd <- ses.pd(sp_ses, tr, null.model="independentswap", runs=999, iterations = 1000, include.root=F) %>% as_tibble() %>% arrange(ntaxa) %>% add_column(com = level_order) %>% select(-runs)
-sespd <- sespd %>% rename(pd_ses = pd.obs.z) %>% write_csv(file = "Phylogenetic_Diversity/PD_Results.csv")
+sespd <- sespd %>% rename(pd_ses = pd.obs.z) #%>% write_csv(file = "Phylogenetic_Diversity/PD_Results.csv")
 sespd
 ```
 
@@ -135,6 +141,27 @@ ylim(-2.5, 2.5) +
   guides(fill = guide_legend(reverse=T), color = guide_legend(reverse=T),
          color = guide_legend(override.aes = list(size = 1)))
 p1
+```
+
+## PD Without Haeromys
+
+```{r}
+sp_ses2 <- sp_ses %>% select(!Haeromys_minahassae)
+tr2 <- drop.tip(tr, "Haeromys_minahassae")
+sespd2 <- ses.pd(sp_ses2, tr2, null.model="independentswap", runs=999, iterations = 1000, include.root=F) %>% as_tibble() %>% arrange(ntaxa) %>% add_column(com = level_order) %>% select(-runs)
+sespd2 <- sespd2 %>% rename(pd_ses = pd.obs.z) %>% write_csv(file = "Phylogenetic_Diversity/PD_Results_no_Hae.csv")
+```
+
+
+```{r}
+p1.2 <- sespd2 %>% mutate(com = factor(com, level = level_order)) %>% ggplot(aes(x = ntaxa, y=pd_ses, color = com, fill = com)) + 
+#geom_point(size = 10) + 
+geom_jitter(size = 5, width = 1.25, alpha = 0.85) +
+ylim(-2.5, 2.5) + 
+  geom_hline(yintercept = 0) + scale_color_viridis_d(direction = -1, begin = 0, end = 0.95,  option = "A") + theme_classic() + ggtitle("Phylo Div") +
+  guides(fill = guide_legend(reverse=T), color = guide_legend(reverse=T),
+         color = guide_legend(override.aes = list(size = 1)))
+p1.2
 ```
 
 ## Net Relatedness Index

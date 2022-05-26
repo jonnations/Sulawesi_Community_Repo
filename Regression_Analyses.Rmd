@@ -361,11 +361,15 @@ all_fin <- bind_rows(l1, l2, l3, l4, all_fin)
 
 ```{r}
 phydat <- read_csv("Phylogenetic_Diversity/PD_Results.csv") %>% rename(nspec = ntaxa)
+phydat2 <- read_csv("Phylogenetic_Diversity/PD_Results_no_Hae.csv") %>% rename(nspec = ntaxa)
 scale2 <- function(x, na.rm = FALSE) (x - mean(x, na.rm = na.rm)) / sd(x, na.rm) 
   
 phydat <- phydat %>% mutate(pd = scale2(pd.obs)) %>% rename(nsp = "nspec")
+phydat2 <- phydat2 %>% mutate(pd = scale2(pd.obs)) %>% rename(nsp = "nspec")
 p.1 <- update(l.1, formula = pd ~ nsp, newdata = phydat, refresh = 0)
 p.2 <- update(l.1, formula = pd_ses ~ nsp, newdata = phydat, refresh = 0)
+p.3 <- update(l.1, formula = pd ~ nsp, newdata = phydat2, refresh = 0)
+p.4 <- update(l.1, formula = pd_ses ~ nsp, newdata = phydat2, refresh = 0)
 ```
 
 Results added *manually* to `Regression_Results.csv`
@@ -392,7 +396,29 @@ p2 <- bind_cols((cleanup(p.2) %>% rename(b_lower = "Q5.5",
 (cleanupRsm(p.2)%>% rename(R2sm_lower = "Q12.5",
                        R2sm_upper = "Q87.5"))) %>% add_column(var = "ses_phy")
 
-all_fin <- bind_rows(p1, p2, all_fin)
+p3 <- bind_cols((cleanup(m3) %>% rename(b_lower = "Q5.5",
+                       b_upper = "Q94.5")),
+          (cleanupI(m3)%>% rename(I_lower = "Q5.5",
+                       I_upper = "Q94.5")),
+(cleanupS(m3)%>% rename(s_lower = "Q5.5",
+                       s_upper = "Q94.5")),
+(cleanupR(m3)%>% rename(R2_lower = "Q5.5",
+                       R2_upper = "Q94.5")),
+(cleanupRsm(m3)%>% rename(R2sm_lower = "Q12.5",
+                       R2sm_upper = "Q87.5"))) %>% add_column(var = "vphy2")
+          
+p4 <- bind_cols((cleanup(m4) %>% rename(b_lower = "Q5.5",
+                       b_upper = "Q94.5")),
+          (cleanupI(m4)%>% rename(I_lower = "Q5.5",
+                       I_upper = "Q94.5")),
+(cleanupS(m4)%>% rename(s_lower = "Q5.5",
+                       s_upper = "Q94.5")),
+(cleanupR(m4)%>% rename(R2_lower = "Q5.5",
+                       R2_upper = "Q94.5")),
+(cleanupRsm(m4)%>% rename(R2sm_lower = "Q12.5",
+                       R2sm_upper = "Q87.5"))) %>% add_column(var = "ses_phy2")
+
+all_fin <- bind_rows(p1, p2, p3, p4, all_fin)
 ```
 
 ```{r}
