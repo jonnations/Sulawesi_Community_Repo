@@ -15,6 +15,7 @@ fin <- read_csv("Fig3_Regression_Plot_Data.csv") %>% drop_na()
 p1 <- fin %>% 
   filter(type == "v_ses",
          ntraits == "multi") %>% 
+  mutate(name = recode(name, Isospace = 'Isotopic Niche Space',)) %>% 
     arrange(Beta) %>%  
  ggplot(aes(y = factor(name, levels=name), x = Beta, xmin = b_lower, xmax = b_upper, color = Beta)) +
   #scale_color_manual(values = cols) +
@@ -42,8 +43,6 @@ p2 <- fin %>%
   theme(axis.text.y=element_blank(),
         axis.title.x = element_text(size = 13))
 
-
-
 p3 <- fin %>% 
   filter(type == "v_ses",
          ntraits == "one") %>% 
@@ -55,6 +54,8 @@ p3 <- fin %>%
   geom_pointrange(size = 1.25, show.legend = F) +
   xlim(-.13, .33) +
   labs(x = expression(beta[richness]), y="") +
+  scale_y_discrete(labels = c("Nitrogen 15 Isotope" = expression(delta^15~N),
+                              "Carbon 13 Isotope" = expression(delta^13~C))) +
   ggtitle("Individual Trait Variance") +
   theme_classic() +
   theme(axis.title.x = element_text(size = 17))
@@ -92,6 +93,7 @@ ggsave("Plots/Fig3A_V_SES_Regression_Magma.pdf", width = 6, height = 10, useDing
 p1 <- fin %>% 
   filter(type == "nn_ses",
          ntraits == "multi") %>% 
+  mutate(name = recode(name, Isospace = 'Isotopic Niche Space',)) %>% 
     arrange(Beta) %>%  
  ggplot(aes(y = factor(name, levels=name), x = Beta, xmin = b_lower, xmax = b_upper, color = Beta)) +
   #scale_color_manual(values = cols) +
@@ -132,6 +134,8 @@ p3 <- fin %>%
   geom_pointrange(size = 1.25, show.legend = F) +
   xlim(-.23, .43) +
   labs(x = expression(beta[richness]), y="") +
+  scale_y_discrete(labels = c("Nitrogen 15 Isotope" = expression(delta^15~N),
+                              "Carbon 13 Isotope" = expression(delta^13~C))) +
   ggtitle("Individual Trait NN Distance") +
   theme_classic() +
   theme(axis.title.x = element_text(size = 17))
