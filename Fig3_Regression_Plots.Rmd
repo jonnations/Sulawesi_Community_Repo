@@ -22,7 +22,7 @@ p1 <- fin %>%
   scale_color_viridis_c(direction = -1, begin = 0.17, end = 0.71, option = "B") +
   geom_vline(xintercept = 0, linetype = 2 ) + 
   geom_pointrange(size = 1.25, show.legend = F) +
-  labs(x = expression(beta[richness]), y="") +
+  labs(x = expression(beta[italic(richness)]), y="") +
   xlim(-.13, .33) +
   ggtitle("Combined Trait Variance") +
   theme_classic() +
@@ -53,7 +53,7 @@ p3 <- fin %>%
   geom_vline(xintercept = 0, linetype = 2 ) + 
   geom_pointrange(size = 1.25, show.legend = F) +
   xlim(-.13, .33) +
-  labs(x = expression(beta[richness]), y="") +
+  labs(x = expression(beta[italic(richness)]), y="") +
   scale_y_discrete(labels = c("Nitrogen 15 Isotope" = expression(delta^15~N),
                               "Carbon 13 Isotope" = expression(delta^13~C))) +
   ggtitle("Individual Trait Variance") +
@@ -100,7 +100,7 @@ p1 <- fin %>%
   scale_color_viridis_c(direction = -1, begin = 0.17, end = 0.82, option = "B") +
   geom_vline(xintercept = 0, linetype = 2 ) + 
   geom_pointrange(size = 1.25, show.legend = F) +
-  labs(x = expression(beta[richness]), y="") +
+  labs(x = expression(beta[italic(richness)]), y="") +
   xlim(-.23, .43) +
   ggtitle("Combined Trait NN Distance") +
   theme_classic()+
@@ -133,7 +133,7 @@ p3 <- fin %>%
   geom_vline(xintercept = 0, linetype = 2 ) + 
   geom_pointrange(size = 1.25, show.legend = F) +
   xlim(-.23, .43) +
-  labs(x = expression(beta[richness]), y="") +
+  labs(x = expression(beta[italic(richness)]), y="") +
   scale_y_discrete(labels = c("Nitrogen 15 Isotope" = expression(delta^15~N),
                               "Carbon 13 Isotope" = expression(delta^13~C))) +
   ggtitle("Individual Trait NN Distance") +
