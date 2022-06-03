@@ -32,18 +32,18 @@ dat <- read_csv("CLEAN_All_Traits.csv") %>%
 
 ldat <- read_csv("Locomotion_Data/All_Locomotor_Var.csv") %>%
   arrange(factor(com, levels = level_order)) %>% 
-  mutate(nspec=replace(nspec, com == "Katopasa", 12.3),
-         nspec=replace(nspec, com == "Dako", 11.7),
-         nspec=replace(nspec, com == "Ambang", 12.7),
-         nspec=replace(nspec, com == "Latimojong", 13.3))
+  mutate(nspec=replace(nsp, com == "Katopasa", 12.3),
+         nspec=replace(nsp, com == "Dako", 11.7),
+         nspec=replace(nsp, com == "Ambang", 12.7),
+         nspec=replace(nsp, com == "Latimojong", 13.3))
 
 
-pdat <- read_csv("Phy_Div/PD_Results.csv")  %>%
+pdat <- read_csv("Phylogenetic_Diversity/PD_Results.csv")  %>%
   arrange(factor(com, levels = level_order)) %>% 
-  mutate(nspec=replace(nspec, com == "Katopasa", 12.3),
-         nspec=replace(nspec, com == "Dako", 11.7),
-         nspec=replace(nspec, com == "Ambang", 12.7),
-         nspec=replace(nspec, com == "Latimojong", 13.3))
+  mutate(nspec=replace(ntaxa, com == "Katopasa", 12.3),
+         nspec=replace(ntaxa, com == "Dako", 11.7),
+         nspec=replace(ntaxa, com == "Ambang", 12.7),
+         nspec=replace(ntaxa, com == "Latimojong", 13.3))
 # Colors taken from Viridis palette, starting at 0.95 on the yellow side
 ```
 
@@ -57,7 +57,7 @@ select(com, nspec, ses_morpho, ses_ext, ses_vBsz, ses_vsk, ses_vIso_group) %>%
          'Morphology' = ses_morpho,
          'Body Size' = ses_vBsz,
          'Head Shape' = ses_vsk,
-         'Isospace' = ses_vIso_group) %>% 
+         'Isotopic Niche Space' = ses_vIso_group) %>% 
   pivot_longer(!c(com, nspec), 
                names_to = "var") %>% 
   ggplot(aes(y = value, 
@@ -176,11 +176,14 @@ select(com, nspec, ses_vC13_group, ses_vN15_group) %>%
        y = "SES",
        subtitle = "Isospace, Locomotor & Phylogenetic Diversity") +
   ylim(-3.1, 3.1) +
-  scale_color_manual(values = ratpal, name = "") +
+  scale_color_manual(values = ratpal, name = "", 
+                     labels = c("Nitrogen 15" = expression(delta^15~N),
+                                "Carbon 13" = expression(delta^13~C))) +
   scale_x_continuous(breaks = c(7, 10, 11.77 ,12.23, 12.77,13.23, 15, 17, 23),
                      labels = xLabels) +
   theme_classic() + 
   theme(legend.justification = "left",
+        legend.text.align = 0,
         axis.text.x = element_text(angle = -50, vjust = 1, hjust = 0, size = 8))#, vjust = -1))
 p4 
 ```
@@ -199,7 +202,7 @@ select(com, nspec, nnses_morpho, nnses_ext, nnses_Bsz, nnses_sk, nnses_iso_group
          'Morphology' = nnses_morpho,
          'Body Size' = nnses_Bsz,
          'Head Shape' = nnses_sk,
-         'Isospace' = nnses_iso_group) %>% 
+         'Isotopic Niche Space' = nnses_iso_group) %>%
   pivot_longer(!c(com, nspec), 
                names_to = "var") %>% 
   ggplot(aes(y = value, 
@@ -314,12 +317,15 @@ select(com, nspec, nnses_C13_group, nnses_N15_group) %>%
        y = "Nearest Neighbor SES",
        subtitle = "Isospace & Locomotor Densities") +
   ylim(-3.1, 4.21) +
-  scale_color_manual(values = ratpal, name = "") +
+  scale_color_manual(values = ratpal, name = "", 
+                     labels = c("Nitrogen 15" = expression(delta^15~N),
+                                "Carbon 13" = expression(delta^13~C))) +
   scale_x_continuous(breaks = c(7, 10, 11.77 ,12.23, 12.77,13.23, 15, 17, 23),
                      labels = xLabels) +
   theme_classic() + 
   theme(legend.justification = "left",
-        axis.text.x = element_text(angle = -50, vjust = 1, hjust = 0, size = 7.7, face = "bold"))
+        legend.text.align = 0,
+        axis.text.x = element_text(angle = -50, vjust = 1, hjust = 0, size = 8))
 n4 
 ```
 
