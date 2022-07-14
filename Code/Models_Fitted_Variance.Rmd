@@ -17,10 +17,8 @@ pacman::p_load(here, tidyverse, brms, tidybayes, patchwork, modelr)
 
 here::i_am('Code/Models_Fitted_Variance.Rmd')
 
-
 scale2 <- function(x, na.rm = TRUE) (x - mean(x, na.rm = na.rm)) / sd(x, na.rm)
 # Species lists of all Sulawesi Species by community. Used to group species by community.
-here("Data", "Carnivora_MCC_2.tre")
 load(here("Species_Data", "Species_Lists.Rdata"))
 # order of communities by richness
 level_order <-  c( 'Bawakaraeng', 'Buliohuto','Dako', "Katopasa", "Ambang", "Latimojong", "Torompupu", "Nokilalaki", "Gandangdewata")

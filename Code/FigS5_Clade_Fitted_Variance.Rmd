@@ -11,9 +11,13 @@ There is no way to estimate variance for one species. I think Haeromys must be s
 
 
 ```{r}
-pacman::p_load(tidyverse, brms, tidybayes, patchwork, modelr)
+pacman::p_load(here, tidyverse, brms, tidybayes, patchwork, modelr)
 scale2 <- function(x, na.rm = TRUE) (x - mean(x, na.rm = na.rm)) / sd(x, na.rm)
-load("Species_Lists.Rdata")
+
+
+here::i_am('Code/Models_Fitted_Variance.Rmd')
+
+load(here("Species_Data", "Species_Lists.Rdata"))
 
 # Species Lists
 echiothrix <- c("Echiothrix_centrosa", "Echiothrix_leucura",  "Gracillimus_radix", "Hyorhinomys_steumpkei", "Melasmothrix_naso",  "Paucidentomys_vermidax", "Sommeromys_macrorhinos", 
@@ -24,7 +28,7 @@ margaretamys <- c("Margaretamys_elegans", "Margaretamys_parvus")
 rattus <- c("Rattus_botanus", "Rattus_facetus", "Rattus_hoffmani", "Rattus_marmosurus", "Rattus_mollicomulus", "Rattus_xanthurus")
 haeromys <- c("Haeromys_minahassae")
 
-load("Species_Extant.Rdata")
+load(here("Species_Data", "Species_Extant.Rdata"))
 
 
 ```
@@ -35,7 +39,7 @@ load("Species_Extant.Rdata")
 ## Data and Function 
 Function taken from Community Variance Function
 ```{r}
-cran <- read_csv("Cranial_Data/Cranial_36axes_Fitted.csv")
+cran <- read_csv(here("Cranial_Data", "Cranial_36axes_Fitted.csv"))
 
 get_cran <- function(sp, data, mountain) {
 data %>% 
@@ -61,7 +65,7 @@ c4 <- get_cran(maxomys, cran, "Maxomys")
 c5 <- get_cran(rattus, cran, "Rattus")
 c6 <- get_cran(haeromys,  cran, "Haeromys")
 cct <- bind_rows(c1, c2, c3, c4, c5, c6)
-write_csv(cct, "Cranial_Data/Clade_Cranial_Variance_Weighted.csv")
+write_csv(cct, here("Cranial_Data", "Clade_Cranial_Variance_Weighted.csv"))
 
 ords = c("Echiothrix", "Maxomys", "Bunomys", "Margaretamys", "Rattus", "Haeromys")
 ```
@@ -92,7 +96,7 @@ p1 + p2 + plot_layout(widths = c(1,2)) + plot_annotation(title = "Cranial Shape 
 ## Data and Function
 
 ```{r}
-dent <- read_csv("Dentary_Data/Dentary_20axes_Fitted.csv")
+dent <- read_csv(here("Dentary_Data", "Dentary_20axes_Fitted.csv"))
 
 get_dent <- function(sp, data, mountain) {
 data %>% 
@@ -117,7 +121,7 @@ c4 <- get_dent(maxomys,       dent, "Maxomys")
 c5 <- get_dent(rattus,        dent, "Rattus")
 c6 <- get_dent(haeromys,      dent, "Haeromys")
 ddt <- bind_rows(c1, c2, c3, c4, c5, c6)
-write_csv(cct, "Dentary_Data/Clade_Dentary_Variance_Weighted.csv")
+write_csv(cct, here("Dentary_Data", "Clade_Dentary_Variance_Weighted.csv"))
 ```
 
 ```{r}
@@ -145,7 +149,7 @@ p1 + p2 + plot_layout(widths = c(1,2)) + plot_annotation(title = "Dentary Shape 
 
 ## Data and Function
 ```{r}
-ext <- read_csv("External_Measurement_Data/External_Fitted.csv")
+ext <- read_csv(here("External_Measurement_Data", "External_Fitted.csv"))
 
 get_ext <- function(sp, data, mountain) {
 data %>% 
@@ -173,7 +177,7 @@ c4 <- get_ext(maxomys,       ext, "Maxomys")
 c5 <- get_ext(rattus,        ext, "Rattus")
 c6 <- get_ext(haeromys,      ext, "Haeromys")
 eet <- bind_rows(c1, c2, c3, c4, c5, c6)
-write_csv(eet, "External_Measurement_Data/Clade_External_Variance_Fitted.csv")
+write_csv(eet, here("External_Measurement_Data", "Clade_External_Variance_Fitted.csv"))
 ```
 
 ```{r}
@@ -245,7 +249,7 @@ pp1 <- p1 + p2 + plot_layout(widths = c(1,2)) + plot_annotation(title = "Hind Fo
 ## Data and Function
 
 ```{r}
-iso <- read_csv("Isotope_Data/Isotope_Group_Level_Fitted.csv")
+iso <- read_csv(here("Isotope_Data", "Isotope_Group_Level_Fitted.csv"))
 
 get_iso <- function(sp, data, mountain) {
 data %>% 
@@ -270,7 +274,7 @@ c4 <- get_iso(maxomys,       iso, "Maxomys")
 c5 <- get_iso(rattus,        iso, "Rattus")
 c6 <- get_iso(haeromys,      iso, "Haeromys")
 ist <- bind_rows(c1, c2, c3, c4, c5, c6)
-write_csv(ist, "Isotope_Data/Clade_Isotope_Fitted.csv")
+write_csv(ist, here("Isotope_Data", "Clade_Isotope_Fitted.csv"))
 ```
 
 
@@ -302,14 +306,14 @@ p1 + p2 + plot_layout(widths = c(1,2)) + plot_annotation(title = "N15 Disparity"
 #Combine and Save
 ```{r}
 dat <- cct %>% right_join(ddt) %>% right_join(eet) %>% right_join(ist)
-dat %>% write_csv("Plots/Clade_Varaince.csv")
+dat %>% write_csv(here("Plots", "Clade_Varaince.csv"))
 rm(cct, ddt, ext, ist)
 ```
 
 # Locomotor Variance
 ## Data and Function
 ```{r}
-loc <- read_csv("Locomotion_Data/Locomotion_List.csv")
+loc <- read_csv(here("Locomotion_Data", "Locomotion_List.csv"))
 
 get_loc<- function(sp, data, mountain) {
 data %>% 
@@ -330,7 +334,7 @@ c4 <- get_loc(maxomys,       loc, "Maxomys")
 c5 <- get_loc(rattus,        loc, "Rattus")
 c6 <- get_loc(haeromys,      loc, "Haeromys")
 lst <- bind_rows(c1, c2, c3, c4, c5, c6)
-write_csv(lst, "Locomotion_Data/Clade_Locomotion_Var.csv")
+write_csv(lst, here("Locomotion_Data", "Clade_Locomotion_Var.csv"))
 ```
 
 
@@ -339,8 +343,8 @@ write_csv(lst, "Locomotion_Data/Clade_Locomotion_Var.csv")
 
 ```{r}
 pacman::p_load(tidyverse, patchwork, tidybayes)
-dat <- read_csv("Plots/Clade_Varaince.csv")
-ldat <- read_csv("Locomotion_Data/Clade_Locomotion_Var.csv")
+dat <- read_csv(here("Plots", "Clade_Varaince.csv"))
+ldat <- read_csv(here("Locomotion_Data", "Clade_Locomotion_Var.csv"))
 ```
 
 ## Plotting Functions
@@ -464,7 +468,7 @@ UVVWXX
 p1 + s1 + p2 + s2 + p3 + s3 + p4 + s4 + p5 +s5 + p6 + s6 + p7 + s7 + p8 + s8 + p9 + s9 + p10 + s10 + p11 + s11 + p12 + s12 +
   plot_layout(design = layout, tag_level = 'new') + plot_annotation(tag_levels = list(c('A', '', 'B', '', 'C', '', 'D', '', 'E', '', 'F', '', 'G', '', 'H', '', 'I', '', 'J', '', 'K', '', 'L', '')))
 
-ggsave("Plots/FigS3_Clade_Var_Plots_2.pdf", height = 23.25, width =12)
+ggsave(here("Plots", "FigS3_Clade_Var_Plots_2.pdf"), height = 23.25, width =12)
 #without ear and loc
 #ggsave("Clade_Var_Plots.pdf", height = 19.25, width =12)
 ```

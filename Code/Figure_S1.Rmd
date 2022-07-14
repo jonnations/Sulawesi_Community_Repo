@@ -3,18 +3,19 @@ title: "Figure S1"
 
 ---
 
-Scripts for figure S1. 
+Scripts for figure S3. 
 
 ```{r}
-pacman::p_load(brms, tidyverse, tidybayes, patchwork)
+pacman::p_load(here, brms, tidyverse, tidybayes, patchwork)
+here::i_am('Code/Models_Fitted_Variance.Rmd')
 scale2 <- function(x, na.rm = TRUE) (x - mean(x, na.rm = na.rm)) / sd(x, na.rm)
 ```
 
 ## Read Isotope data
 ```{r}
-m.iso <- brm(file = "Models/iso_fitted_Com_Grouping")
-iso_fit <- read_csv("Isotope_Data/Isotope_Group_Level_Fitted.csv")
-idat <- read_csv("Isotope_Data/Isotope_Data.csv") %>% 
+m.iso <- brm(file = here("Models", "iso_fitted_Com_Grouping"))
+iso_fit <- read_csv(here("Isotope_Data", "Isotope_Group_Level_Fitted.csv"))
+idat <- read_csv(here("Isotope_Data", "Isotope_Data.csv")) %>% 
   mutate(sN15 = scale2(Corrected_15N),
          sC13 = scale2(Corrected_13C)) 
 ```
@@ -90,6 +91,6 @@ Cplot
 ## Save Plot
 ```{r}
 Nplot + (Cplot + theme(axis.text.y = element_blank())) + plot_layout(guides = "collect")
-ggsave("Plots/Fig_S1_group_level_Isotopes.pdf", height = 17, width = 14)
-ggsave("Plots/Fig_S1_group_level_Isotopes.png", height = 17, width = 14)
+ggsave(here("Plots", "Fig_S1_group_level_Isotopes.pdf"), height = 17, width = 14)
+ggsave(here("Plots", "Fig_S1_group_level_Isotopes.png"), height = 17, width = 14)
 ```

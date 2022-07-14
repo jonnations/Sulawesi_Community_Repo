@@ -12,10 +12,14 @@ Plotting the SES values on the y axis with the nspecies on the x axis.
 
 #Packages and Info
 ```{r}
-pacman::p_load(tidyverse, tidybayes,  modelr, patchwork)
-load("Species_Lists.Rdata")
+pacman::p_load(here, tidyverse, tidybayes,  modelr, patchwork)
+
+here::i_am('Code/Models_Fitted_Variance.Rmd')
+
+load(here("Species_Data", "Species_Lists.Rdata"))
+
 # Rat Color Palette
-load("Rat_Colors.Rdata")
+load(here("Species_Data", "Rat_Colors.Rdata"))
 
 level_order <-  c( 'Bawakaraeng', 'Buliohuto','Dako', 'Katopasa',  "Ambang", "Latimojong", 'Torompupu', 'Nokilalaki', "Gandangdewata")
 level_order2 <-  c( 'Bawakaraeng', 'Buliohuto',"Dako",'Ambang',  "Latimojong", "Gandangdewata")
@@ -23,14 +27,14 @@ level_order2 <-  c( 'Bawakaraeng', 'Buliohuto',"Dako",'Ambang',  "Latimojong", "
 
 # Load Data
 ```{r}
-dat <- read_csv("CLEAN_All_Traits.csv") %>% 
+dat <- read_csv(here("All_Traits.csv")) %>% 
   select(-.draw)%>% 
   select(c(com, contains('ses'))) %>% 
   arrange(factor(com, levels = level_order)) %>% 
   mutate(nspec = rep(c(7, 10, 11.9, 12.1, 12.9, 13.1, 15, 17, 23 ), each = 4000)) 
 
 
-ldat <- read_csv("Locomotion_Data/All_Locomotor_Var.csv") %>%
+ldat <- read_csv(here("Locomotion_Data", "All_Locomotor_Var.csv")) %>%
   arrange(factor(com, levels = level_order)) %>% 
   mutate(nspec=replace(nsp, com == "Katopasa", 12.3),
          nspec=replace(nsp, com == "Dako", 11.7),
@@ -38,7 +42,7 @@ ldat <- read_csv("Locomotion_Data/All_Locomotor_Var.csv") %>%
          nspec=replace(nsp, com == "Latimojong", 13.3))
 
 
-pdat <- read_csv("Phylogenetic_Diversity/PD_Results.csv")  %>%
+pdat <- read_csv(here("Phylogenetic_Diversity", "PD_Results.csv"))  %>%
   arrange(factor(com, levels = level_order)) %>% 
   mutate(nspec=replace(ntaxa, com == "Katopasa", 12.3),
          nspec=replace(ntaxa, com == "Dako", 11.7),
@@ -347,8 +351,8 @@ p1 / p2 / p3 / p4 + plot_layout(tag_level = 'new') +
   plot_annotation(tag_levels = list(c('A', 'B', 'C', 'D')))
   
 
-ggsave(file = "Plots/Fig4_Variance_Richness_Plots_Vertical-com_labels.pdf", height = 11, width = 7.5)
-ggsave(file = "Plots/Fig4_Variance_Richness_Plots_Vertical-com_labels.png", height = 11, width = 7.5)
+ggsave(file = here("Plots", "Fig4_Variance_Richness_Plots_Vertical-com_labels.pdf"), height = 11, width = 7.5)
+ggsave(file = here("Plots", "Fig4_Variance_Richness_Plots_Vertical-com_labels.png"), height = 11, width = 7.5)
 ```
 
 # Density Plots
@@ -359,6 +363,6 @@ n1 / n2 / n3 / n4 + plot_layout(tag_level = 'new') +
   plot_annotation(tag_levels = list(c('A', 'B', 'C', 'D')))
   
 
-ggsave(file = "Plots/FigS2_Density_Richness_Plots_vertical-com_labels.pdf", height = 10, width = 7.5)
+ggsave(file = here("Plots", "FigS2_Density_Richness_Plots_vertical-com_labels.pdf"), height = 10, width = 7.5)
 ```
 

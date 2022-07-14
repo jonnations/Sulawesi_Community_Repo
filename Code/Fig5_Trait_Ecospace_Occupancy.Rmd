@@ -12,11 +12,14 @@ These scrips produce figure 5, and help demonstrate differences in ecospace occu
 I did some minor modifications to figure 5 in afdesign, such as moving the legend around a bit.
 
 ```{r}
-pacman::p_load(tidyverse, tidybayes, patchwork, modelr, ggstar)
+pacman::p_load(here, tidyverse, tidybayes, patchwork, modelr, ggstar)
 scale2 <- function(x, na.rm = TRUE) (x - mean(x, na.rm = na.rm)) / sd(x, na.rm)
 scale3 <- function(x, na.rm = TRUE) (x - mean(x, na.rm = na.rm))
-load("Species_Lists.Rdata")
-load("Species_Extant.Rdata")
+
+here::i_am('Code/Models_Fitted_Variance.Rmd')
+
+load(here("Species_Data", "Species_Lists.Rdata"))
+load(here("Species_Data", "Species_Extant.Rdata"))
 level_order <-  c( 'Bawakaraeng', 'Buliohuto','Dako', "Katopasa", "Ambang", "Latimojong", "Torompupu", "Nokilalaki", "Gandangdewata")
 level_order2 <-  c( 'Bawakaraeng', 'Buliohuto','Dako',  "Ambang", "Latimojong", "Gandangdewata")
 
@@ -36,7 +39,7 @@ haeromys <- c("Haeromys_minahassae")
 Here I am going to ad a new column called "clade" then color the points by it.
 ```{r}
 
-pre.cranium_t <- read_csv("Cranial_Data/Cranial_36axes_Fitted.csv") %>% select(1:7) %>%
+pre.cranium_t <- read_csv(here("Cranial_Data", "Cranial_36axes_Fitted.csv")) %>% select(1:7) %>%
   filter(Species %in% ext_sp) %>% 
   mutate(Clade = case_when(Species %in% unlist(bunomys) ~ "Bunomys (15)",
                            Species %in% unlist(echiothrix) ~ "Echiothrix (10)",
@@ -123,8 +126,8 @@ ggplot() +
 #ggsave("ecospace_size_cranium.png")
 c_plot2
 
-#adat <- read_csv("All_Traits.csv")
-c_plot3 <- read_csv("All_Traits.csv") %>% select(com, ses_vsk) %>% 
+
+c_plot3 <- read_csv(here("All_Traits.csv")) %>% select(com, ses_vsk) %>% 
   mutate(com = factor(com, level = level_order)) %>% 
   mutate(com = recode(com,
                       'Ambang' = 'Ambang (13)',
@@ -161,7 +164,7 @@ Using the group-level fitted values
 
 
 ```{r}
-pre.iso <- read_csv("Isotope_Data/Isotope_Group_Level_Fitted.csv") %>% 
+pre.iso <- read_csv(here("Isotope_Data", "Isotope_Group_Level_Fitted.csv")) %>% 
    filter(Species != "Rattus_exulans") %>% 
   mutate(Clade = case_when(Species %in% unlist(bunomys) ~ "Bunomys (15)",
                            Species %in% unlist(echiothrix) ~ "Echiothrix (10)",
@@ -244,7 +247,7 @@ i_plot2 <- pre.iso %>%
 
 i_plot2
 
-i_plot3 <- read_csv("All_Traits.csv") %>% select(com, ses_vIso_group) %>% drop_na() %>% 
+i_plot3 <- read_csv(here("All_Traits.csv")) %>% select(com, ses_vIso_group) %>% drop_na() %>% 
   mutate(com = factor(com, level = level_order2)) %>% 
   mutate(com = recode(com,
                       'Ambang' = 'Ambang (13)',
@@ -277,7 +280,7 @@ Different thing with Isotopes
 
 ### HF and Tail
 ```{r}
-pre.ext <- read_csv("External_Measurement_Data/External_Fitted.csv") %>% 
+pre.ext <- read_csv(here("External_Measurement_Data", "External_Fitted.csv")) %>% 
    filter(Species != "Margaretamys_beccarii") %>% 
   mutate(Clade = case_when(Species %in% unlist(bunomys) ~ "Bunomys (15)",
                            Species %in% unlist(echiothrix) ~ "Echiothrix (10)",
@@ -371,7 +374,7 @@ e_plot1 <- pre.ext %>%
 
 e_plot1
 
-e_plot2 <- read_csv("All_Traits.csv") %>% select(com, ses_vHF) %>% drop_na() %>% 
+e_plot2 <- read_csv(here("All_Traits.csv")) %>% select(com, ses_vHF) %>% drop_na() %>% 
   mutate(com = factor(com, level = level_order)) %>% 
   mutate(com = recode(com,
                       'Ambang' = 'Ambang (13)',
@@ -394,7 +397,7 @@ e_plot2 <- read_csv("All_Traits.csv") %>% select(com, ses_vHF) %>% drop_na() %>%
                                                                                                         panel.grid.major.y = element_line( size=.1, color="black" ))
 e_plot2
 
-e_plot3 <- read_csv("All_Traits.csv") %>% select(com, ses_vTail) %>% drop_na() %>% 
+e_plot3 <- read_csv(here("All_Traits.csv")) %>% select(com, ses_vTail) %>% drop_na() %>% 
   mutate(com = factor(com, level = level_order)) %>% 
   mutate(com = recode(com,
                       'Ambang' = 'Ambang (13)',
@@ -458,6 +461,6 @@ e4 <- e_plot2 + e_plot3
 e_plot1 + e4 +  c_plot2 + c_plot3 +  i_plot2 + i_plot3 + guide_area() +
   plot_layout(design = layout, guides = "collect", tag_level = 'new') + plot_annotation(tag_levels = list(c('A', '', '', 'B', '', 'C')))
 
-ggsave("Plots/Fig5.png", height = 13, width =9)
+ggsave(here("Plots", "Fig5.png"), height = 13, width =9)
 #ggsave("Plots/Fig5.pdf", height = 13, width =9)
 ```
