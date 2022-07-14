@@ -20,10 +20,10 @@ tr <- drop.tip(tr, c("Pelomys_fallax", "Taeromys_hamatus"))
 # This is a matrix of binary 1 or 0 for each species for each community
 sp_ses <- read.csv("Phylogenetic_Diversity/Species_SES.csv") %>% select(!X)
 #Species lists
-load("Species_Lists.Rdata")
-load("Species_Extant.Rdata")
+load("Species_Data/Species_Lists.Rdata")
+load("Species_Data/Species_Extant.Rdata")
 # list for initial trim
-load("Species_Extant_Tree.Rdata")
+load("Species_Data/Species_Extant_Tree.Rdata")
 # Order
 level_order <-  c( 'Bawakaraeng', 'Buliohuto','Dako', "Katopasa", "Ambang", "Latimojong", "Torompupu", "Nokilalaki", "Gandangdewata")
 # Just need a DF with species as column names, and one row of data

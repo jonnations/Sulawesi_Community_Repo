@@ -13,10 +13,15 @@ All of these scripts rely heavily on the **tidyverse**, **tidybayes**, and the B
 
 Load some general packages and write some common functions
 ```{r}
-pacman::p_load(tidyverse, brms, tidybayes, patchwork, modelr)
+pacman::p_load(here, tidyverse, brms, tidybayes, patchwork, modelr)
+
+here::i_am('Code/Models_Fitted_Variance.Rmd')
+
+
 scale2 <- function(x, na.rm = TRUE) (x - mean(x, na.rm = na.rm)) / sd(x, na.rm)
 # Species lists of all Sulawesi Species by community. Used to group species by community.
-load("Species_Lists.Rdata")
+here("Data", "Carnivora_MCC_2.tre")
+load(here("Species_Data", "Species_Lists.Rdata"))
 # order of communities by richness
 level_order <-  c( 'Bawakaraeng', 'Buliohuto','Dako', "Katopasa", "Ambang", "Latimojong", "Torompupu", "Nokilalaki", "Gandangdewata")
 ```
@@ -43,7 +48,7 @@ The cumulative variances are stored in a file called `Cranial_PCA_Eigen_Variance
 Data
 
 ```{r}
-pdat <- read_csv("Cranial_Data/Cranial_PCA_Data_36axes.csv") %>% 
+pdat <- read_csv(here("Cranial_Data", "Cranial_PCA_Data_36axes.csv")) %>% 
   mutate_if(is.numeric, scale2, na.rm = TRUE)
 ```
 
@@ -96,7 +101,7 @@ mvcPC2<- brm(mvcmod,
           refresh = 0,
           cores = 4,
           #DEFAULT PRIORS ARE GOOD HERE! Student-t distribution. 
-          file = "Models/Cranium_36_PC_fitted")
+          file = here("Models","Cranium_36_PC_fitted"))
 ```
 
 
@@ -113,7 +118,7 @@ pre.cranium_t <- pdat %>%
   select(!c(.chain, .iteration)) #%>% 
  # mutate_if(is_double, scale2, na.rm = TRUE)
 
-write_csv(pre.cranium_t, "Cranial_Data/Cranial_36axes_Fitted.csv")
+write_csv(pre.cranium_t, here("Cranial_Data","Cranial_36axes_Fitted.csv"))
 ```
 
 
@@ -146,7 +151,7 @@ cnokt <- get_cran(spnok, pre.cranium_t, "Nokilalaki")
 ctort <- get_cran(sptor, pre.cranium_t, "Torompupu")
 cct <- bind_rows(cambt, cbawt, cbult, cdakt, cgant, ckatt, clatt, cnokt, ctort) 
 rm(cambt, cbawt, cbult, cdakt, cgant, ckatt, clatt, cnokt, ctort)
-write_csv(cct, "Cranial_Data/Community_Cranial_Variance_Weighted.csv")
+write_csv(cct, here("Cranial_Data","Community_Cranial_Variance_Weighted.csv"))
 ```
 
 #### Quick Plot
@@ -166,7 +171,7 @@ Looks Good. Move on to Dentary
 
 First load some data and remove the previous data to save RAM
 ```{r}
-ddat <- read_csv("Dentary_Data/Dentary_PCA_Data_20axes.csv") %>% 
+ddat <- read_csv(here("Dentary_Data", "Dentary_PCA_Data_20axes.csv")) %>% 
   mutate_if(is.numeric, scale2, na.rm = TRUE)
 rm(cct, pre.cranium_t, mvcPC2, mvcmod)
 ```
@@ -184,7 +189,7 @@ mvdPC2<- brm(mvdmod,
           iter = 5000,
           warmup = 4000,
           refresh = 0,
-          file = "Models/Dentary_20_PC_fitted")
+          file = here("Models", "Dentary_20_PC_fitted"))
 ``` 
 
 ## Dentary Fitted Values
@@ -198,7 +203,7 @@ pre.dentary_t <- ddat %>%
   rename(dCsize = Csize) %>% 
   select(!c(.chain, .iteration))
 
-write_csv(pre.dentary_t, "Dentary_Data/Dentary_20axes_Fitted.csv")
+write_csv(pre.dentary_t, here("Dentary_Data", "Dentary_20axes_Fitted.csv"))
 ```
 
 ## Dentary Variace and Volumes By Community
@@ -231,7 +236,7 @@ dnokt <- get_dent(spnok, pre.dentary_t, "Nokilalaki")
 dtort <- get_dent(sptor, pre.dentary_t, "Torompupu")
 dct <- bind_rows(dambt, dbawt, dbult, ddakt, dgant, dkatt, dlatt, dnokt, dtort) 
 rm(dambt, dbawt, dbult, ddakt, dgant, dkatt, dlatt, dnokt, dtort)
-write_csv(dct, "Dentary_Data/Community_Dental_Variance_Weighted.csv")
+write_csv(dct, here("Dentary_Data","Community_Dental_Variance_Weighted.csv"))
 ```
 
 #### Quick Plot
@@ -251,7 +256,7 @@ Looking Good, on to External measurements
 
 This is the introduction to the external measurment data. These are measurements from over 600 museum specimens. See text for more info. This reads in the data, then generates the size-corrected ratios for each measurement (i.e. relative tail length).
 ```{r}
-dat <- read_csv("External_Measurement_Data/Measurement_Data_Museum.csv") %>% 
+dat <- read_csv(here("External_Measurement_Data", "Measurement_Data_Museum.csv")) %>% 
   mutate(loc_state = as_factor(loc_state),
          lMass = log(Mass),
          rHF = HF / HB,
@@ -279,7 +284,7 @@ m.ex1<- brm(exmod,
           warmup = 4000,
           refresh = 0,
           cores = 4,
-          file = "Models/External_Measurement_Fitted")
+          file = here("Models", "External_Measurement_Fitted"))
 ```
 
 ## External Fitted
@@ -291,7 +296,7 @@ ext_fit <- dat %>%
   spread(.category, .value) %>% 
   select(!c(.chain, .iteration))
 
-write_csv(ext_fit , "External_Measurement_Data/External_Fitted.csv")
+write_csv(ext_fit , here("External_Measurement_Data", "External_Fitted.csv"))
 ```
 
 ## External Variance
@@ -326,7 +331,7 @@ dnokt <- get_ext(spnok, ext_fit, "Nokilalaki")
 dtort <- get_ext(sptor, ext_fit, "Torompupu")
 ext <- bind_rows(dambt, dbawt, dbult, ddakt, dgant, dkatt, dlatt, dnokt, dtort) 
 rm(dambt, dbawt, dbult, ddakt, dgant, dkatt, dlatt, dnokt, dtort)
-write_csv(ext, "External_Measurement_Data/Community_External_Variance_Fitted.csv")
+write_csv(ext, here("External_Measurement_Data", "Community_External_Variance_Fitted.csv"))
 ```
 
 #### Quick Plot
@@ -345,7 +350,7 @@ This is inherently a bit trickier as each community has it's own unique isotopic
 
 Data and things
 ```{r}
-idat <- read_csv("Isotope_Data/Isotope_Data.csv") %>% 
+idat <- read_csv(here("Isotope_Data", "Isotope_Data.csv")) %>% 
   mutate(sN15 = scale2(Corrected_15N),
          sC13 = scale2(Corrected_13C)) 
 rm(ext, m.ex1, exmod, ext_fit, dat)
@@ -370,8 +375,7 @@ m.iso <- brm(imod,
           #DEFAULT PRIORS ARE GOOD HERE!
           control = list(adapt_delta = .99,
                          max_treedepth = 12),
-          file = "Models/iso_fitted_Com_Grouping"
-          )
+          file = here("Models", "iso_fitted_Com_Grouping"))
 
 ```
 
@@ -384,8 +388,7 @@ iso_fit <- idat %>%
   spread(.category, .value) %>% 
   select(!c(.chain, .iteration))
 
-write_csv(iso_fit , "Isotope_Data/Isotope_Group_Level_Fitted.csv")
-#iso_fit <- read_csv("Isotope_Data/Isotope_Group_Level_Fitted.csv")
+write_csv(iso_fit , here("Isotope_Data", "Isotope_Group_Level_Fitted.csv"))
 ```
 
 ## Iso Variance
@@ -412,23 +415,23 @@ dgant <- get_ext(spgan, iso_fit, "Gandangdewata")
 dlatt <- get_ext(splat, iso_fit, "Latimojong")
 ivar <- bind_rows(dambt, dbawt, dbult, ddakt, dgant,  dlatt) 
 rm(dambt, dbawt, dbult, ddakt, dgant, dlatt)
-write_csv(ivar, "Isotope_Data/Isotope_Group_Level_Variance.csv")
+write_csv(ivar, here("Isotope_Data", "Isotope_Group_Level_Variance.csv"))
 ```
 
 # Combine Data
 Now to finish up I need to combine the sum of variances into one big dataframe.
 Read in Data
 ```{r}
-cdat <- read_csv("Cranial_Data/Community_Cranial_Variance_Weighted.csv")
-ddat <- read_csv("Dentary_Data/Community_Dental_Variance_Weighted.csv")
-edat <- read_csv("External_Measurement_Data/Community_External_Variance_Fitted.csv")
-idat <- read_csv("Isotope_Data/Isotope_Group_Level_Variance.csv")
+cdat <- read_csv(here("Cranial_Data", "Community_Cranial_Variance_Weighted.csv"))
+ddat <- read_csv(here("Dentary_Data", "Community_Dental_Variance_Weighted.csv"))
+edat <- read_csv(here("External_Measurement_Data", "Community_External_Variance_Fitted.csv"))
+idat <- read_csv(here("Isotope_Data", "Isotope_Group_Level_Variance.csv"))
 all_var <- cdat %>% right_join(ddat,by = c(".draw", "com")) %>% right_join(edat,by = c(".draw", "com")) %>% full_join(idat,by = c(".draw", "com")) %>% 
   mutate(sk_var = (cv_wei + dv_wei) / 2,
          iso_var = (vN15_group + vC13_group) / 2,
          morpho_var = (vMass + vEar + vHF + vTail + vHB + dv_wei + cv_wei) / 7
          )
-write_csv(all_var, "All_Traits_Variance_Fitted.csv")
+write_csv(all_var, here("All_Traits_Variance_Fitted.csv"))
 ```
 
 
@@ -436,7 +439,7 @@ write_csv(all_var, "All_Traits_Variance_Fitted.csv")
 
 This is a little different because there is one categorical (ordinal) value for each species, so there is no model.
 ```{r}
-locdat <- read_csv("Locomotion_Data/Locomotion_List.csv")
+locdat <- read_csv(here("Locomotion_Data", "Locomotion_List.csv"))
 ```
 
 ```{r}
@@ -460,5 +463,5 @@ loclat <- get_loc(splat, locdat, "Latimojong")
 locnok <- get_loc(spnok, locdat, "Nokilalaki")
 loctor <- get_loc(sptor, locdat, "Torompupu")
 vLoc <- bind_rows(locamb, locbaw, locbul, locdak, locgan, lockat, loclat, locnok, loctor) 
-write_csv(vLoc, "Locomotion_Data/All_Locomotor_var.csv")
+write_csv(vLoc, here("Locomotion_Data", "All_Locomotor_var.csv"))
 ```

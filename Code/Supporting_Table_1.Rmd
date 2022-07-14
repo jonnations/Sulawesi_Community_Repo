@@ -292,7 +292,7 @@ tabl <- vdf %>%
   select(!c(comb.x, comb.y)) %>%
   arrange(comb, Trait, Community)
 
-tabl %>% write_csv("Table_S1_output.csv")
+tabl %>% write_csv("Table/Table_S1_output.csv")
 ```
 
 Added Phylogenetic Diversity and Locomotor Variance/density manually. Read this back in. Also changing the Isotope NA values to just an NA so it prints better. Then I need to drop_na in the Vses column to eliminate the non-important coms. 
@@ -300,7 +300,7 @@ Added Phylogenetic Diversity and Locomotor Variance/density manually. Read this 
 This is in "Table_SI_output2.csv"
 
 ```{r}
-tabl <- read_csv("Table_S1_output2.csv") %>%
+tabl <- read_csv("Table/Table_S1_output2.csv") %>%
   mutate_if(is.numeric, ~round(., 2)) %>% 
   mutate_at(vars(3:6), ~ifelse(. == 'NaN (NA, NA)', NA, .)) %>% 
   drop_na(Volume)
@@ -317,7 +317,7 @@ tabl %>% select(!comb) %>% kbl( align = "c") %>%
   collapse_rows(columns = 1:2, valign = "top") %>% 
   row_spec(0, bold = TRUE, hline_after = TRUE) %>% 
   #scroll_box(width = "1600px", height = "1000px") %>% 
-  save_kable("Table_S1.pdf") 
+  save_kable("Table/Table_S1.pdf") 
 
 tabl %>% select(!comb) %>% kbl( align = "c") %>%
   kable_classic_2(full_width = F) %>%
@@ -325,7 +325,7 @@ tabl %>% select(!comb) %>% kbl( align = "c") %>%
   collapse_rows(columns = 1:2, valign = "top") %>% 
   row_spec(0, bold = TRUE, hline_after = TRUE) %>% 
   #scroll_box(width = "1600px", height = "1000px") %>% 
-  save_kable("Table_S1.png") 
+  save_kable("Table/Table_S1.png") 
 ```
 
 ##Split Table in two! 

@@ -336,31 +336,10 @@ n4
 ```
 
 
-# Plot ALL
-```{r}
-try1 <- p1 + n1 + plot_layout(guides = "collect")
 
-try2 <- p2 + n2 + plot_layout(guides = "collect")
-
-try3 <- p3 + n3 + plot_layout(guides = "collect")
-
-try4 <- p4 + n4 + plot_layout(guides = "collect")
-```
-
-```{r}
-try1 / try2 / try3 / try4 + plot_layout(tag_level = 'new') + plot_annotation(tag_levels = list(c('A', '', 'B', '', 'C', '', 'D', '')))
-
-ggsave(file = "Ecospace_Richness_Plots.pdf", height = 8, width = 11)
-```
 
 # Variance Plots
-```{r}
-(p1 + p2) / (p3 + p4) + plot_layout(tag_level = 'new') +
-  plot_annotation(tag_levels = list(c('A', 'B', 'C', 'D')))
-  
 
-#ggsave(file = "Variance_Richness_Plots.pdf", height = 7, width = 14)
-```
 
 #### Variance Plots Vertical
 ```{r}
@@ -373,13 +352,7 @@ ggsave(file = "Plots/Fig4_Variance_Richness_Plots_Vertical-com_labels.png", heig
 ```
 
 # Density Plots
-```{r}
-(n1 + n2) / (n3 + n4) + plot_layout(tag_level = 'new') +
-  plot_annotation(tag_levels = list(c('A', 'B', 'C', 'D')))
-  
 
-#ggsave(file = "Plots/Fig4_Density_Richness_Plots.pdf", height = 7, width = 14)
-```
 
 ```{r}
 n1 / n2 / n3 / n4 + plot_layout(tag_level = 'new') +

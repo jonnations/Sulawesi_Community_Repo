@@ -302,7 +302,7 @@ p1 + p2 + plot_layout(widths = c(1,2)) + plot_annotation(title = "N15 Disparity"
 #Combine and Save
 ```{r}
 dat <- cct %>% right_join(ddt) %>% right_join(eet) %>% right_join(ist)
-dat %>% write_csv("Clade_Varaince.csv")
+dat %>% write_csv("Plots/Clade_Varaince.csv")
 rm(cct, ddt, ext, ist)
 ```
 
@@ -339,7 +339,7 @@ write_csv(lst, "Locomotion_Data/Clade_Locomotion_Var.csv")
 
 ```{r}
 pacman::p_load(tidyverse, patchwork, tidybayes)
-dat <- read_csv("Clade_Varaince.csv")
+dat <- read_csv("Plots/Clade_Varaince.csv")
 ldat <- read_csv("Locomotion_Data/Clade_Locomotion_Var.csv")
 ```
 
