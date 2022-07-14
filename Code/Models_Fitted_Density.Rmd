@@ -9,17 +9,20 @@ This script estimates the density of traits in the communities using the Mean Ne
 Load packages and data and functions
 Most of these are different species lists.
 ```{r}
-pacman::p_load(tidyverse, tidybayes, brms, modelr, furrr, dispRity)
+pacman::p_load(here, tidyverse, tidybayes, brms, modelr, furrr, dispRity)
+
+here::i_am('Code/Models_Fitted_Variance.Rmd')
+
 #List of species by community
-load("Species_Lists.Rdata")
+load(here("Species_Data", "Species_Lists.Rdata"))
 #List of all species
-load("Species_Extant.RData")
+load(here("Species_Data", "Species_Extant.RData"))
 
 scale2 <- function(x, na.rm = TRUE) (x - mean(x, na.rm = na.rm)) / sd(x, na.rm)
 level_order <-  c( 'Bawakaraeng', 'Buliohuto','Dako', "Katopasa", "Ambang", "Latimojong", "Torompupu", "Nokilalaki", "Gandangdewata")
 level_order_iso <-  c( 'Bawakaraeng', 'Buliohuto','Dako',  "Ambang", "Latimojong",  "Gandangdewata")
 
-adat <- read_csv("All_Traits.csv")
+adat <- read_csv(here("All_Traits.csv"))
 ```
 
 These scripts use the package `furrr` which is a multi-threading version of `purrr`. It incorperates the `futures` package to run on as many cores as you choose. Here I am selecting 6 cores on my laptop.
@@ -103,7 +106,7 @@ get_mnni <- function(data, sp) {
 Load the necessary data
 
 ```{r}
-cdat <- read_csv("Cranial_Data/Cranial_36axes_Fitted.csv") 
+cdat <- read_csv(here("Cranial_Data", "Cranial_36axes_Fitted.csv"))
 ```
 #### Broken Stick
 
@@ -186,7 +189,7 @@ adat <- adat  %>% bind_cols(dd)
 # Dentary Nearest Neighbor
 
 ```{r}
-ddat <- read_csv("Dentary_Data/Dentary_20axes_Fitted.csv")
+ddat <- read_csv(here("Dentary_Data", "Dentary_20axes_Fitted.csv"))
 ```
 
 
@@ -223,7 +226,6 @@ nn_dent <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_n
 
 dd <- nn_dent %>% select(d_nn)
 adat <- adat  %>% bind_cols(dd)
-#adat %>% write_csv("CLEAN_All_Traits.csv")
 ```
 
 
@@ -249,7 +251,6 @@ nn_dsize <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_
 
 dd <- nn_dsize %>% select(dsize_nn)
 adat <- adat  %>% bind_cols(dd)
-#adat %>% write_csv("CLEAN_All_Traits.csv")
 ```
 
 
@@ -292,7 +293,7 @@ adat <- adat %>% bind_cols(dd)
 # External Measurements
 
 ```{r}
-edat <- read_csv("External_Measurement_Data/External_Fitted.csv")
+edat <- read_csv(here("External_Measurement_Data", "External_Fitted.csv"))
 ```
 
 ## Head-Body NN
@@ -485,7 +486,7 @@ rm(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_n
 
 
 ```{r}
-adat %>% write_csv("All_Traits.csv")
+adat %>% write_csv(here("All_Traits.csv"))
 ```
 
 # Isotope GROUP Nearest Neighbor
@@ -493,7 +494,7 @@ adat %>% write_csv("All_Traits.csv")
 Realized I have to use the grouping data again. Thats ok. It'll be just like any of the other variables.
 ## N15 Group
 ```{r}
-idat <- read_csv("Isotope_Data/Isotope_Group_Level_Fitted.csv", col_select = c(Species, .draw, sN15))
+idat <- read_csv(here("Isotope_Data", "Isotope_Group_Level_Fitted.csv")) %>% select(Species, .draw, sN15)
 
 
 amb_nni <- get_mnni(idat, spamb) %>%  mutate(com = "Ambang" )
@@ -515,7 +516,7 @@ adat <- adat  %>%
 
 ## C13 Group
 ```{r}
-idat <- read_csv("Isotope_Data/Isotope_Group_Level_Fitted.csv", col_select = c(Species, .draw, sC13))
+idat <- read_csv(here("Isotope_Data", "Isotope_Group_Level_Fitted.csv")) %>% select(Species, .draw, sC13)
 
 
 amb_nni <- get_mnni(idat, spamb) %>%  mutate(com = "Ambang" )
@@ -537,7 +538,7 @@ adat <- adat  %>%
 
 ## Iso Group
 ```{r}
-idat <- read_csv("Isotope_Data/Isotope_Group_Level_Fitted.csv", col_select = c(Species, .draw, sC13, sN15))
+idat <- read_csv(here("Isotope_Data", "Isotope_Group_Level_Fitted.csv")) %>% select(Species, .draw, sC13, sN15)
 
 
 amb_nni <- get_mnni(idat, spamb) %>%  mutate(com = "Ambang" )
@@ -559,5 +560,5 @@ adat <- adat  %>%
 
 #Write All Data
 ```{r}
-adat %>% write_csv("All_Traits.csv")
+adat %>% write_csv(here("All_Traits.csv"))
 ```

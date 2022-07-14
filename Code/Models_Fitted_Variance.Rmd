@@ -431,7 +431,7 @@ all_var <- cdat %>% right_join(ddat,by = c(".draw", "com")) %>% right_join(edat,
          iso_var = (vN15_group + vC13_group) / 2,
          morpho_var = (vMass + vEar + vHF + vTail + vHB + dv_wei + cv_wei) / 7
          )
-write_csv(all_var, here("All_Traits_Variance_Fitted.csv"))
+write_csv(all_var, here("All_Traits.csv"))
 ```
 
 
