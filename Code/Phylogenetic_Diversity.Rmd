@@ -13,21 +13,24 @@ Once this is done, I can calculate the phylogenetic diversity and the pd standar
 
 Load tree
 ```{r}
-pacman::p_load(tidyverse, phytools, picante)
-tr <- read.nexus("Phylogenetic_Diversity/397_MCC.tree")
+pacman::p_load(here, tidyverse, phytools, picante)
+
+here::i_am("Code/Phylogenetic_Diversity.Rmd")
+
+tr <- read.nexus(here("Phylogenetic_Diversity", "397_MCC.tree"))
 # Need to take care of some 0 length tips
 tr <- drop.tip(tr, c("Pelomys_fallax", "Taeromys_hamatus"))
 # This is a matrix of binary 1 or 0 for each species for each community
-sp_ses <- read.csv("Phylogenetic_Diversity/Species_SES.csv") %>% select(!X)
+sp_ses <- read.csv(here("Phylogenetic_Diversity", "Species_SES.csv")) %>% select(!X)
 #Species lists
-load("Species_Data/Species_Lists.Rdata")
-load("Species_Data/Species_Extant.Rdata")
+load(here("Species_Data", "Species_Lists.Rdata"))
+load(here("Species_Data", "Species_Extant.Rdata"))
 # list for initial trim
-load("Species_Data/Species_Extant_Tree.Rdata")
+load(here("Species_Data", "Species_Extant_Tree.Rdata"))
 # Order
 level_order <-  c( 'Bawakaraeng', 'Buliohuto','Dako', "Katopasa", "Ambang", "Latimojong", "Torompupu", "Nokilalaki", "Gandangdewata")
 # Just need a DF with species as column names, and one row of data
-mdat <- read_csv("External_Measurement_Data/Measurement_Data_Museum.csv") %>% 
+mdat <- read_csv(here("External_Measurement_Data", "Measurement_Data_Museum.csv")) %>% 
   select(c(Species, Total)) %>% 
   group_by(Species) %>% 
   summarise(mTot = mean(Total)) %>% 
@@ -118,7 +121,7 @@ axisPhylo()
 #### Write Tree
 
 ```{r}
-write.tree(tr, file = "Phylogenetic_Diversity/Clean_Sulawesi_Tree.tre")
+write.tree(tr, file = here("Phylogenetic_Diversity", "Clean_Sulawesi_Tree.tre"))
 ```
 
 
@@ -127,7 +130,7 @@ write.tree(tr, file = "Phylogenetic_Diversity/Clean_Sulawesi_Tree.tre")
 ```{r}
 set.seed(111)
 sespd <- ses.pd(sp_ses, tr, null.model="independentswap", runs=999, iterations = 1000, include.root=F) %>% as_tibble() %>% arrange(ntaxa) %>% add_column(com = level_order) %>% select(-runs)
-sespd <- sespd %>% rename(pd_ses = pd.obs.z) #%>% write_csv(file = "Phylogenetic_Diversity/PD_Results.csv")
+sespd <- sespd %>% rename(pd_ses = pd.obs.z) %>% write_csv(file = here("Phylogenetic_Diversity", "PD_Results.csv"))
 sespd
 ```
 
@@ -148,7 +151,9 @@ p1
 sp_ses2 <- sp_ses %>% select(!Haeromys_minahassae)
 tr2 <- drop.tip(tr, "Haeromys_minahassae")
 sespd2 <- ses.pd(sp_ses2, tr2, null.model="independentswap", runs=999, iterations = 1000, include.root=F) %>% as_tibble() %>% arrange(ntaxa) %>% add_column(com = level_order) %>% select(-runs)
-sespd2 <- sespd2 %>% rename(pd_ses = pd.obs.z) %>% write_csv(file = "Phylogenetic_Diversity/PD_Results_no_Hae.csv")
+sespd2 <- sespd2 %>% 
+  rename(pd_ses = pd.obs.z) %>% 
+  write_csv(file = here("Phylogenetic_Diversity", "PD_Results_no_Hae.csv"))
 ```
 
 

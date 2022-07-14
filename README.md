@@ -21,9 +21,9 @@ Most of the data in this project arrive here ready to go, including the stable i
  
  To better leverage the sampling distributions of the data, and incorporate the intraspecific variance inherent in any species, I use a partial-pooling approach with Bayesian multilevel modeling to estimate trait value predictions for each species. 
  
-For the Community Ecospace Variance values, all models and predictions are in the `Models_Fitted_Variance.Rmd` script. This includes Cranial shape & size, Dentary shape & size, external measurements, isotopes, and locomotion. The Community Ecospace Density models and predictions are in `Models_Fitted_Density.Rmd`.
+For the Community Ecospace Variance values, all models and predictions are in the `Models_Fitted_Variance.Rmd` script. This includes Cranial shape & size, Dentary shape & size, external measurements, isotopes, and locomotion. **RUN THIS FIRST**
 
-The density script includes a broken stick estimation. Unlike sum of variance, nearest-neighbor density reqires all the axes together in one estimation. Therefore Ican't weight them. In order not to use extraneous PC axes in these analyses, I use a broken stick method to estimate the *significant* axes. In this case it's the first 2 for Cranial and first 3 for Dentary.
+The Community Ecospace Density models and predictions are in `Models_Fitted_Density.Rmd`. The density script includes a broken stick estimation. Unlike sum of variance, nearest-neighbor density reqires all the axes together in one estimation. Therefore Ican't weight them. In order not to use extraneous PC axes in these analyses, I use a broken stick method to estimate the *significant* axes. In this case it's the first 2 for Cranial and first 3 for Dentary. **RUN THIS SECOND**
 
 
  - **Phylogenetic Diversity**
