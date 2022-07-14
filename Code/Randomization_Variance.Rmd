@@ -12,17 +12,19 @@ IMPORTANTLY: Values are being drawn from and added to the `sesdat` dataset store
 
 #### Load Packages and Data  
 ```{r}
-pacman::p_load(tidyverse, tidybayes, patchwork, modelr, forcats, picante, furrr)
+pacman::p_load(here, tidyverse, tidybayes, patchwork, modelr, forcats, picante, furrr)
 #supress dplyr messages for summarise()
 options(dplyr.summarise.inform = FALSE)
 
+here::i_am('Code/Randomization_Variance.Rmd')
+
 #External Data
-edat <- read_csv("External_Measurement_Data/External_Fitted.csv")
+edat <- read_csv(here("External_Measurement_Data", "External_Fitted.csv"))
 # Cranial Data
-cdat <- read_csv("Cranial_Data/Cranial_36axes_Fitted.csv") %>%
+cdat <- read_csv(here("Cranial_Data", "Cranial_36axes_Fitted.csv")) %>%
   mutate_if(is.numeric, round, digits=6)
 # Dentary Data
-ddat <- read_csv("Dentary_Data/Dentary_20axes_Fitted.csv") %>%
+ddat <- read_csv(here("Dentary_Data", "Dentary_20axes_Fitted.csv")) %>%
   mutate_if(is.numeric, round, digits=6)
 
 skdat <- ddat  %>% select(!.row) %>% 
@@ -33,21 +35,19 @@ mdat <- edat  %>% select(!.row) %>%
 
 
 # Locomotor Data
-ldat <- read_csv("Locomotion_Data/Locomotion_List.csv") # List of species modes
-lvdat <- read_csv("Locomotion_Data/All_Locomotor_Var.csv") # variances by community
+ldat <-  read_csv(here("Locomotion_Data", "Locomotion_List.csv")) # List of species modes
+lvdat <- read_csv(here("Locomotion_Data", "All_Locomotor_Var.csv")) # variances by community
 
 
-# Changing this up!
-ifit <- read_csv("Isotope_Data/Isotope_Group_Level_Fitted.csv")
+ifit <- read_csv(here("Isotope_Data", "Isotope_Group_Level_Fitted.csv"))
 
-adat <- read_csv("All_Traits_Variance_Fitted.csv") %>% mutate(vBsz = (vdCsize + vcCsize + vHB + vMass) / 4)
+adat <- read_csv(here("All_Traits.csv")) %>% mutate(vBsz = (vdCsize + vcCsize + vHB + vMass) / 4)
 
 
-#adat <- read_csv("CLEAN_All_Traits.csv") 
-sp_ses <- read.csv("Phylogenetic_Diversity/Species_SES.csv") %>% select(!X)
+sp_ses <- read.csv(here("Phylogenetic_Diversity", "Species_SES.csv")) %>% select(!X)
 
-load("Species_Lists.RData")
-load("Species_Extant.RData")
+load(here("Species_Data", "Species_Lists.RData"))
+load(here("Species_Data", "Species_Extant.RData"))
 
 #Just as a reminder
 n_sp <- tibble(com = c("Ambang", "Bawakaraeng", "Buliohuto", "Dako", "Gandangdewata", "Katopasa", "Latimojong", "Nokilalaki", "Torompupu"),
@@ -180,7 +180,7 @@ This is hashed out because it only should be done once, and data needs to be loo
 
 
 ```{r}
-adat %>% write_csv("All_Traits.csv")
+adat %>% write_csv(here("All_Traits.csv"))
 rm(x_rand, xamb, xbaw, xbul, xdak, xgan, xkat, xlat, xnok, xtor)
 ```
 
@@ -281,7 +281,7 @@ adat <- c_rand %>% group_by(com) %>%
 #### Add data to file
 This is hashed out because it only should be done once, and data needs to be looked at to confirm that it is correct and safe to add. Definitely inspect before saving!!!
 ```{r}
-adat %>% write_csv("All_Traits.csv")
+adat %>% write_csv(here("All_Traits.csv"))
 rm(c_rand)
 ```
 
@@ -355,7 +355,7 @@ adat <- d_rand %>% group_by(com) %>%
 ```
 
 ```{r}
-adat %>% write_csv("All_Traits.csv")
+adat %>% write_csv(here("All_Traits.csv"))
 rm(d_rand)
 ```
 
@@ -473,7 +473,7 @@ adat <- sk_rand %>% group_by(com) %>%
 ```
 
 ```{r}
-adat5 %>% write_csv("All_Traits.csv")
+adat5 %>% write_csv(here("All_Traits.csv"))
 ```
 
 
@@ -601,7 +601,7 @@ adat <- m_rand %>% group_by(com) %>%
 #### Add Data to file
 ```{r}
 
-adat6 %>% write_csv("All_Traits.csv")
+adat6 %>% write_csv(here("All_Traits.csv"))
 
 rm(camb, cbaw, cbul, cdak, ckat, cgan, clat, cnok, ctor, c_rand)
 ```
@@ -674,7 +674,7 @@ adat <-
 
 ```{r}
  adat  %>% 
- write_csv("All_Traits.csv")
+ write_csv(here("All_Traits.csv"))
 
 ```
 
@@ -682,8 +682,8 @@ adat <-
 
 # Locomotion Randomization
 ```{r}
-locdat <- read_csv("Locomotion_Data/Locomotion_List.csv")
-locvar <- read_csv("Locomotion_Data/All_Locomotor_var.csv")
+locdat <- read_csv(here("Locomotion_Data", "Locomotion_List.csv"))
+locvar <- read_csv(here("Locomotion_Data", "All_Locomotor_var.csv"))
 ```
 
 #### Locomotion Randomization Function
@@ -725,7 +725,7 @@ Simple calculations!
 df5$var = locvar$vloc
 df5$ses_loc= ((df5$var - df5$m) / df5$sd)
 locvar$ses_loc = df5$ses_loc
-write_csv(locvar, "Locomotion_Data/All_Locomotor_var.csv")
+write_csv(locvar, here("Locomotion_Data", "All_Locomotor_var.csv"))
 ```
 
 
