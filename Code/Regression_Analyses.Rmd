@@ -10,13 +10,17 @@ I am only using the SES estimates, not the raw volume and density values.
 
 ## Load Up
 ```{r}
-pacman::p_load(tidyverse, tidybayes, brms, modelr, purrr, cmdstanr, patchwork)
+pacman::p_load(here, tidyverse, tidybayes, brms, modelr, purrr, cmdstanr, patchwork)
 options(brms.backend = "cmdstanr")
-load("Species_Lists.Rdata")
+
+here::i_am('Code/Regression_Analyses.Rmd')
+
+
+load(here("Species_Data", "Species_Lists.Rdata"))
 
 
 level_order <-  c( 'Bawakaraeng', 'Buliohuto','Dako', "Katopasa", "Ambang", "Latimojong", "Torompupu", "Nokilalaki", "Gandangdewata")
-dat <- read_csv("All_Traits.csv") %>% select(-.draw) %>% select(contains(c("ses", "com")))
+dat <- read_csv(here("All_Traits.csv")) %>% select(-.draw) %>% select(contains(c("ses", "com")))
 
 ```
 ## SE function
@@ -150,12 +154,12 @@ plan(multisession, workers = 6)
 
 ```{r echo = T, results = 'hide'}
 ttt <- ttt %>% mutate(fits = future_map(d, ~update(fit, newdata = .x, refresh = 0)))
-write_rds(ttt, "Models/All_Regression_Models_List2.rds")
+write_rds(ttt, here("Models", "All_Regression_Models_List2.rds"))
 ```
 
 ### Cleanup
 ```{r}
-ttt <- readRDS("Models/All_Regression_Models_List2.rds")
+ttt <- readRDS(here("Models", "All_Regression_Models_List2.rds"))
 b <- ttt %>%  mutate(beta = map(fits, cleanup)) %>%
                 unnest(beta) %>% 
                 rename(b_lower = "Q5.5",
@@ -278,7 +282,7 @@ iso_fin <- bind_cols(b, i, s, r, rsm)
 
 #### Combine Iso and All fits together
 ```{r}
-all_fin <- bind_rows(fin, iso_fin) %>% write_csv("Regression_Results2.csv")
+all_fin <- bind_rows(fin, iso_fin) %>% write_csv(here("Regression", "Regression_Results2.csv"))
 
 rm(adat, isodat)
 ```
@@ -288,7 +292,7 @@ rm(adat, isodat)
 
 Separate Models, no SE in model because they are not distributions.
 ```{r}
-locdat <- read_csv("Locomotion_Data/All_Locomotor_var.csv") 
+locdat <- read_csv(here("Locomotion_Data", "All_Locomotor_var.csv"))
 ```
 
 
@@ -360,8 +364,8 @@ all_fin <- bind_rows(l1, l2, l3, l4, all_fin)
 #Phylogenetic Diversity Regression
 
 ```{r}
-phydat <- read_csv("Phylogenetic_Diversity/PD_Results.csv") %>% rename(nspec = ntaxa)
-phydat2 <- read_csv("Phylogenetic_Diversity/PD_Results_no_Hae.csv") %>% rename(nspec = ntaxa)
+phydat <-  read_csv(here("Phylogenetic_Diversity", "PD_Results.csv") %>% rename(nspec = ntaxa))
+phydat2 <- read_csv(here("Phylogenetic_Diversity", "PD_Results_no_Hae.csv") %>% rename(nspec = ntaxa))
 scale2 <- function(x, na.rm = FALSE) (x - mean(x, na.rm = na.rm)) / sd(x, na.rm) 
   
 phydat <- phydat %>% mutate(pd = scale2(pd.obs)) %>% rename(nsp = "nspec")
@@ -422,5 +426,5 @@ all_fin <- bind_rows(p1, p2, p3, p4, all_fin)
 ```
 
 ```{r}
-all_fin %>%  write_csv("Regression_Results.csv")
+all_fin %>%  write_csv(here("Regression", "Regression_Results.csv"))
 ```
