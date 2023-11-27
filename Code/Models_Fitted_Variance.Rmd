@@ -1,0 +1,523 @@
+---
+title: "R Notebook"
+---
+#  Trait Estimates And Community Fitted Values
+
+This script includes all the models of trait estimates, the fitted mean values for each species, and the estimates of the variances for each community. 
+
+**I apologize in advance** - There are some really big multivariate models and big functions here. The Notebook becomes really long because of this, but I thought it would be easier to look in one place for all of these functions rather than across a different script for each trait. 
+
+I will split them up into sections be headers, and explain as much about what I am doing in them as I can.
+
+All of these scripts rely heavily on the **tidyverse**, **tidybayes**, and the Bayesian multilevel modeling package **brms**.
+
+Load some general packages and write some common functions
+```{r}
+pacman::p_load(here, tidyverse, brms, tidybayes, patchwork, modelr, cmdstanr, paletteer)
+
+here::i_am('Code/Models_Fitted_Variance.Rmd')
+
+scale2 <- function(x, na.rm = TRUE) (x - mean(x, na.rm = na.rm)) / sd(x, na.rm)
+# Species lists of all Sulawesi Species by community. Used to group species by community.
+load(here("Species_Data", "Species_Lists.Rdata"))
+# order of communities by richness
+level_order <-  c( 'Bawakaraeng', 'Buliohuto','Dako', "Katopasa", "Ambang", "Latimojong", "Torompupu", "Nokilalaki", "Gandangdewata")
+```
+
+
+# Cranium
+
+Principal Components separates different axes by variance. So PC1 has more information about the variance of Cranial Shape than PC2, PC3, etc. Each axes should be valued **based on the amount of variance it contributes to the shape**. Therefore, adjust the importance of each axis by the amount of variance it describes. To do this I will need to
+
+  + Find all axes that lead to 95% of overall variance  
+  + Determine the amount of Cranial variance explained by each axis
+  + adjust this variance to % (out of 100)
+  + multiply the estimated mountain variance of each axis by the percentage of overall PC variance the axis has
+  + Sum all of these, resulting in a shape volume = 1 that can be added to other trait volumes.
+  
+example: If PC1 is 25% of the entire PCA variance, and PC2 is 20%, it will look something like this
+`var(PC1)*0.25 + var(PC2)*.2` rather than `(var(PC1) + var(PC2))/2`
+
+The cumulative variances are stored in a file called `Cranial_PCA_Eigen_Variance.csv` in the `~/Cranial_Data/landmarks` directory. Same for Dentary Data (in Dentary directory).
+
+
+## Cranial Model
+
+Data
+ ***DO NOT SCALE PCA DATA***
+```{r}
+pdat <- read_csv(here("Cranial_Data", "Cranial_PCA_Data_36axes.csv")) %>% 
+  mutate(Csize = scale2(Csize))
+```
+
+This is a multivariate model. Basically it is 36 models - one for each of the 36 cranial PCs - run at once, for ease. This uses partial pooling to estimate a distribution of predicted values for each species. See text for more info. 
+```{r}
+mvcmod <- bf(PC1 ~ 0 + (1|Species)) + 
+          bf(PC2 ~ 0 + (1|Species)) +
+          bf(PC3 ~ 0 + (1|Species)) +
+          bf(PC4 ~ 0 + (1|Species)) +
+          bf(PC5 ~ 0 + (1|Species)) +
+          bf(PC6 ~ 0 + (1|Species)) + 
+          bf(PC7 ~ 0 + (1|Species)) +
+          bf(PC8 ~ 0 + (1|Species)) +
+          bf(PC9 ~ 0 + (1|Species)) +
+          bf(PC10 ~ 0 + (1|Species)) +
+          bf(PC11 ~ 0 + (1|Species)) + 
+          bf(PC12 ~ 0 + (1|Species)) +
+          bf(PC13 ~ 0 + (1|Species)) +
+          bf(PC14 ~ 0 + (1|Species)) +
+          bf(PC15 ~ 0 + (1|Species)) +
+          bf(PC16 ~ 0 + (1|Species)) + 
+          bf(PC17 ~ 0 + (1|Species)) +
+          bf(PC18 ~ 0 + (1|Species)) +
+          bf(PC19 ~ 0 + (1|Species)) +
+          bf(PC20 ~ 0 + (1|Species)) +
+          bf(PC21 ~ 0 + (1|Species)) + 
+          bf(PC22 ~ 0 + (1|Species)) +
+          bf(PC23 ~ 0 + (1|Species)) +
+          bf(PC24 ~ 0 + (1|Species)) +
+          bf(PC25 ~ 0 + (1|Species)) +
+          bf(PC26 ~ 0 + (1|Species)) + 
+          bf(PC27 ~ 0 + (1|Species)) +
+          bf(PC28 ~ 0 + (1|Species)) +
+          bf(PC29 ~ 0 + (1|Species)) +
+          bf(PC30 ~ 0 + (1|Species)) +
+          bf(PC31 ~ 0 + (1|Species)) + 
+          bf(PC32 ~ 0 + (1|Species)) +
+          bf(PC33 ~ 0 + (1|Species)) +
+          bf(PC34 ~ 0 + (1|Species)) +
+          bf(PC35 ~ 0 + (1|Species)) + 
+          bf(PC36 ~ 0 + (1|Species)) +
+          bf(Csize ~ 0 + (1|Species)) +
+               set_rescor(FALSE)
+
+mvcPC2<- brm(mvcmod,
+          data = pdat,
+          family = gaussian(),
+          iter = 5000,
+          warmup = 4000,
+          refresh = 0,
+          cores = 4,
+          #DEFAULT PRIORS ARE GOOD HERE! Student-t distribution. 
+          file = here("Models","Cranium_36_PC_fitted"),
+          backend = 'cmdstanr')
+```
+
+
+## Cranial Predicted Values
+Fitted values for PC1-36 and centroid size for each species.
+In short this means re running the original data through the model output to get the "fitted" values. So using the data as both a training and testing set. 
+```{r}
+pre.cranium_t <- pdat %>%
+  data_grid(Species) %>%
+  add_fitted_draws(mvcPC2) %>% 
+  spread(.category, .value) %>% 
+  rename_with(~ gsub("PC", "cPC", .x)) %>% 
+  rename(cCsize = Csize) %>% 
+  select(!c(.chain, .iteration)) #%>% 
+ # mutate_if(is_double, scale2, na.rm = TRUE)
+
+write_csv(pre.cranium_t, here("Cranial_Data","Cranial_36axes_Fitted.csv"))
+```
+
+
+```{r}
+
+get_cran <- function(sp, data, mountain) {
+  data %>%
+    filter(Species %in% {{sp}}) %>%
+    select(!Species) %>%
+    select(!.row) %>%
+    group_by(.draw) %>% 
+    summarise_at(vars(cPC1:cCsize), var) %>% 
+    mutate(cv_wei = select(., cPC1:cPC36) %>% rowSums(na.rm = TRUE),
+           vcCsize = cCsize) %>% 
+    select(.draw, vcCsize, cv_wei) %>% 
+    add_column(com = {{mountain}})
+}
+
+
+cambt <- get_cran(spamb, pre.cranium_t, "Ambang")
+cbawt <- get_cran(spbaw, pre.cranium_t, "Bawakaraeng") 
+cbult <- get_cran(spbul, pre.cranium_t, "Buliohuto") 
+cdakt <- get_cran(spdak, pre.cranium_t, "Dako")
+cgant <- get_cran(spgan, pre.cranium_t, "Gandangdewata")
+ckatt <- get_cran(spkat, pre.cranium_t, "Katopasa")
+clatt <- get_cran(splat, pre.cranium_t, "Latimojong")
+cnokt <- get_cran(spnok, pre.cranium_t, "Nokilalaki")
+ctort <- get_cran(sptor, pre.cranium_t, "Torompupu")
+cct <- bind_rows(cambt, cbawt, cbult, cdakt, cgant, ckatt, clatt, cnokt, ctort) 
+rm(cambt, cbawt, cbult, cdakt, cgant, ckatt, clatt, cnokt, ctort)
+write_csv(cct, here("Cranial_Data","Community_Cranial_Variance_Weighted.csv"))
+```
+
+#### Quick Plot
+```{r}
+#cct %>% mutate(cv_wei = (cv_wei / 36)) %>% 
+cct %>% mutate(com = factor(com, level = level_order)) %>% 
+ggplot(aes(y = com, x = cv_wei, fill = com)) +
+  stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
+   labs(title="Cranial Shape Disparity",x="Sum of Variance", y = "", fill = "Mountain") +
+  theme_bw() +
+  scale_fill_paletteer_d('ggsci::default_gsea', direction = 1) +
+  guides(fill = guide_legend(reverse=T)) + theme(legend.position = "none")
+```
+
+
+
+Looks Good. Move on to Dentary
+
+
+# Dentary 
+
+First load some data and remove the previous data to save RAM
+```{r}
+ddat <- read_csv(here("Dentary_Data", "Dentary_PCA_Data_20axes.csv")) %>% 
+  mutate(Csize = scale2(Csize))
+rm(cct, pre.cranium_t, mvcPC2, mvcmod)
+```
+
+
+## Dentary Model 
+
+Same thing as the multivariate model for cranium above.
+```{r}
+mvdmod <- bf(PC1 ~ 0 + (1|Species)) + bf(PC2 ~ 0 + (1|Species)) + bf(PC3 ~ 0 + (1|Species)) + bf(PC4 ~ 0 + (1|Species)) + bf(PC5 ~ 0 + (1|Species)) + bf(PC6 ~ 0 + (1|Species)) + bf(PC7 ~ 0 + (1|Species)) + bf(PC8 ~ 0 + (1|Species)) + bf(PC9 ~ 0 + (1|Species)) + bf(PC10 ~ 0 + (1|Species)) + bf(PC11 ~ 0 + (1|Species)) + bf(PC12 ~ 0 + (1|Species)) + bf(PC13 ~ 0 + (1|Species)) + bf(PC14 ~ 0 + (1|Species)) + bf(PC15 ~ 0 + (1|Species)) + bf(PC16 ~ 0 + (1|Species)) + bf(PC17 ~ 0 + (1|Species)) + bf(PC18 ~ 0 + (1|Species)) + bf(PC19 ~ 0 + (1|Species)) + bf(PC20 ~ 0 + (1|Species)) + bf(Csize ~ 0 + (1|Species)) + set_rescor(FALSE)
+
+mvdPC2<- brm(mvdmod,
+          data = ddat,
+          family = gaussian(),
+          iter = 5000,
+          warmup = 4000,
+          refresh = 0,
+          cores = 4,
+          file = here("Models", "Dentary_20_PC_fitted"),
+          backend = "cmdstan")
+``` 
+
+## Dentary Fitted Values
+Fitted values for PC1-5 and centroid size for each species
+```{r}
+pre.dentary_t <- ddat %>%
+  data_grid(Species) %>%
+  add_fitted_draws(mvdPC2) %>% 
+  spread(.category, .value) %>% 
+  rename_with(~ gsub("PC", "dPC", .x)) %>% 
+  rename(dCsize = Csize) %>% 
+  select(!c(.chain, .iteration))
+
+write_csv(pre.dentary_t, here("Dentary_Data", "Dentary_20axes_Fitted.csv"))
+```
+
+## Dentary Variace and Volumes By Community
+
+Same thing as the Cranial predictions above, multiplying each variance b
+```{r}
+get_dent <- function(sp, data, mountain) {
+data %>% 
+  filter(Species %in% {{sp}}) %>%
+  select(!Species) %>%
+  select(!.row) %>%
+  group_by(.draw) %>% 
+    summarise_at(vars(dPC1:dCsize), var) %>% 
+    mutate(dv_wei = select(., dPC1:dPC20) %>% rowSums(na.rm = TRUE),
+           vdCsize = dCsize) %>%  
+    select(.draw, vdCsize, dv_wei) %>% 
+    add_column(com = {{mountain}})
+}
+```
+
+
+```{r}
+dambt <- get_dent(spamb, pre.dentary_t, "Ambang")
+dbawt <- get_dent(spbaw, pre.dentary_t, "Bawakaraeng") 
+dbult <- get_dent(spbul, pre.dentary_t, "Buliohuto") 
+ddakt <- get_dent(spdak, pre.dentary_t, "Dako")
+dgant <- get_dent(spgan, pre.dentary_t, "Gandangdewata")
+dkatt <- get_dent(spkat, pre.dentary_t, "Katopasa")
+dlatt <- get_dent(splat, pre.dentary_t, "Latimojong")
+dnokt <- get_dent(spnok, pre.dentary_t, "Nokilalaki")
+dtort <- get_dent(sptor, pre.dentary_t, "Torompupu")
+dct <- bind_rows(dambt, dbawt, dbult, ddakt, dgant, dkatt, dlatt, dnokt, dtort) 
+rm(dambt, dbawt, dbult, ddakt, dgant, dkatt, dlatt, dnokt, dtort)
+write_csv(dct, here("Dentary_Data","Community_Dental_Variance_Weighted.csv"))
+```
+
+#### Quick Plot
+```{r}
+dct %>% mutate(com = factor(com, level = level_order)) %>% 
+ggplot(aes(y = com, x = dv_wei, fill = com)) +
+  stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
+   labs(title="Dentary Shape Disparity",x="Sum of Variance", y = "", fill = "Mountain") +
+  theme_bw() +
+  scale_fill_paletteer_d('ggsci::default_gsea', direction = 1)  + 
+  guides(fill = guide_legend(reverse=T)) + theme(legend.position = "none")
+```
+
+
+
+Looking Good, on to External measurements
+
+#External Measurements 
+
+This is the introduction to the external measurment data. These are measurements from over 600 museum specimens. See text for more info. This reads in the data, then generates the size-corrected ratios for each measurement (i.e. relative tail length).
+```{r}
+dat <- read_csv(here("External_Measurement_Data", "Measurement_Data_Museum.csv")) %>% 
+  mutate(loc_state = as_factor(loc_state),
+         lMass = log(Mass),
+         rHF = HF / HB,
+         rEar = Ear / HB,
+         rTail = Tail / Total) %>% 
+  mutate_if(is.numeric, scale2, na.rm = TRUE) 
+
+rm(mvdPC2, pre.dentary_t, dct, ddat, mvdmod)
+```
+
+## External Measurement Model
+Much more simple than the landmark data! Same thing though... one model for each measurement. 
+```{r}
+exmod <- bf(HB ~ 0 + (1|Species)) + 
+        bf(rTail ~ 0 + (1|Species)) +
+        bf(rHF ~ 0 + (1|Species)) +
+        bf(rEar ~ 0 + (1|Species)) +
+        bf(lMass ~ 0 + (1|Species)) +
+        set_rescor(FALSE)
+
+m.ex1<- brm(exmod,
+          data = dat,
+          family = gaussian(),
+          iter = 5000,
+          warmup = 4000,
+          refresh = 0,
+          cores = 4,
+          file = here("Models", "External_Measurement_Fitted"),
+          backend = 'cmdstanr')
+```
+
+## External Fitted
+Fitted values for external measurements for each species
+```{r}
+ext_fit <- dat %>%
+  data_grid(Species) %>%
+  add_fitted_draws(m.ex1) %>% 
+  spread(.category, .value) %>% 
+  select(!c(.chain, .iteration))
+
+write_csv(ext_fit , here("External_Measurement_Data", "External_Fitted.csv"))
+```
+
+## External Variance
+estimate the variance of each community for each measurement. Each of the 1000 draws will have a variance measurement. 
+```{r}
+get_ext <- function(sp, data, mountain) {
+data %>% 
+  filter(Species %in% {{sp}}) %>%
+  select(!Species) %>%
+  select(!.row) %>%
+  group_by(.draw) %>%  
+  summarise(vHB = var(HB),
+            vTail = var(rTail),
+            vHF = var(rHF),
+            vEar = var(rEar),
+            vMass = var(lMass),
+            #ADDING IN MEAN HERE TO TEST FOR CHANGES IN POSTION
+            #NOT SURE IF IT WORKS OR I WANT TO KEEP IT
+            mHB = mean(HB),
+            mTail = mean(rTail),
+            mHF = mean(rHF),
+            mEar = mean(rEar),
+            mMass = mean(lMass)) %>% 
+  mutate(ext_sum = vHB + vTail + vHF + vEar) %>% 
+  mutate(ext_scaled = ext_sum/5) %>% 
+  add_column(com = {{mountain}})
+}
+```
+
+
+```{r}
+dambt <- get_ext(spamb, ext_fit, "Ambang")
+dbawt <- get_ext(spbaw, ext_fit, "Bawakaraeng") 
+dbult <- get_ext(spbul, ext_fit, "Buliohuto") 
+ddakt <- get_ext(spdak, ext_fit, "Dako")
+dgant <- get_ext(spgan, ext_fit, "Gandangdewata")
+dkatt <- get_ext(spkat, ext_fit, "Katopasa")
+dlatt <- get_ext(splat, ext_fit, "Latimojong")
+dnokt <- get_ext(spnok, ext_fit, "Nokilalaki")
+dtort <- get_ext(sptor, ext_fit, "Torompupu")
+ext <- bind_rows(dambt, dbawt, dbult, ddakt, dgant, dkatt, dlatt, dnokt, dtort) 
+rm(dambt, dbawt, dbult, ddakt, dgant, dkatt, dlatt, dnokt, dtort)
+write_csv(ext, here("External_Measurement_Data", "Community_External_Variance_Fitted.csv"))
+```
+
+#### Quick Plot
+```{r}
+ext %>% mutate(com = factor(com, level = level_order)) %>% 
+ggplot(aes(y = com, x = vTail, fill = com)) +
+  stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
+   labs(title="Tail Length",x="Trait Volume", y = "", fill = "Mountain") +
+  theme_bw() + 
+  scale_fill_paletteer_d('ggsci::default_gsea', direction = 1)  +
+  guides(fill = guide_legend(reverse=T)) + theme(legend.position = "none")
+```
+###########
+#NOW THAT I KNOW BAWA IS THE LOWEST MEAN TAIL LENGTH, I WOULD NEED TO GO BACK UP AND SUBSTRACT THE... WAIT, NOT SURE. 
+
+# Isotopes
+
+This is inherently a bit trickier as each community has it's own unique isotopic signature. So here I am using a model that includes a second predictor term: The community itself. This generates a isotopic signature for each species, conditioned on the community. So these values work between communities, so we can do randomization (later on).
+
+Data and things
+```{r}
+idat <- read_csv(here("Isotope_Data", "Isotope_Data.csv")) %>% 
+  mutate(sN15 = scale2(Corrected_15N),
+         sC13 = scale2(Corrected_13C)) 
+rm(ext, m.ex1, exmod, ext_fit, dat)
+```
+
+## Isotope Model
+multivariate model, one formula for nitrogen, one for carbon.
+```{r}
+imod <- bf(sN15 ~ 0 + (1|Species) + (1|Community)) + 
+          bf(sC13 ~ 0 + (1|Species) + (1|Community))  +
+          set_rescor(FALSE)
+options(brms.backend = "cmdstanr")
+# Ambang
+
+m.iso <- brm(imod,
+          data =  idat,
+          family = gaussian(),
+          iter = 5000,
+          warmup = 4000,
+          refresh = 0,
+          cores = 4,
+          #DEFAULT PRIORS ARE GOOD HERE!
+          control = list(adapt_delta = .99,
+                         max_treedepth = 12),
+          file = here("Models", "iso_fitted_Com_Grouping"))
+
+```
+
+## Isotope  fitted
+re_formula is clutch here!
+```{r}
+iso_fit <- idat %>%
+  data_grid(Species) %>%
+  add_fitted_draws(m.iso,  re_formula = ~ (1|Species) ) %>% 
+  spread(.category, .value) %>% 
+  select(!c(.chain, .iteration))
+
+write_csv(iso_fit , here("Isotope_Data", "Isotope_Group_Level_Fitted.csv"))
+```
+
+## Iso Variance
+Same thing, the variance for each community for N and C
+```{r}
+get_iso <- function(sp, data, mountain) {
+data %>% 
+  filter(Species %in% {{sp}}) %>%
+  select(!Species) %>%
+  select(!.row) %>%
+  group_by(.draw) %>%  
+  summarise(vN15_group = var(sN15),
+            vC13_group = var(sC13)) %>% 
+  add_column(com = {{mountain}})
+}
+```
+
+```{r}
+dambt <- get_iso(spamb, iso_fit, "Ambang")
+dbawt <- get_iso(spbaw, iso_fit, "Bawakaraeng") 
+dbult <- get_iso(spbul, iso_fit, "Buliohuto") 
+ddakt <- get_iso(spdak, iso_fit, "Dako")
+dgant <- get_iso(spgan, iso_fit, "Gandangdewata")
+dlatt <- get_iso(splat, iso_fit, "Latimojong")
+ivar <- bind_rows(dambt, dbawt, dbult, ddakt, dgant,  dlatt) 
+rm(dambt, dbawt, dbult, ddakt, dgant, dlatt)
+write_csv(ivar, here("Isotope_Data", "Isotope_Group_Level_Variance.csv"))
+```
+
+#### Quick Plot
+```{r}
+ivar %>% mutate(com = factor(com, level = level_order)) %>% 
+ggplot(aes(y = com, x = vN15_group, fill = com)) +
+  stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
+   labs(title="Tail Length",x="Trait Volume", y = "", fill = "Mountain") +
+  theme_bw() + 
+  scale_fill_paletteer_d('ggsci::default_gsea', direction = 1)  +
+  guides(fill = guide_legend(reverse=T)) + theme(legend.position = "none")
+```
+
+# Combine Data
+Now to finish up I need to combine the sum of variances into one big dataframe.
+Read in Data
+```{r}
+cdat <- read_csv(here("Cranial_Data", "Community_Cranial_Variance_Weighted.csv"))
+ddat <- read_csv(here("Dentary_Data", "Community_Dental_Variance_Weighted.csv"))
+edat <- read_csv(here("External_Measurement_Data", "Community_External_Variance_Fitted.csv"))
+idat <- read_csv(here("Isotope_Data", "Isotope_Group_Level_Variance.csv"))
+all_var <- cdat %>% right_join(ddat,by = c(".draw", "com")) %>% right_join(edat,by = c(".draw", "com")) %>% full_join(idat,by = c(".draw", "com")) %>% 
+  mutate(sk_var = (cv_wei + dv_wei) / 2,
+         iso_var = (vN15_group + vC13_group) / 2,
+         morpho_var = (vMass + vEar + vHF + vTail + vHB + dv_wei + cv_wei) / 7
+         )
+write_csv(all_var, here("All_Traits.csv"))
+```
+
+
+# Locomotion Variance
+
+This is a little different because there is one categorical (ordinal) value for each species, so there is no model.
+```{r}
+locdat <- read_csv(here("Locomotion_Data", "Locomotion_List.csv"))
+```
+
+```{r}
+get_loc <- function(sp, data, mountain) {
+data %>% 
+  filter(Species %in% {{sp}}) %>%
+  select(!Species) %>%
+  summarise(vloc = var(Loc)) %>% 
+  add_column(com = {{mountain}})
+}
+```
+
+
+```{r}
+locamb <- get_loc(spamb, locdat, "Ambang")
+locbaw <- get_loc(spbaw, locdat, "Bawakaraeng") 
+locbul <- get_loc(spbul, locdat, "Buliohuto") 
+locdak <- get_loc(spdak, locdat, "Dako")
+locgan <- get_loc(spgan, locdat, "Gandangdewata")
+lockat <- get_loc(spkat, locdat, "Katopasa")
+loclat <- get_loc(splat, locdat, "Latimojong")
+locnok <- get_loc(spnok, locdat, "Nokilalaki")
+loctor <- get_loc(sptor, locdat, "Torompupu")
+vLoc <- bind_rows(locamb, locbaw, locbul, locdak, locgan, lockat, loclat, locnok, loctor) 
+write_csv(vLoc, here("Locomotion_Data", "All_Locomotor_var.csv"))
+```
+
+
+#### Diversity Index (Shannon, or H')
+Trying this instead of variance, which doesn't make sense with categorical data. 
+```{r}
+locdiv <- read_csv(here("Locomotion_Data", "Locomotion_Div_Data.csv")) 
+
+div <- locdiv %>% select(!com) %>% 
+  diversity(., "shannon")
+
+locdiv2 = locdiv %>% add_column(div) %>% write_csv(here("Locomotion_Data", "All_Locomotor_diversity.csv"))
+```
+
+#### Quick Plot
+```{r}
+locdiv2 %>% mutate(com = factor(com, level = level_order),
+                   n = (A + C + T + SA)) %>% 
+ggplot(aes(y = n, x = div, color = com)) +
+  #stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
+  geom_point(size = 8) +
+   labs(title="Locomotor Variance",x="Locomotor Diversity", y = "Richness") +
+  theme_bw() + 
+  scale_color_paletteer_d('ggsci::default_gsea', direction = 1)  +
+  xlim(0.4, 1.1) +
+  guides(fill = guide_legend(reverse=T)) + theme(legend.position = "none")
+```
