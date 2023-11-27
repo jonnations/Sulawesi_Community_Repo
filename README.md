@@ -5,17 +5,27 @@ output:
 ---
 #########################
 #UPDATES
-# realized that the problem I was having with the # of axes is because I was SCALING all my PC axes to N(0,1)! THis means that multiplying by the variance was basically just putting them back on their original scale!
 
-# The big question everyone has: What regions are taken up by the more diverse communities? I'm not sure how to calculate this. A distribution of the means of each measurement is one way. Tail value example, If a mean is near 0 for a low-rich communitiy and 0.5 for a high rich, and the community is expanding, this means that there are more long tailed species in the high richness community. 
+27 Nov 2023
+
+Adding in the position. This can be done simply by using the means for each community on each axis. The new scripts are in `Model_Fitted_Position.Rmd`. The prelim results are cool. Most of the expansion in the larger communities is skull variation in smaller to midsized species. The morpho is interesting too. The means are not always that different. So, for example the tails, it looks like the overall tail disparity is increasing, even though Gandang is near the mean values. I think this adds additional perspective. 
+
+
+
+
+## Older 
+
+- realized that the problem I was having with the # of axes is because I was SCALING all my PC axes to N(0,1)! THis means that multiplying by the variance was basically just putting them back on their original scale!
+
+- The big question everyone has: What regions are taken up by the more diverse communities? I'm not sure how to calculate this. A distribution of the means of each measurement is one way. Tail value example, If a mean is near 0 for a low-rich communitiy and 0.5 for a high rich, and the community is expanding, this means that there are more long tailed species in the high richness community. 
 RETHINK THIS : what the mean is showing is the difference between the mean of all the species pooled together and the mean of the community. Am i more interested in the differences in the means of the small communities vs the means of the large communities?
 
-The disparity Metric of Guillerme gives the distance from 0, but tells nothing of the directionality, so that's out. 
+- The disparity Metric of Guillerme gives the distance from 0, but tells nothing of the directionality, so that's out. 
 #
 #
 #
-# Other Thing - for clades, instead of verbally talking about how clades occupy different space, I can calculate the displacement values for each clade. This is the ratio between the distance to the centroid (see centroids above) and the distance from a reference.
-# Not sure this is best, couldn't I just estimate the mean from the centroid for each species? (or is that bogus with PCA?)
+- Other Thing - for clades, instead of verbally talking about how clades occupy different space, I can calculate the displacement values for each clade. This is the ratio between the distance to the centroid (see centroids above) and the distance from a reference.
+- Not sure this is best, couldn't I just estimate the mean from the centroid for each species? (or is that bogus with PCA?)
 #
 
 

@@ -5,7 +5,7 @@ title: "R Notebook"
 
 This script includes all the models of trait estimates, the fitted mean values for each species, and the estimates of the variances for each community. 
 
-**I apologize in advance** - There are some really big multivariate models and big functions here. The Notebook becomes really long because of this, but I thought it would be easier to look in one place for all of these functions rather than across a different script for each trait. 
+There are some really big multivariate models and big functions here. The Notebook becomes really long because of this, but I thought it would be easier to look in one place for all of these functions rather than across a different script for each trait. 
 
 I will split them up into sections be headers, and explain as much about what I am doing in them as I can.
 
@@ -114,12 +114,12 @@ pre.cranium_t <- pdat %>%
   spread(.category, .value) %>% 
   rename_with(~ gsub("PC", "cPC", .x)) %>% 
   rename(cCsize = Csize) %>% 
-  select(!c(.chain, .iteration)) #%>% 
- # mutate_if(is_double, scale2, na.rm = TRUE)
+  select(!c(.chain, .iteration)) 
 
 write_csv(pre.cranium_t, here("Cranial_Data","Cranial_36axes_Fitted.csv"))
 ```
 
+## Cranium Variace and Volumes By Community
 
 ```{r}
 
@@ -360,7 +360,6 @@ ggplot(aes(y = com, x = vTail, fill = com)) +
   guides(fill = guide_legend(reverse=T)) + theme(legend.position = "none")
 ```
 ###########
-#NOW THAT I KNOW BAWA IS THE LOWEST MEAN TAIL LENGTH, I WOULD NEED TO GO BACK UP AND SUBSTRACT THE... WAIT, NOT SURE. 
 
 # Isotopes
 
