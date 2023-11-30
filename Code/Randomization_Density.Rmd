@@ -22,10 +22,6 @@ sp_ses <- read.csv(here("Phylogenetic_Diversity", "Species_SES.csv")) %>% select
 
 adat <- read_csv(here("All_Traits.csv"))
 
-# Parallel computing options
-furrr_options(seed = TRUE)
-options(future.rng.onMisuse="ignore")
-plan(multisession, workers = 6)
 
 # Misc. infoprmation
 n_sp <- tibble(com = c("Ambang", "Bawakaraeng", "Buliohuto", "Dako", "Gandangdewata", "Katopasa", "Latimojong", "Nokilalaki", "Torompupu"),
@@ -43,7 +39,7 @@ very helpful: https://stackoverflow.com/questions/61740025/dplyr-how-to-collapse
 sample_com <- function(com) {
 dlist <- list()
 for (i in 1:100){
-  b <- picante::randomizeMatrix(sp_ses, null.model = "independentswap", iterations = 1000) %>% 
+  b <- picante::randomizeMatrix(sp_ses, null.model = "trialswap", iterations = 1000) %>% 
     as_tibble() %>% 
     bind_cols(com = c("Ambang", "Bawakaraeng", "Buliohuto", "Dako", "Gandangdewata", "Katopasa", "Latimojong", "Nokilalaki", "Torompupu")) %>% 
     pivot_longer(cols = -com, names_to = 'species') %>%
@@ -116,6 +112,7 @@ get_mnni <- function(sp, data, mountain) {
   sample_n(., size = 100) %>% 
     add_column(com = {{mountain}})
 }
+
 ```
 
 
@@ -124,6 +121,11 @@ get_mnni <- function(sp, data, mountain) {
 #### Cranial Shape NN Estimation
 This is using the variance Using PC1 & 2. Broken stick analysis is in `Models_Fitted_Density.Rmd`
 ```{r}
+# Parallel computing options
+furrr_options(seed = TRUE)
+options(future.rng.onMisuse="ignore")
+plan(multisession, workers = 6)
+
 cdat <- read_csv(here("Cranial_Data", "Cranial_36axes_Fitted.csv")) %>% 
   select(c(Species, .draw, cPC1, cPC2)) 
 cskamb <- future_map(sp_amb, ~ get_mnni(.x, cdat, "Ambang"), chunks = 1000) %>% bind_rows()
@@ -136,9 +138,13 @@ csklat <- future_map(sp_lat, ~ get_mnni(.x, cdat, "Latimojong"), chunks = 1000) 
 csknok <- future_map(sp_nok, ~ get_mnni(.x, cdat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
 csktor <- future_map(sp_tor, ~ get_mnni(.x, cdat, "Torompupu"), chunks = 1000) %>% bind_rows()
 
+plan(sequential)
+
 nn_c_shp_rand <- bind_rows(cskamb, cskbaw, cskbul, cskdak, cskgan, cskkat, csklat, csknok, csktor)
 rm(cskamb, cskbaw, cskbul, cskdak, cskgan, cskkat, csklat, csknok, csktor)
 ```
+
+
 
 #### Cranial SES
 ```{r}
@@ -160,6 +166,11 @@ Using 20 axes not PCA
 ddat <- read_csv(here("Dentary_Data", "Dentary_20axes_Fitted.csv")) %>% 
   select(c(Species, .draw, dPC1, dPC2, dPC3)) 
 
+# Parallel computing options
+furrr_options(seed = TRUE)
+options(future.rng.onMisuse="ignore")
+plan(multisession, workers = 6)
+
 dskamb <- future_map(sp_amb, ~ get_mnni(.x, ddat, "Ambang"), chunks = 1000) %>% bind_rows()
 dskbaw <- future_map(sp_baw, ~ get_mnni(.x, ddat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
 dskbul <- future_map(sp_bul, ~ get_mnni(.x, ddat, "Buliohuto"), chunks = 1000) %>% bind_rows()
@@ -169,6 +180,8 @@ dskkat <- future_map(sp_kat, ~ get_mnni(.x, ddat, "Katopasa"), chunks = 1000) %>
 dsklat <- future_map(sp_lat, ~ get_mnni(.x, ddat, "Latimojong"), chunks = 1000) %>% bind_rows()
 dsknok <- future_map(sp_nok, ~ get_mnni(.x, ddat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
 dsktor <- future_map(sp_tor, ~ get_mnni(.x, ddat, "Torompupu"), chunks = 1000) %>% bind_rows()
+
+plan(sequential)
 
 nn_d_shp_rand <- bind_rows(dskamb, dskbaw, dskbul, dskdak, dskgan, dskkat, dsklat, dsknok, dsktor) 
 rm(dskamb, dskbaw, dskbul, dskdak, dskgan, dskkat, dsklat, dsknok, dsktor)
@@ -193,6 +206,11 @@ rm(nn_d_shp_rand )
 cdat <- read_csv(here("Cranial_Data", "Cranial_36axes_Fitted.csv")) %>% 
   select(c(.draw, Species, cCsize))
 
+# Parallel computing options
+furrr_options(seed = TRUE)
+options(future.rng.onMisuse="ignore")
+plan(multisession, workers = 6)
+
 cszamb <- future_map(sp_amb, ~ get_mnni(.x, cdat, "Ambang"), chunks = 1000) %>% bind_rows()
 cszbaw <- future_map(sp_baw, ~ get_mnni(.x, cdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
 cszbul <- future_map(sp_bul, ~ get_mnni(.x, cdat, "Buliohuto"), chunks = 1000) %>% bind_rows()
@@ -202,6 +220,8 @@ cszkat <- future_map(sp_kat, ~ get_mnni(.x, cdat, "Katopasa"), chunks = 1000) %>
 cszlat <- future_map(sp_lat, ~ get_mnni(.x, cdat, "Latimojong"), chunks = 1000) %>% bind_rows()
 csznok <- future_map(sp_nok, ~ get_mnni(.x, cdat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
 csztor <- future_map(sp_tor, ~ get_mnni(.x, cdat, "Torompupu"), chunks = 1000) %>% bind_rows()
+
+plan(sequential)
 
 nn_c_sz_rand <- bind_rows(cszamb, cszbaw, cszbul, cszdak, cszgan, cszkat, cszlat, csznok, csztor) 
 rm(cszamb, cszbaw, cszbul, cszdak, cszgan, cszkat, cszlat, csznok, csztor)
@@ -227,6 +247,11 @@ rm(nn_c_sz_rand)
 ddat <- read_csv(here("Dentary_Data", "Dentary_20axes_Fitted.csv")) %>% 
   select(c(.draw, Species, dCsize))
 
+# Parallel computing options
+furrr_options(seed = TRUE)
+options(future.rng.onMisuse="ignore")
+plan(multisession, workers = 6)
+
 dszamb <- future_map(sp_amb, ~ get_mnni(.x, ddat, "Ambang"), chunks = 1000) %>% bind_rows()
 dszbaw <- future_map(sp_baw, ~ get_mnni(.x, ddat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
 dszbul <- future_map(sp_bul, ~ get_mnni(.x, ddat, "Buliohuto"), chunks = 1000) %>% bind_rows()
@@ -236,6 +261,8 @@ dszkat <- future_map(sp_kat, ~ get_mnni(.x, ddat, "Katopasa"), chunks = 1000) %>
 dszlat <- future_map(sp_lat, ~ get_mnni(.x, ddat, "Latimojong"), chunks = 1000) %>% bind_rows()
 dsznok <- future_map(sp_nok, ~ get_mnni(.x, ddat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
 dsztor <- future_map(sp_tor, ~ get_mnni(.x, ddat, "Torompupu"), chunks = 1000) %>% bind_rows()
+
+plan(sequential)
 
 nn_d_sz_rand <- bind_rows(dszamb, dszbaw, dszbul, dszdak, dszgan, dszkat, dszlat, dsznok, dsztor) 
 rm(dszamb, dszbaw, dszbul, dszdak, dszgan, dszkat, dszlat, dsznok, dsztor)
@@ -266,6 +293,11 @@ skdat <- ddat  %>% #select(!.row) %>%
   full_join(cdat, by = c(".draw", "Species"))
 rm(cdat, ddat)
 
+# Parallel computing options
+furrr_options(seed = TRUE)
+options(future.rng.onMisuse="ignore")
+plan(multisession, workers = 6)
+
 skamb <- future_map(sp_amb, ~ get_mnni(.x, skdat, "Ambang"), chunks = 1000) %>% bind_rows()
 skbaw <- future_map(sp_baw, ~ get_mnni(.x, skdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
 skbul <- future_map(sp_bul, ~ get_mnni(.x, skdat, "Buliohuto"), chunks = 1000) %>% bind_rows()
@@ -275,6 +307,9 @@ skkat <- future_map(sp_kat, ~ get_mnni(.x, skdat, "Katopasa"), chunks = 1000) %>
 sklat <- future_map(sp_lat, ~ get_mnni(.x, skdat, "Latimojong"), chunks = 1000) %>% bind_rows()
 sknok <- future_map(sp_nok, ~ get_mnni(.x, skdat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
 sktor <- future_map(sp_tor, ~ get_mnni(.x, skdat, "Torompupu"), chunks = 1000) %>% bind_rows()
+
+
+plan(sequential)
 
 nn_sk_rand <- bind_rows(skamb, skbaw, skbul, skdak, skgan, skkat, sklat, sknok, sktor) 
 rm(skamb, skbaw, skbul, skdak, skgan, skkat, sklat, sknok, sktor)
@@ -302,6 +337,11 @@ xdat <- read_csv(here("External_Measurement_Data", "External_Fitted.csv")) %>%
   select(-.row) %>% 
   select(Species, .draw, HB, lMass)
 
+# Parallel computing options
+furrr_options(seed = TRUE)
+options(future.rng.onMisuse="ignore")
+plan(multisession, workers = 6)
+
 bszamb <- future_map(sp_amb, ~ get_mnni(.x, xdat, "Ambang"), chunks = 1000) %>% bind_rows()
 bszbaw <- future_map(sp_baw, ~ get_mnni(.x, xdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
 bszbul <- future_map(sp_bul, ~ get_mnni(.x, xdat, "Buliohuto"), chunks = 1000) %>% bind_rows()
@@ -311,6 +351,8 @@ bszkat <- future_map(sp_kat, ~ get_mnni(.x, xdat, "Katopasa"), chunks = 1000) %>
 bszlat <- future_map(sp_lat, ~ get_mnni(.x, xdat, "Latimojong"), chunks = 1000) %>% bind_rows()
 bsznok <- future_map(sp_nok, ~ get_mnni(.x, xdat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
 bsztor <- future_map(sp_tor, ~ get_mnni(.x, xdat, "Torompupu"), chunks = 1000) %>% bind_rows()
+
+plan(sequential)
 
 nn_b_sz_rand <- bind_rows(bszamb, bszbaw, bszbul, bszdak, bszgan, bszkat, bszlat, bsznok, bsztor)
 rm(bszamb, bszbaw, bszbul, bszdak, bszgan, bszkat, bszlat, bsznok, bsztor)
@@ -337,6 +379,12 @@ rm(nn_b_sz_rand)
 xdat <- read_csv(here("External_Measurement_Data", "External_Fitted.csv")) %>% 
   select(-.row) %>%
   select(Species, .draw, rTail)
+
+# Parallel computing options
+furrr_options(seed = TRUE)
+options(future.rng.onMisuse="ignore")
+plan(multisession, workers = 6)
+
 tailamb <- future_map(sp_amb, ~ get_mnni(.x, xdat, "Ambang"), chunks = 1000) %>% bind_rows()
 tailbaw <- future_map(sp_baw, ~ get_mnni(.x, xdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
 tailbul <- future_map(sp_bul, ~ get_mnni(.x, xdat, "Buliohuto"), chunks = 1000) %>% bind_rows()
@@ -346,6 +394,8 @@ tailkat <- future_map(sp_kat, ~ get_mnni(.x, xdat, "Katopasa"), chunks = 1000) %
 taillat <- future_map(sp_lat, ~ get_mnni(.x, xdat, "Latimojong"), chunks = 1000) %>% bind_rows()
 tailnok <- future_map(sp_nok, ~ get_mnni(.x, xdat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
 tailtor <- future_map(sp_tor, ~ get_mnni(.x, xdat, "Torompupu"), chunks = 1000) %>% bind_rows()
+
+plan(sequential)
 
 nn_tail_rand <- bind_rows(tailamb, tailbaw, tailbul, taildak, tailgan, tailkat, taillat, tailnok, tailtor)
 rm(tailamb, tailbaw, tailbul, taildak, tailgan, tailkat, taillat, tailnok, tailtor)
@@ -369,6 +419,12 @@ rm(nn_tail_rand)
 xdat <- read_csv(here("External_Measurement_Data", "External_Fitted.csv")) %>% 
   select(-.row) %>%
   select(Species, .draw, rHF)
+
+# Parallel computing options
+furrr_options(seed = TRUE)
+options(future.rng.onMisuse="ignore")
+plan(multisession, workers = 6)
+
 hfamb <- future_map(sp_amb, ~ get_mnni(.x, xdat, "Ambang"), chunks = 1000) %>% bind_rows()
 hfbaw <- future_map(sp_baw, ~ get_mnni(.x, xdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
 hfbul <- future_map(sp_bul, ~ get_mnni(.x, xdat, "Buliohuto"), chunks = 1000) %>% bind_rows()
@@ -378,6 +434,8 @@ hfkat <- future_map(sp_kat, ~ get_mnni(.x, xdat, "Katopasa"), chunks = 1000) %>%
 hflat <- future_map(sp_lat, ~ get_mnni(.x, xdat, "Latimojong"), chunks = 1000) %>% bind_rows()
 hfnok <- future_map(sp_nok, ~ get_mnni(.x, xdat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
 hftor <- future_map(sp_tor, ~ get_mnni(.x, xdat, "Torompupu"), chunks = 1000) %>% bind_rows()
+
+plan(sequential)
 
 nn_hf_rand <- bind_rows(hfamb, hfbaw, hfbul, hfdak, hfgan, hfkat, hflat, hfnok, hftor)
 rm(hfamb, hfbaw, hfbul, hfdak, hfgan, hfkat, hflat, hfnok, hftor)
@@ -402,6 +460,12 @@ rm(nn_hf_rand)
 xdat <- read_csv(here("External_Measurement_Data", "External_Fitted.csv")) %>% 
   select(-.row) %>%
   select(Species, .draw, rEar)
+
+# Parallel computing options
+furrr_options(seed = TRUE)
+options(future.rng.onMisuse="ignore")
+plan(multisession, workers = 6)
+
 earamb <- future_map(sp_amb, ~ get_mnni(.x, xdat, "Ambang"), chunks = 1000) %>% bind_rows()
 earbaw <- future_map(sp_baw, ~ get_mnni(.x, xdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
 earbul <- future_map(sp_bul, ~ get_mnni(.x, xdat, "Buliohuto"), chunks = 1000) %>% bind_rows()
@@ -411,6 +475,8 @@ earkat <- future_map(sp_kat, ~ get_mnni(.x, xdat, "Katopasa"), chunks = 1000) %>
 earlat <- future_map(sp_lat, ~ get_mnni(.x, xdat, "Latimojong"), chunks = 1000) %>% bind_rows()
 earnok <- future_map(sp_nok, ~ get_mnni(.x, xdat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
 eartor <- future_map(sp_tor, ~ get_mnni(.x, xdat, "Torompupu"), chunks = 1000) %>% bind_rows()
+
+plan(sequential)
 
 nn_ear_rand <- bind_rows(earamb, earbaw, earbul, eardak, eargan, earkat, earlat, earnok, eartor)
 rm(earamb, earbaw, earbul, eardak, eargan, earkat, earlat, earnok, eartor)
@@ -434,6 +500,12 @@ rm(nn_ear_rand)
 xdat <- read_csv(here("External_Measurement_Data", "External_Fitted.csv")) %>% 
   select(-.row) %>%
   select(Species, .draw, HB)
+
+# Parallel computing options
+furrr_options(seed = TRUE)
+options(future.rng.onMisuse="ignore")
+plan(multisession, workers = 6)
+
 hbamb <- future_map(sp_amb, ~ get_mnni(.x, xdat, "Ambang"), chunks = 1000) %>% bind_rows()
 hbbaw <- future_map(sp_baw, ~ get_mnni(.x, xdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
 hbbul <- future_map(sp_bul, ~ get_mnni(.x, xdat, "Buliohuto"), chunks = 1000) %>% bind_rows()
@@ -443,6 +515,8 @@ hbkat <- future_map(sp_kat, ~ get_mnni(.x, xdat, "Katopasa"), chunks = 1000) %>%
 hblat <- future_map(sp_lat, ~ get_mnni(.x, xdat, "Latimojong"), chunks = 1000) %>% bind_rows()
 hbnok <- future_map(sp_nok, ~ get_mnni(.x, xdat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
 hbtor <- future_map(sp_tor, ~ get_mnni(.x, xdat, "Torompupu"), chunks = 1000) %>% bind_rows()
+
+plan(sequential)
 
 nn_hb_rand <- bind_rows(hbamb, hbbaw, hbbul, hbdak, hbgan, hbkat, hblat, hbnok, hbtor)
 rm(hbamb, hbbaw, hbbul, hbdak, hbgan, hbkat, hblat, hbnok, hbtor)
@@ -466,6 +540,12 @@ rm(nn_hb_rand )
 xdat <- read_csv(here("External_Measurement_Data", "External_Fitted.csv")) %>% 
   select(-.row) %>%
   select(Species, .draw, lMass)
+
+# Parallel computing options
+furrr_options(seed = TRUE)
+options(future.rng.onMisuse="ignore")
+plan(multisession, workers = 6)
+
 massamb <- future_map(sp_amb, ~ get_mnni(.x, xdat, "Ambang"), chunks = 1000) %>% bind_rows()
 massbaw <- future_map(sp_baw, ~ get_mnni(.x, xdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
 massbul <- future_map(sp_bul, ~ get_mnni(.x, xdat, "Buliohuto"), chunks = 1000) %>% bind_rows()
@@ -475,6 +555,8 @@ masskat <- future_map(sp_kat, ~ get_mnni(.x, xdat, "Katopasa"), chunks = 1000) %
 masslat <- future_map(sp_lat, ~ get_mnni(.x, xdat, "Latimojong"), chunks = 1000) %>% bind_rows()
 massnok <- future_map(sp_nok, ~ get_mnni(.x, xdat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
 masstor <- future_map(sp_tor, ~ get_mnni(.x, xdat, "Torompupu"), chunks = 1000) %>% bind_rows()
+
+plan(sequential)
 
 nn_mass_rand <- bind_rows(massamb, massbaw, massbul, massdak, massgan, masskat, masslat, massnok, masstor)
 rm(massamb, massbaw, massbul, massdak, massgan, masskat, masslat, massnok, masstor)
@@ -499,6 +581,11 @@ xdat <- read_csv(here("External_Measurement_Data", "External_Fitted.csv")) %>%
   select(-.row) %>%
   select(Species, .draw, HB, rTail, rHF, rEar)
 
+# Parallel computing options
+furrr_options(seed = TRUE)
+options(future.rng.onMisuse="ignore")
+plan(multisession, workers = 6)
+
 x_shpamb <- future_map(sp_amb, ~ get_mnni(.x, xdat, "Ambang"), chunks = 1000) %>% bind_rows()
 x_shpbaw <- future_map(sp_baw, ~ get_mnni(.x, xdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
 x_shpbul <- future_map(sp_bul, ~ get_mnni(.x, xdat, "Buliohuto"), chunks = 1000) %>% bind_rows()
@@ -508,6 +595,8 @@ x_shpkat <- future_map(sp_kat, ~ get_mnni(.x, xdat, "Katopasa"), chunks = 1000) 
 x_shplat <- future_map(sp_lat, ~ get_mnni(.x, xdat, "Latimojong"), chunks = 1000) %>% bind_rows()
 x_shpnok <- future_map(sp_nok, ~ get_mnni(.x, xdat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
 x_shptor <- future_map(sp_tor, ~ get_mnni(.x, xdat, "Torompupu"), chunks = 1000) %>% bind_rows()
+
+plan(sequential)
 
 nn_x_shp_rand <- bind_rows(x_shpamb, x_shpbaw, x_shpbul, x_shpdak, x_shpgan, x_shpkat, x_shplat, x_shpnok, x_shptor)
 rm(x_shpamb, x_shpbaw, x_shpbul, x_shpdak, x_shpgan, x_shpkat, x_shplat, x_shpnok, x_shptor)
@@ -542,6 +631,11 @@ morphdat <- xdat %>% full_join(skdat, by = c(".draw", "Species"))
 
 rm(cdat, ddat, xdat)
 
+# Parallel computing options
+furrr_options(seed = TRUE)
+options(future.rng.onMisuse="ignore")
+plan(multisession, workers = 6)
+
 mshpamb <- future_map(sp_amb, ~ get_mnni(.x, morphdat, "Ambang"), chunks = 1000) %>% bind_rows()
 mshpbaw <- future_map(sp_baw, ~ get_mnni(.x, morphdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
 mshpbul <- future_map(sp_bul, ~ get_mnni(.x, morphdat, "Buliohuto"), chunks = 1000) %>% bind_rows()
@@ -551,6 +645,8 @@ mshpkat <- future_map(sp_kat, ~ get_mnni(.x, morphdat, "Katopasa"), chunks = 100
 mshplat <- future_map(sp_lat, ~ get_mnni(.x, morphdat, "Latimojong"), chunks = 1000) %>% bind_rows()
 mshpnok <- future_map(sp_nok, ~ get_mnni(.x, morphdat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
 mshptor <- future_map(sp_tor, ~ get_mnni(.x, morphdat, "Torompupu"), chunks = 1000) %>% bind_rows()
+
+plan(sequential)
 
 nn_mshp_rand <- bind_rows(mshpamb, mshpbaw, mshpbul, mshpdak, mshpgan, mshpkat, mshplat, mshpnok, mshptor)
 rm(mshpamb, mshpbaw, mshpbul, mshpdak, mshpgan, mshpkat, mshplat, mshpnok, mshptor)
@@ -575,12 +671,19 @@ I want load in the community group_level fitted values for estimating the random
 ```{r}
 idat <- read_csv(here("Isotope_Data", "Isotope_Group_Level_Fitted.csv")) %>% select(Species, .draw, sC13)
 
+# Parallel computing options
+furrr_options(seed = TRUE)
+options(future.rng.onMisuse="ignore")
+plan(multisession, workers = 6)
+
 camb <- future_map(sp_amb, ~ get_mnni(.x, idat, "Ambang"), chunks = 1000) %>%  bind_rows()
 cbaw <- future_map(sp_baw, ~ get_mnni(.x, idat, "Buliohuto"), chunks = 1000) %>%  bind_rows()
 cbul <- future_map(sp_bul, ~ get_mnni(.x, idat, "Bawakaraeng"), chunks = 1000) %>%  bind_rows()
 cdak <- future_map(sp_dak, ~ get_mnni(.x, idat, "Dako"), chunks = 1000) %>%  bind_rows()
 cgan <- future_map(sp_gan, ~ get_mnni(.x, idat, "Gandangdewata"), chunks = 1000) %>%  bind_rows()
 clat <- future_map(sp_lat, ~ get_mnni(.x, idat, "Latimojong"), chunks = 1000) %>%  bind_rows()
+
+plan(sequential)
 
 nn_car_rand <- bind_rows(camb, cbaw, cbul, cdak, cgan, clat)
 rm(camb, cbaw, cbul, cdak, cgan, clat)
@@ -604,12 +707,19 @@ rm(nn_car_rand)
 ```{r}
 idat <- read_csv(here("Isotope_Data", "Isotope_Group_Level_Fitted.csv")) %>% select(Species, .draw, sN15)
 
+# Parallel computing options
+furrr_options(seed = TRUE)
+options(future.rng.onMisuse="ignore")
+plan(multisession, workers = 6)
+
 camb <- future_map(sp_amb, ~ get_mnni(.x, idat, "Ambang"), chunks = 1000) %>%  bind_rows()
 cbaw <- future_map(sp_baw, ~ get_mnni(.x, idat, "Buliohuto"), chunks = 1000) %>%  bind_rows()
 cbul <- future_map(sp_bul, ~ get_mnni(.x, idat, "Bawakaraeng"), chunks = 1000) %>%  bind_rows()
 cdak <- future_map(sp_dak, ~ get_mnni(.x, idat, "Dako"), chunks = 1000) %>%  bind_rows()
 cgan <- future_map(sp_gan, ~ get_mnni(.x, idat, "Gandangdewata"), chunks = 1000) %>%  bind_rows()
 clat <- future_map(sp_lat, ~ get_mnni(.x, idat, "Latimojong"), chunks = 1000) %>%  bind_rows()
+
+plan(sequential)
 
 nn_car_rand <- bind_rows(camb, cbaw, cbul, cdak, cgan, clat)
 rm(camb, cbaw, cbul, cdak, cgan, clat)
@@ -633,12 +743,19 @@ rm(nn_car_rand)
 ```{r}
 idat <- read_csv(here("Isotope_Data", "Isotope_Group_Level_Fitted.csv")) %>% select(Species, .draw, sN15, sC13)
 
+# Parallel computing options
+furrr_options(seed = TRUE)
+options(future.rng.onMisuse="ignore")
+plan(multisession, workers = 6)
+
 camb <- future_map(sp_amb, ~ get_mnni(.x, idat, "Ambang"), chunks = 1000) %>%  bind_rows()
 cbaw <- future_map(sp_baw, ~ get_mnni(.x, idat, "Buliohuto"), chunks = 1000) %>%  bind_rows()
 cbul <- future_map(sp_bul, ~ get_mnni(.x, idat, "Bawakaraeng"), chunks = 1000) %>%  bind_rows()
 cdak <- future_map(sp_dak, ~ get_mnni(.x, idat, "Dako"), chunks = 1000) %>%  bind_rows()
 cgan <- future_map(sp_gan, ~ get_mnni(.x, idat, "Gandangdewata"), chunks = 1000) %>%  bind_rows()
 clat <- future_map(sp_lat, ~ get_mnni(.x, idat, "Latimojong"), chunks = 1000) %>%  bind_rows()
+
+plan(sequential)
 
 nn_car_rand <- bind_rows(camb, cbaw, cbul, cdak, cgan, clat)
 rm(camb, cbaw, cbul, cdak, cgan, clat)

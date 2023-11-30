@@ -1,5 +1,8 @@
 ---
 title: "Positions"
+#author: "Jon Nations"
+date: "`r Sys.Date()`"
+output: html_document
 ---
 
 # Estimate the differences in the location of space occupation
@@ -356,7 +359,7 @@ ggplot(aes( x = mTail, y = mHB, color = com)) +
 
 This is skull shape and external measurements hb, tail, hf, lmass, ear
 
-```{r}
+#```{r}
 morph_dat <-  skdat  %>% select(!.row) %>% select(Species, .draw, dPC1, dPC2, dPC3, cPC1, cPC2) %>% 
   full_join(edat, by = c(".draw", "Species"))
 
@@ -381,17 +384,17 @@ adat <- adat %>% bind_cols(dd)
 
 
 rm(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni)
-```
+#```
 
-```{r}
+#```{r}
 adat %>% write_csv(here("All_Traits.csv"))
-```
+#```
 
 # Isotope GROUP Nearest Neighbor
 
 Realized I have to use the grouping data again. Thats ok. It'll be just like any of the other variables. \## N15 Group
 
-```{r}
+#```{r}
 idat <- read_csv(here("Isotope_Data", "Isotope_Group_Level_Fitted.csv")) %>% select(Species, .draw, sN15)
 
 
@@ -410,11 +413,11 @@ nn_N <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, lat_nni) %>% rena
 
 adat <- adat  %>% 
   full_join(nn_N, by = c(".draw", "com"))
-```
+#```
 
 ## C13 Group
 
-```{r}
+#```{r}
 idat <- read_csv(here("Isotope_Data", "Isotope_Group_Level_Fitted.csv")) %>% select(Species, .draw, sC13)
 
 
@@ -433,11 +436,11 @@ nn_C <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, lat_nni) %>% rena
 
 adat <- adat  %>% 
   full_join(nn_C, by = c(".draw", "com"))
-```
+#```
 
 ## Iso Group
 
-```{r}
+#```{r}
 idat <- read_csv(here("Isotope_Data", "Isotope_Group_Level_Fitted.csv")) %>% select(Species, .draw, sC13, sN15)
 
 
@@ -456,10 +459,10 @@ nn_i <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, lat_nni) %>% rena
 
 adat <- adat  %>% 
   full_join(nn_i, by = c(".draw", "com"))
-```
+#```
 
 #Write All Data
 
-```{r}
+#```{r}
 adat %>% write_csv(here("All_Traits.csv"))
-```
+#```
