@@ -38,9 +38,9 @@ I need to make 2 tibbles, one with the iso traits (6 coms), and one without(9 co
 ```{r}
 keepcoms <- c('Bawakaraeng', 'Buliohuto','Dako', "Ambang", "Latimojong", "Gandangdewata")
 
-isodat <- dat %>% select(c(com, ses_vIso, ses_vC13, ses_vN15, nnses_C13, nnses_N15, nnses_iso)) %>% filter(com %in% keepcoms)
+isodat <- dat %>% select(c(com, ses_vIso, ses_vC13, ses_vN15, c_nnses_C13, c_nnses_N15, c_nnses_iso)) %>% filter(com %in% keepcoms)
 
-adat <- dat %>% select(!c(ses_vIso, ses_vC13, ses_vN15, nnses_C13, nnses_N15, nnses_iso)) 
+adat <- dat %>% select(!c(ses_vIso, ses_vC13, ses_vN15, c_nnses_C13, c_nnses_N15, c_nnses_iso)) 
 
 rm(dat)
 ```
@@ -157,12 +157,12 @@ ttt <- ttt %>% mutate(fits = future_map(d, ~update(fit, newdata = .x, refresh = 
 
 plan(sequential)
 
-write_rds(ttt, here("Models", "All_Regression_Models_List2.rds"))
+write_rds(ttt, here("Models", "All_Regression_Models_List2_Constrain.rds"))
 ```
 
 ### Cleanup
 ```{r}
-ttt <- readRDS(here("Models", "All_Regression_Models_List2.rds"))
+ttt <- readRDS(here("Models", "All_Regression_Models_List2_Constrain.rds"))
 b <- ttt %>%  mutate(beta = map(fits, cleanup)) %>%
                 unnest(beta) %>% 
                 rename(b_lower = "Q5.5",
@@ -248,6 +248,7 @@ fit <- brm(data = lildat,
 
 plan(multisession, workers = 6)
 
+
 ttt <- ttt %>% mutate(fits = future_map(d, ~update(fit, newdata = .x, refresh = 0)))
 
 plan(sequential)
@@ -290,7 +291,7 @@ iso_fin <- bind_cols(b, i, s, r, rsm)
 
 #### Combine Iso and All fits together
 ```{r}
-all_fin <- bind_rows(fin, iso_fin) %>% write_csv(here("Regression", "Regression_Results2.csv"))
+all_fin <- bind_rows(fin, iso_fin) %>% write_csv(here("Regression", "Regression_Results2_Constrain.csv"))
 
 rm(adat, isodat)
 ```
@@ -316,8 +317,8 @@ l.1 <- brm(data = locdat,
            cores = 4, 
            refresh = 0) 
 l.2 <- update(l.1, formula = ses_loc ~ nsp, newdata = locdat, refresh = 0)
-l.3 <- update(l.1, formula = nn_rda ~ nsp, newdata = locdat, refresh = 0)
-l.4 <- update(l.1, formula = nnses_loc ~ nsp, newdata = locdat, refresh = 0)
+l.3 <- update(l.1, formula = c_nn_rda ~ nsp, newdata = locdat, refresh = 0)
+l.4 <- update(l.1, formula = c_nnses_loc ~ nsp, newdata = locdat, refresh = 0)
 ```
 These values were *manually* added to the `Regression_Results.csv`
 
@@ -353,7 +354,7 @@ l3 <- bind_cols((cleanup(l.3) %>% rename(b_lower = "Q5.5",
 (cleanupR(l.3)%>% rename(R2_lower = "Q5.5",
                        R2_upper = "Q94.5")),
 (cleanupRsm(l.3)%>% rename(R2sm_lower = "Q12.5",
-                       R2sm_upper = "Q87.5"))) %>% add_column(var = "nn_rda")
+                       R2sm_upper = "Q87.5"))) %>% add_column(var = "c_nn_rda")
 
 l4 <- bind_cols((cleanup(l.4) %>% rename(b_lower = "Q5.5",
                        b_upper = "Q94.5")),
@@ -364,7 +365,7 @@ l4 <- bind_cols((cleanup(l.4) %>% rename(b_lower = "Q5.5",
 (cleanupR(l.4)%>% rename(R2_lower = "Q5.5",
                        R2_upper = "Q94.5")),
 (cleanupRsm(l.4)%>% rename(R2sm_lower = "Q12.5",
-                       R2sm_upper = "Q87.5"))) %>% add_column(var = "nn_ses_loc")
+                       R2sm_upper = "Q87.5"))) %>% add_column(var = "c_nn_ses_loc")
 
 all_fin <- bind_rows(l1, l2, l3, l4, all_fin)
 ```
@@ -373,9 +374,7 @@ all_fin <- bind_rows(l1, l2, l3, l4, all_fin)
 
 ```{r}
 phydat <-  read_csv(here("Phylogenetic_Diversity", "PD_Results.csv")) %>% rename(nspec = ntaxa)
-                    
 phydat2 <- read_csv(here("Phylogenetic_Diversity", "PD_Results_no_Hae.csv")) %>% rename(nspec = ntaxa)
-
 scale2 <- function(x, na.rm = FALSE) (x - mean(x, na.rm = na.rm)) / sd(x, na.rm) 
   
 phydat <- phydat %>% mutate(pd = scale2(pd.obs)) %>% rename(nsp = "nspec")
@@ -436,5 +435,5 @@ all_fin <- bind_rows(p1, p2, p3, p4, all_fin)
 ```
 
 ```{r}
-all_fin %>%  write_csv(here("Regression", "Regression_Results.csv"))
+all_fin %>%  write_csv(here("Regression", "Regression_Results_Constrain.csv"))
 ```
