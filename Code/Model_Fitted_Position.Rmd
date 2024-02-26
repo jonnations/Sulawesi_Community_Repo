@@ -260,7 +260,7 @@ extdat <- read_csv(here("External_Measurement_Data", "Measurement_Data_Museum.cs
          rTail = Tail / Total) %>% 
   mutate_if(is.numeric, scale2, na.rm = TRUE) %>% 
   group_by(Species) %>% 
-  summarise_at(vars(HB, lMass:rTail), mean) %>% 
+  summarise_at(vars(HB, lMass:rTail), list(m = mean, sd = sd)) %>% 
   ungroup()
 
 ambt <- extdat %>% filter(Species %in% spamb) %>% 
@@ -286,8 +286,9 @@ extdat <- bind_rows(ambt, bawt, bult, dakt, gant, katt, latt, nokt, tort) %>%
   mutate(com = factor(com, level = level_order))
 ```
 
-## Ext Position Estimate
 
+## Ext Position Estimate
+Here I didn't group by draw so that I could calculate means and SDs for each community on the whole. These values are used for plotting points with error bars.
 ```{r}
 get_ext <- function(sp, data, mountain) {
 data %>% 
@@ -322,11 +323,111 @@ rm(dambt, dbawt, dbult, ddakt, dgant, dkatt, dlatt, dnokt, dtort)
 
 #### Quick Plot
 ```{r}
+
+ext %>% mutate(com = factor(com, level = level_order)) %>% 
+ggplot(aes(y = com, x = mHB)) +
+  stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
+  # Add points
+  geom_point(aes(x = HB_m, y = com), data = extdat) +
+  #labs(title="Cranial Shape Position",x="PC1 Mean", y = "", fill = "Mountain") +
+  geom_vline(xintercept = 0, linetype = 2) +
+  theme_bw() +
+  scale_fill_paletteer_d('ggsci::default_gsea', direction = 1) +
+  guides(fill = guide_legend(reverse=T)) + theme(legend.position = "none")
+
 ext %>% mutate(com = factor(com, level = level_order)) %>% 
 ggplot(aes( x = mTail,y = com)) +
   stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
   # Add points
-  geom_point(aes(x = rTail, y = com), data = extdat) +
+  geom_point(aes(x = rTail_m, y = com), data = extdat) +
+  geom_vline(xintercept = 0, linetype = 2) +
+  theme_bw() +
+  scale_fill_paletteer_d('ggsci::default_gsea', direction = 1) +
+  guides(fill = guide_legend(reverse=T)) + theme(legend.position = "none")
+```
+
+### WIth Convex Hulls rather than low-alpha dots
+
+This won't work unless I go back to the previous one.
+```{r}
+#convex hulls
+hull <- ext %>% 
+  group_by(com) %>% 
+  slice(chull(mTail, mHB)) %>% 
+  mutate(com = factor(com, level = level_order))
+
+
+
+ext %>% mutate(com = factor(com, level = level_order)) %>% 
+ggplot(aes( x = mTail, y = mHB, color = com)) +
+  #geom_density_2d(bins =5, contour_var = "ndensity") +
+  geom_polygon(aes(fill = com, 
+                   color = com),
+               data = hull, 
+               alpha = 0.2, 
+               show.legend = F,
+               size = 0.2) +
+  # Add points
+#  geom_jitter(aes(x = rTail_m, y = HB_m, size = #lMass_m, color = com), data = extdat, width = 0.09, #height = 0.09, shape = 5) +
+#  scale_size(range = c(0.5, 5)) +
+  geom_point(size = 8) +
+  #labs(title="Cranial Shape Position",x="PC1 Mean", y = "", fill = "Mountain") +
+  theme_bw() +
+  scale_fill_paletteer_d('ggsci::default_gsea', direction = 1) +
+  guides(fill = guide_legend(reverse=T)) #+ 
+  #theme(legend.position = "none")
+```
+
+
+
+
+## MEAN Ext Position Estimate
+
+Here I didn't group by draw so that I could calculate means and SDs for each community on the whole. These values are used for plotting points with error bars.
+```{r}
+get_ext <- function(sp, data, mountain) {
+data %>% 
+  filter(Species %in% {{sp}}) %>%
+  select(!Species) %>%
+  select(!.row) %>%
+  #group_by(.draw) %>%  
+  summarise(
+            #ADDING IN MEAN HERE TO TEST FOR CHANGES IN POSTION
+            #NOT SURE IF IT WORKS OR I WANT TO KEEP IT
+            mHB = mean(HB),
+            mTail = mean(rTail),
+            mHF = mean(rHF),
+            mEar = mean(rEar),
+            mMass = mean(lMass),
+            sdHB = sd(HB),
+            sdTail = sd(rTail),
+            sdHF = sd(rHF),
+            sdEar = sd(rEar),
+            sdMass = sd(lMass),) %>% 
+  add_column(com = {{mountain}})
+}
+
+
+dambt <- get_ext(spamb, edat, "Ambang")
+dbawt <- get_ext(spbaw, edat, "Bawakaraeng") 
+dbult <- get_ext(spbul, edat, "Buliohuto") 
+ddakt <- get_ext(spdak, edat, "Dako")
+dgant <- get_ext(spgan, edat, "Gandangdewata")
+dkatt <- get_ext(spkat, edat, "Katopasa")
+dlatt <- get_ext(splat, edat, "Latimojong")
+dnokt <- get_ext(spnok, edat, "Nokilalaki")
+dtort <- get_ext(sptor, edat, "Torompupu")
+ext <- bind_rows(dambt, dbawt, dbult, ddakt, dgant, dkatt, dlatt, dnokt, dtort) 
+rm(dambt, dbawt, dbult, ddakt, dgant, dkatt, dlatt, dnokt, dtort)
+```
+
+#### Quick Plot
+```{r}
+ext %>% mutate(com = factor(com, level = level_order)) %>% 
+ggplot(aes( x = mTail,y = com)) +
+  stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
+  # Add points
+  geom_point(aes(x = rTail_m, y = com), data = extdat) +
   geom_vline(xintercept = 0, linetype = 2) +
   theme_bw() +
   scale_fill_paletteer_d('ggsci::default_gsea', direction = 1) +
@@ -338,9 +439,13 @@ ext %>% mutate(com = factor(com, level = level_order)) %>%
 ggplot(aes( x = mTail, y = mHB, color = com)) +
   #geom_density_2d(bins =5, contour_var = "ndensity") +
   # Add points
-  geom_jitter(aes(x = rTail, y = HB, size = lMass), data = extdat, width = 0.09, height = 0.09) +
+  geom_jitter(aes(x = rTail_m, y = HB_m, size = lMass_m), data = extdat, width = 0.09, height = 0.09, shape = 5) +
   scale_size(range = c(0.5, 5)) +
-  geom_point(size = 8, alpha = 0.01) +
+  geom_point(size = 6) +
+  geom_errorbar(aes(ymin = mHB - (sdHB/2) ,
+                    ymax = mHB + (sdHB/2))) + 
+  geom_errorbarh(aes(xmin = mTail - (sdTail/2),
+                     xmax = mTail + (sdTail/2))) +
   #labs(title="Cranial Shape Position",x="PC1 Mean", y = "", fill = "Mountain") +
   theme_bw() +
   scale_fill_paletteer_d('ggsci::default_gsea', direction = 1) +
@@ -348,51 +453,44 @@ ggplot(aes( x = mTail, y = mHB, color = com)) +
   #theme(legend.position = "none")
 ```
 
-###################
-#STOPPED HERE
-##################
+### WIth Convex Hulls rather than low-alpha dots
+
+This won't work unless I go back to the previous one.
+```{r}
+#convex hulls
+hull <- ext %>% 
+  group_by(com) %>% 
+  slice(chull(mTail, mHB)) %>% 
+  mutate(com = factor(com, level = level_order))
 
 
 
+ext %>% mutate(com = factor(com, level = level_order)) %>% 
+ggplot(aes( x = mTail, y = mHB, color = com)) +
+  #geom_density_2d(bins =5, contour_var = "ndensity") +
+  geom_polygon(aes(fill = com, 
+                   color = com),
+               data = hull, 
+               alpha = 0.2, 
+               show.legend = F,
+               size = 0.2) +
+  # Add points
+#  geom_jitter(aes(x = rTail_m, y = HB_m, size = #lMass_m, color = com), data = extdat, width = 0.09, #height = 0.09, shape = 5) +
+#  scale_size(range = c(0.5, 5)) +
+  geom_point(size = 8) +
+  #labs(title="Cranial Shape Position",x="PC1 Mean", y = "", fill = "Mountain") +
+  theme_bw() +
+  scale_fill_paletteer_d('ggsci::default_gsea', direction = 1) +
+  guides(fill = guide_legend(reverse=T)) #+ 
+  #theme(legend.position = "none")
+```
 
-# Morpho NN
-
-This is skull shape and external measurements hb, tail, hf, lmass, ear
-
-#```{r}
-morph_dat <-  skdat  %>% select(!.row) %>% select(Species, .draw, dPC1, dPC2, dPC3, cPC1, cPC2) %>% 
-  full_join(edat, by = c(".draw", "Species"))
-
-
-df <- morph_dat %>% 
-  select(!.row) 
-
-amb_nni <- get_mnni(df, spamb) %>%  mutate(com = "Ambang" )
-baw_nni <- get_mnni(df, spbaw) %>%  mutate(com = "Bawakaraeng" )
-bul_nni <- get_mnni(df, spbul) %>%  mutate(com = "Buliohuto" )
-dak_nni <- get_mnni(df, spdak) %>%  mutate(com = "Dako" )
-gan_nni <- get_mnni(df, spgan) %>%  mutate(com = "Gandangdewata" )
-kat_nni <- get_mnni(df, spkat) %>%  mutate(com = "Katopasa" )
-lat_nni <- get_mnni(df, splat) %>%  mutate(com = "Latimojong" )
-nok_nni <- get_mnni(df, spnok) %>%  mutate(com = "Nokilalaki" )
-tor_nni <- get_mnni(df, sptor) %>%  mutate(com = "Torompupu" )
-
-nn_morph <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni) %>% rename(morpho_nn = value)
-
-dd <- nn_morph %>% select(morpho_nn)
-adat <- adat %>% bind_cols(dd)
-
-
-rm(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni)
-#```
-
-#```{r}
-adat %>% write_csv(here("All_Traits.csv"))
-#```
 
 # Isotope GROUP Nearest Neighbor
 
-Realized I have to use the grouping data again. Thats ok. It'll be just like any of the other variables. \## N15 Group
+Realized I have to use the grouping data again. Thats ok. It'll be just like any of the other variables. 
+
+## N15 Group
 
 #```{r}
 idat <- read_csv(here("Isotope_Data", "Isotope_Group_Level_Fitted.csv")) %>% select(Species, .draw, sN15)
@@ -461,7 +559,7 @@ adat <- adat  %>%
   full_join(nn_i, by = c(".draw", "com"))
 #```
 
-#Write All Data
+Write All Data
 
 #```{r}
 adat %>% write_csv(here("All_Traits.csv"))

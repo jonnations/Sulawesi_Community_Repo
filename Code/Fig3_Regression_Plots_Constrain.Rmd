@@ -1,0 +1,93 @@
+---
+title: "ALL REGRESSION PLOTS"
+---
+
+# Plotting for FIg 3
+
+This csv I am reading in contains some updated fields that I added manually. These describe the traits or trait types, and are there for organizing. All numeric values are the same as the regression outputs.
+```{r}
+pacman::p_load(here, tidyverse, tidybayes, brms, modelr, patchwork)
+here::i_am("Code/Fig3_Regression_Plots.Rmd")
+# I added constrained values here
+fin <- read_csv(here("Regression", "Fig3_Regression_Plot_Data.csv")) %>% drop_na()
+```
+
+# Plot NN SES Constrained
+
+```{r}
+p1 <- fin %>% 
+  filter(type == "c_nn_ses",
+         ntraits == "multi") %>% 
+  mutate(name = recode(name, Isospace = 'Isotopic Niche Space',)) %>% 
+    arrange(Beta) %>%  
+ ggplot(aes(y = factor(name, levels=name), x = Beta, xmin = b_lower, xmax = b_upper, color = Beta)) +
+  #scale_color_manual(values = cols) +
+  scale_color_viridis_c(direction = -1, begin = 0.17, end = 0.82, option = "B") +
+  geom_vline(xintercept = 0, linetype = 2 ) + 
+  geom_pointrange(size = 1.25, show.legend = F) +
+  labs(x = expression(beta[italic(richness)]), y="") +
+  xlim(-.23, .43) +
+  ggtitle("Combined Trait NN Distance") +
+  theme_classic()+
+  theme(axis.title.x = element_text(size = 17))
+
+p2 <- fin %>% 
+  filter(type == "c_nn_ses",
+         ntraits == "multi") %>% 
+    arrange(Beta)  %>% ggplot(aes(y = factor(name, levels=name), x = R2sm, xmin = R2sm_lower, xmax = R2sm_upper#, color = Effect_Size
+                            )) +
+  scale_color_manual(values = cols) +
+  #geom_vline(xintercept = 0, linetype = 2 ) +
+  geom_pointrange(size = 1) +
+  labs(x = bquote("Bayesian"~ R^2), y = "") +
+  xlim(0,1) +
+  #ggtitle("Trait Space SES - Total Species Pool") +
+  theme_classic() +
+  theme(axis.text.y=element_blank(),
+        axis.title.x = element_text(size = 13))
+
+
+
+p3 <- fin %>% 
+  filter(type == "c_nn_ses",
+         ntraits == "one") %>% 
+    arrange(Beta) %>%  
+ ggplot(aes(y = factor(name, levels=name), x = Beta, xmin = b_lower, xmax = b_upper, color = Beta)) +
+  #scale_color_manual(values = cols) +
+  scale_color_viridis_c(direction = -1, option = "B", end = 0.9) +
+  geom_vline(xintercept = 0, linetype = 2 ) + 
+  geom_pointrange(size = 1.25, show.legend = F) +
+  xlim(-.233, .45) +
+  labs(x = expression(beta[italic(richness)]), y="") +
+  scale_y_discrete(labels = c("Nitrogen 15 Isotope" = expression(delta^15~N),
+                              "Carbon 13 Isotope" = expression(delta^13~C))) +
+  ggtitle("Individual Trait NN Distance") +
+  theme_classic() +
+  theme(axis.title.x = element_text(size = 17))
+
+p4 <- fin %>% 
+  filter(type == "c_nn_ses",
+         ntraits == "one") %>% 
+    arrange(Beta)  %>% ggplot(aes(y = factor(name, levels=name), x = R2sm, xmin = R2sm_lower, xmax = R2sm_upper#, color = Effect_Size
+                            )) +
+  scale_color_manual(values = cols) +
+  #geom_vline(xintercept = 0, linetype = 2 ) +
+  geom_pointrange(size = 1) +
+  labs(x = bquote("Bayesian"~ R^2), y = "") +
+  xlim(0,1) + 
+  #ggtitle("Trait Space SES - Total Species Pool") +
+  theme_classic() +
+  theme(axis.text.y=element_blank(),
+        axis.title.x = element_text(size = 13))
+
+layout <- "
+AAB
+CCD
+CCD
+"
+
+p1 + p2 + p3 + p4 + plot_layout(design = layout, guides = "collect", tag_level = 'new') + plot_annotation(tag_levels = list(c('C', '', 'D', '')))
+
+#ggsave(here("Plots", "Fig3B_c_NN_SES_Regression_Magma.pdf"), width = 6, height = 10, useDingbats = F)
+```
+

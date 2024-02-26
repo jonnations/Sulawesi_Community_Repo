@@ -56,12 +56,12 @@ pdat <- read_csv(here("Phylogenetic_Diversity", "PD_Results.csv"))  %>%
 ## SES Var Combined Traits
 ```{r}
 p1 <- dat %>% 
-select(com, nspec, ses_morpho, ses_ext, ses_vBsz, ses_vsk, ses_vIso) %>% 
+select(com, nspec, ses_morpho, ses_ext, ses_vBsz, ses_vsk, ses_vIso_group) %>% 
   rename('External Proportions' = ses_ext,
          'Morphology' = ses_morpho,
          'Body Size' = ses_vBsz,
          'Head Shape' = ses_vsk,
-         'Isotopic Niche Space' = ses_vIso) %>% 
+         'Isotopic Niche Space' = ses_vIso_group) %>% 
   pivot_longer(!c(com, nspec), 
                names_to = "var") %>% 
   ggplot(aes(y = value, 
@@ -156,11 +156,11 @@ xLabels <- c("Bawakaraeng (7)", "Buliohuto (10)", "Dako (12)", "Katopasa (12)", 
 
 
 p4 <- dat %>% 
-select(com, nspec, ses_vC13, ses_vN15) %>%
+select(com, nspec, ses_vC13_group, ses_vN15_group) %>%
   right_join(ldat2, by = 'com') %>% 
   right_join(pdat2, by = 'com') %>% 
-  rename('Nitrogen 15' = ses_vN15,
-         'Carbon 13' = ses_vC13,
+  rename('Nitrogen 15' = ses_vN15_group,
+         'Carbon 13' = ses_vC13_group,
          'Locomotor Mode' = ses_loc_prob,
          'Phylogenetic Diversity' = pd_ses) %>% 
   pivot_longer(!c(com, nspec), 
@@ -198,15 +198,20 @@ p1 / p2 / p3 / p4 #+ plot_layout(guides = 'collect')
 
 ```
 
+#NNSES 
+
 ## NNSES Var Combined
 ```{r}
+xLabels <- c("Bawakaraeng (7)", "Buliohuto (10)", "Dako (12)", "Katopasa (12)", "Ambang (13)", "Latimojong (13)", "Torompupu (15)", "Nokilalaki (17)", "Gandang Dewata (23)")
+
+
 n1 <- dat %>% 
-select(com, nspec, nnses_morpho, nnses_ext, nnses_Bsz, nnses_sk, nnses_iso) %>% 
-  rename('External Proportions' = nnses_ext,
-         'Morphology' = nnses_morpho,
-         'Body Size' = nnses_Bsz,
-         'Head Shape' = nnses_sk,
-         'Isotopic Niche Space' = nnses_iso) %>%
+select(com, nspec, c_nnses_morpho, c_nnses_ext, c_nnses_Bsz, c_nnses_sk, c_nnses_iso) %>% 
+  rename('External Proportions' = c_nnses_ext,
+         'Morphology' = c_nnses_morpho,
+         'Body Size' = c_nnses_Bsz,
+         'Head Shape' = c_nnses_sk,
+         'Isotopic Niche Space' = c_nnses_iso) %>%
   pivot_longer(!c(com, nspec), 
                names_to = "var") %>% 
   ggplot(aes(y = value, 
@@ -233,11 +238,11 @@ n1
 ## NNSES Cranial
 ```{r}
 n2 <- dat %>% 
-select(com, nspec, nnses_c, nnses_d, nnses_csize, nnses_dsize) %>% 
-  rename('Cranium Shape' = nnses_c,
-         'Dentary Shape' = nnses_d,
-         'Cranium Size' = nnses_csize,
-         'Dentary Size' = nnses_dsize) %>% 
+select(com, nspec, c_nnses_c, c_nnses_d, c_nnses_csize, c_nnses_dsize) %>% 
+  rename('Cranium Shape' = c_nnses_c,
+         'Dentary Shape' = c_nnses_d,
+         'Cranium Size' = c_nnses_csize,
+         'Dentary Size' = c_nnses_dsize) %>% 
   pivot_longer(!c(com, nspec), 
                names_to = "var") %>% 
   ggplot(aes(y = value, 
@@ -264,12 +269,12 @@ n2
 ## NNSES EXT
 ```{r}
 n3 <- dat %>% 
-select(com, nspec, nnses_HB, nnses_HF, nnses_Tail, nnses_Mass, nnses_Ear) %>%
-  rename('Head-Body Length' = nnses_HB,
-         'Tail Length' = nnses_Tail,
-         'Hind Foot Length' = nnses_HF,
-         "Ear Length" = nnses_Ear,
-         'Mass' = nnses_Mass) %>% 
+select(com, nspec, c_nnses_HB, c_nnses_HF, c_nnses_Tail, c_nnses_Mass, c_nnses_Ear) %>%
+  rename('Head-Body Length' = c_nnses_HB,
+         'Tail Length' = c_nnses_Tail,
+         'Hind Foot Length' = c_nnses_HF,
+         "Ear Length" = c_nnses_Ear,
+         'Mass' = c_nnses_Mass) %>% 
   pivot_longer(!c(com, nspec), 
                names_to = "var") %>% 
   ggplot(aes(y = value, 
@@ -295,15 +300,15 @@ n3
 
 ## NNSES ISO
 ```{r}
-ldat2 <- ldat %>% select(com, nnses_loc)
+ldat2 <- ldat %>% select(com, c_nnses_loc)
 
 
 n4 <- dat %>% 
-select(com, nspec, nnses_C13, nnses_N15) %>%
+select(com, nspec, c_nnses_C13, c_nnses_N15) %>%
   right_join(ldat2, by = 'com') %>%
-  rename('Nitrogen 15' = nnses_N15,
-         'Carbon 13' = nnses_C13,
-         'Locomotor Mode' = nnses_loc) %>% 
+  rename('Nitrogen 15' = c_nnses_N15,
+         'Carbon 13' = c_nnses_C13,
+         'Locomotor Mode' = c_nnses_loc) %>% 
   pivot_longer(!c(com, nspec), 
                names_to = "var") %>% 
   mutate(var = factor(var, levels = c("Nitrogen 15", "Carbon 13","Locomotor Mode"))) %>% 
@@ -320,7 +325,7 @@ select(com, nspec, nnses_C13, nnses_N15) %>%
   labs(x = "Species Richness",
        y = "Nearest Neighbor SES",
        subtitle = "Isospace & Locomotor Densities") +
-  ylim(-3.1, 4.21) +
+  ylim(-3.1, 4.3) +
   scale_color_manual(values = ratpal, name = "", 
                      labels = c("Nitrogen 15" = expression(delta^15~N),
                                 "Carbon 13" = expression(delta^13~C))) +
@@ -351,8 +356,8 @@ p1 / p2 / p3 / p4 + plot_layout(tag_level = 'new') +
   plot_annotation(tag_levels = list(c('A', 'B', 'C', 'D')))
   
 
-ggsave(file = here("Plots", "Fig4_Variance_Richness_Plots_Vertical-com_labels.pdf"), height = 11, width = 7.5)
-ggsave(file = here("Plots", "Fig4_Variance_Richness_Plots_Vertical-com_labels.png"), height = 11, width = 7.5)
+#ggsave(file = here("Plots", "Fig4_Variance_Richness_Plots_Vertical-com_labels.pdf"), height = 11, width = 7.5)
+#ggsave(file = here("Plots", "Fig4_Variance_Richness_Plots_Vertical-com_labels.png"), height = 11, width = 7.5)
 ```
 
 # Density Plots
@@ -363,6 +368,6 @@ n1 / n2 / n3 / n4 + plot_layout(tag_level = 'new') +
   plot_annotation(tag_levels = list(c('A', 'B', 'C', 'D')))
   
 
-ggsave(file = here("Plots", "FigS2_Density_Richness_Plots_vertical-com_labels.pdf"), height = 10, width = 7.5)
+#ggsave(file = here("Plots", "FigS2_Density_Richness_Plots_vertical-com_labels.pdf"), height = 10, width = 7.5)
 ```
 

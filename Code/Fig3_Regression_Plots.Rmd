@@ -85,7 +85,7 @@ CCD
 
 p1 + p2 + p3 + p4 + plot_layout(design = layout, guides = "collect", tag_level = 'new') + plot_annotation(tag_levels = list(c('A', '', 'B', '')))
 
-ggsave(here("Plots", "Fig3A_V_SES_Regression_Magma.pdf"), width = 6, height = 10, useDingbats = F)
+#ggsave(here("Plots", "Fig3A_V_SES_Regression_Magma.pdf"), width = 6, height = 10, useDingbats = F)
 ```
 
 # Plot NN SES
@@ -164,6 +164,6 @@ CCD
 
 p1 + p2 + p3 + p4 + plot_layout(design = layout, guides = "collect", tag_level = 'new') + plot_annotation(tag_levels = list(c('C', '', 'D', '')))
 
-ggsave(here("Plots", "Fig3B_NN_SES_Regression_Magma.pdf"), width = 6, height = 10, useDingbats = F)
+#ggsave(here("Plots", "Fig3B_NN_SES_Regression_Magma.pdf"), width = 6, height = 10, useDingbats = F)
 ```
 
