@@ -322,11 +322,11 @@ data %>%
             vMass = var(lMass),
             #ADDING IN MEAN HERE TO TEST FOR CHANGES IN POSTION
             #NOT SURE IF IT WORKS OR I WANT TO KEEP IT
-            mHB = mean(HB),
-            mTail = mean(rTail),
-            mHF = mean(rHF),
-            mEar = mean(rEar),
-            mMass = mean(lMass)) %>% 
+            mHB_pos = mean(HB),
+            mTail_pos = mean(rTail),
+            mHF_pos = mean(rHF),
+            mEar_pos = mean(rEar),
+            mMass_pos = mean(lMass)) %>% 
   mutate(ext_sum = vHB + vTail + vHF + vEar) %>% 
   mutate(ext_scaled = ext_sum/5) %>% 
   add_column(com = {{mountain}})
@@ -417,8 +417,8 @@ data %>%
   select(!Species) %>%
   select(!.row) %>%
   group_by(.draw) %>%  
-  summarise(vN15_group = var(sN15),
-            vC13_group = var(sC13)) %>% 
+  summarise(vN15 = var(sN15),
+            vC13 = var(sC13)) %>% 
   add_column(com = {{mountain}})
 }
 ```
@@ -438,7 +438,7 @@ write_csv(ivar, here("Isotope_Data", "Isotope_Group_Level_Variance.csv"))
 #### Quick Plot
 ```{r}
 ivar %>% mutate(com = factor(com, level = level_order)) %>% 
-ggplot(aes(y = com, x = vN15_group, fill = com)) +
+ggplot(aes(y = com, x = vN15, fill = com)) +
   stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
    labs(title="Tail Length",x="Trait Volume", y = "", fill = "Mountain") +
   theme_bw() + 
@@ -456,7 +456,7 @@ edat <- read_csv(here("External_Measurement_Data", "Community_External_Variance_
 idat <- read_csv(here("Isotope_Data", "Isotope_Group_Level_Variance.csv"))
 all_var <- cdat %>% right_join(ddat,by = c(".draw", "com")) %>% right_join(edat,by = c(".draw", "com")) %>% full_join(idat,by = c(".draw", "com")) %>% 
   mutate(sk_var = (cv_wei + dv_wei) / 2,
-         iso_var = (vN15_group + vC13_group) / 2,
+         iso_var = (vN15 + vC13) / 2,
          morpho_var = (vMass + vEar + vHF + vTail + vHB + dv_wei + cv_wei) / 7
          )
 write_csv(all_var, here("All_Traits.csv"))
@@ -491,32 +491,8 @@ lockat <- get_loc(spkat, locdat, "Katopasa")
 loclat <- get_loc(splat, locdat, "Latimojong")
 locnok <- get_loc(spnok, locdat, "Nokilalaki")
 loctor <- get_loc(sptor, locdat, "Torompupu")
-vLoc <- bind_rows(locamb, locbaw, locbul, locdak, locgan, lockat, loclat, locnok, loctor) 
-write_csv(vLoc, here("Locomotion_Data", "All_Locomotor_var.csv"))
+vLoc <- bind_rows(locamb, locbaw, locbul, locdak, locgan, lockat, loclat, locnok, loctor) %>% 
+  mutate(nsp = c(13,7,10,12,23,12,13,17,15)) %>% 
+write_csv(here("Locomotion_Data", "All_Locomotor_var.csv"))
 ```
 
-
-#### Diversity Index (Shannon, or H')
-Trying this instead of variance, which doesn't make sense with categorical data. 
-```{r}
-locdiv <- read_csv(here("Locomotion_Data", "Locomotion_Div_Data.csv")) 
-
-div <- locdiv %>% select(!com) %>% 
-  diversity(., "shannon")
-
-locdiv2 = locdiv %>% add_column(div) %>% write_csv(here("Locomotion_Data", "All_Locomotor_diversity.csv"))
-```
-
-#### Quick Plot
-```{r}
-locdiv2 %>% mutate(com = factor(com, level = level_order),
-                   n = (A + C + T + SA)) %>% 
-ggplot(aes(y = n, x = div, color = com)) +
-  #stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
-  geom_point(size = 8) +
-   labs(title="Locomotor Variance",x="Locomotor Diversity", y = "Richness") +
-  theme_bw() + 
-  scale_color_paletteer_d('ggsci::default_gsea', direction = 1)  +
-  xlim(0.4, 1.1) +
-  guides(fill = guide_legend(reverse=T)) + theme(legend.position = "none")
-```

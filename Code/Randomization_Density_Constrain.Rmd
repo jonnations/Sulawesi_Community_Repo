@@ -1,10 +1,11 @@
 ---
-title: "MNND_Randomization With Sampling Probabilities"
+title: "MNND_Randomization With Constrained Sampling Probabilities"
 ---
 
-Randomization of NN Density values. 
+Randomization of NN Density values, but **CONSTRAINED** to fall into the overall convex hull of the community. This is the *constrained null model* of Swenson and Weiser 2014, On the packing and filling of functional space in eastern North American tree assemblages
 
-I've optimized the functions using a mix of base R, tidyverse, and the furrr::future_map function
+
+
 ```{r echo = FALSE}
 pacman::p_load(here, tidyverse, tidybayes, patchwork, modelr, forcats, picante, furrr, dispRity, vegan)
 #supress dplyr messages for summarise()
@@ -31,14 +32,121 @@ level_order <-  c( "Bawakaraeng", "Buliohuto", "Dako", "Katopasa", "Ambang", "La
 
 ```
 
+
+# Constrained Species Lists
+
+
+### Load Data and Estimate Means
+```{r}
+
+#External Data
+m_edat <- read_csv(here("External_Measurement_Data", "External_Fitted.csv")) %>% 
+  group_by(Species) %>% 
+  summarise(across(HB:lMass, ~ mean(.x, na.rm = TRUE)))
+# Cranial Data
+m_cdat <- read_csv(here("Cranial_Data", "Cranial_36axes_Fitted.csv")) %>%
+  mutate_if(is.numeric, round, digits=6) %>% 
+  group_by(Species) %>% 
+  summarise(across(cPC1:cPC2, ~ mean(.x, na.rm = TRUE)))
+# Dentary Data
+m_ddat <- read_csv(here("Dentary_Data", "Dentary_20axes_Fitted.csv")) %>%
+  mutate_if(is.numeric, round, digits=6) %>% 
+  group_by(Species) %>% 
+  summarise(across(dPC1:dPC3, ~ mean(.x, na.rm = TRUE)))
+```
+
+### Get max and min values for each community for each trait
+
+```{r}
+min_max <- list(
+  min = ~min(.x, na.rm = TRUE), 
+  max = ~max(.x, na.rm = TRUE)
+)
+
+mn_mx <- function(sp, data, mountain){
+data %>% 
+    filter(Species %in% {{sp}}) %>% 
+  summarise(across(where(is.numeric), min_max)) %>% 
+    add_column(com = {{mountain}})
+}
+
+com_ls <- list(spamb, spbaw, spbul, spdak, spgan, spkat, splat, spnok, sptor)
+mon_ls <- c("Ambang", "Bawakaraeng", "Buliohuto", "Dako", "GandangDewata", "Katopasa", "Latimojong", "Nokilalaki", "Torompupu")
+
+e <- map2(com_ls, mon_ls, ~ mn_mx(.x, m_edat, .y)) %>% bind_rows()
+c <- map2(com_ls, mon_ls, ~ mn_mx(.x, m_cdat, .y)) %>% bind_rows()
+d <- map2(com_ls, mon_ls, ~ mn_mx(.x, m_ddat, .y)) %>% bind_rows()
+
+maxmins <- full_join(e, d, by = "com") %>% 
+  full_join(., c, by = "com") %>% relocate(com)
+```
+
+### Get species lists
+
+This is tricky, I don't know the best way so I'll brute force it.
+First, combine morpho data
+```{r}
+tt <- m_edat %>% full_join(m_cdat, by = "Species")
+mean_all <- tt  %>% full_join(m_ddat, by = "Species")
+```
+
+#### For Loop
+This filters by the max and min values for each communitiy for each measurement. 
+
+```{r}
+dlist <- list()
+for (i in 1:9){
+  dat1 <- mean_all %>% 
+  filter(case_when(
+    HB    > maxmins$HB_max[i]     ~ F,
+    HB    < maxmins$HB_min[i]     ~ F,
+    is.na(HB) ~ T,
+    rTail > maxmins$rTail_max[i]  ~ F,
+    rTail < maxmins$rTail_min[i]  ~ F,
+    is.na(rTail) ~ T,
+    rHF   > maxmins$rHF_max[i]    ~ F,
+    rHF   < maxmins$rHF_min[i]    ~ F,
+    is.na(rHF) ~ T,
+    rEar  > maxmins$rEar_max[i]   ~ F,
+    rEar  < maxmins$rEar_min[i]   ~ F,
+    is.na(rEar) ~ T,
+    lMass > maxmins$lMass_max[i]  ~ F,
+    lMass < maxmins$lMass_min[i]  ~ F,
+    is.na(lMass) ~ T,
+    cPC1  > maxmins$cPC1_max[i]   ~ F,
+    cPC1  < maxmins$cPC1_min[i]   ~ F,
+    is.na(cPC1) ~ T,
+    cPC2  > maxmins$cPC2_max[i]       ~ F,
+    cPC2  < maxmins$cPC2_min[i]       ~ F,
+    is.na(cPC2) ~ T,
+    dPC1  > maxmins$dPC1_max[i]   ~ F,
+    dPC1  < maxmins$dPC1_min[i]   ~ F,
+    is.na(dPC1) ~ T,
+    dPC2  > maxmins$dPC2_max[i]       ~ F,
+    dPC2  < maxmins$dPC2_min[i]       ~ F,
+    is.na(dPC2) ~ T,
+    dPC3  > maxmins$dPC3_max[i]       ~ F,
+    dPC3  < maxmins$dPC3_min[i]       ~ F,
+     is.na(dPC3) ~ T,
+    TRUE ~ T)) %>% select(Species) %>% as.vector()
+  dlist[i] <- dat1
+}
+names(dlist) <- NULL
+names(dlist) <- maxmins$com
+```
+
+
 # Sample Species
 
 New sample species using independent swap algorithm from picante
-very helpful: https://stackoverflow.com/questions/61740025/dplyr-how-to-collapse-binary-and-mutually-exclusive-columns-into-1
+Now I'm limiting it to the species in the `dlist` for each community that have overlapping morphological values. 
 ```{r}
-sample_com <- function(com) {
+sample_com <- function(com, list) {
 dlist <- list()
 for (i in 1:10){
+  #THIS IS THE PART I CHANGED
+  sp_ses <- subset(sp_ses, select = names(sp_ses) %in% {{list}})
+  # This is unchanged
   b <- picante::randomizeMatrix(sp_ses, null.model = "trialswap", iterations = 1000) %>% 
     as_tibble() %>% 
     bind_cols(com = c("Ambang", "Bawakaraeng", "Buliohuto", "Dako", "Gandangdewata", "Katopasa", "Latimojong", "Nokilalaki", "Torompupu")) %>% 
@@ -54,19 +162,20 @@ dlist
 }
 ```
 
+Here i need to add the list of overlapping species
 ```{r}
-sp_amb <- sample_com("Ambang" )
-sp_baw <- sample_com("Bawakaraeng" )
-sp_bul <- sample_com("Buliohuto" )
-sp_dak <- sample_com("Dako" )
-sp_gan <- sample_com("Gandangdewata" )
-sp_kat <- sample_com("Katopasa")
-sp_lat <- sample_com("Latimojong")
-sp_nok <- sample_com("Nokilalaki")
-sp_tor <- sample_com("Torompupu")
+sp_amb <- sample_com("Ambang", dlist$Ambang )
+sp_baw <- sample_com("Bawakaraeng", dlist$Bawakaraeng)
+sp_bul <- sample_com("Buliohuto", dlist$Buliohuto )
+sp_dak <- sample_com("Dako", dlist$Dako )
+sp_gan <- sample_com("Gandangdewata", dlist$GandangDewata )
+sp_kat <- sample_com("Katopasa", dlist$Katopasa)
+sp_lat <- sample_com("Latimojong", dlist$Latimojong)
+sp_nok <- sample_com("Nokilalaki", dlist$Nokilalaki)
+sp_tor <- sample_com("Torompupu", dlist$Torompupu)
 ```
 
-#### MNND Function
+# MNND Function
 ALong with edits to two DispaRity functions to allow NA
 ```{r}
 neighbours2 <- function(matrix, which = min, method = "euclidean") {
@@ -153,7 +262,7 @@ adat <- nn_c_shp_rand %>% group_by(com) %>%
             sd = sd(value)) %>% 
   as.data.frame() %>% 
   right_join(adat, by="com") %>%
-  mutate(nnses_c =  (c_nn - mean) / sd) %>% 
+  mutate(c_nnses_c =  (c_nn - mean) / sd) %>% 
   select(!c(mean, sd))
 
 rm(nn_c_shp_rand )
@@ -194,8 +303,8 @@ adat <- nn_d_shp_rand %>% group_by(com) %>%
             sd = sd(value)) %>% 
   as.data.frame() %>% 
   right_join(adat, by="com") %>%
-  #select(!nnses_d) %>% 
-  mutate(nnses_d =  (d_nn - mean) / sd) %>% 
+  #select(!c_nnses_d) %>% 
+  mutate(c_nnses_d =  (d_nn - mean) / sd) %>% 
   select(!c(mean, sd))
 
 rm(nn_d_shp_rand )
@@ -235,7 +344,7 @@ adat <- nn_c_sz_rand %>% group_by(com) %>%
             sd = sd(value)) %>% 
   as.data.frame() %>% 
   right_join(adat, by="com") %>%
-  mutate(nnses_csize =  (csize_nn - mean) / sd) %>% 
+  mutate(c_nnses_csize =  (csize_nn - mean) / sd) %>% 
   select(!c(mean, sd))
 
 rm(nn_c_sz_rand)
@@ -275,8 +384,8 @@ adat <- nn_d_sz_rand %>% group_by(com) %>%
             sd = sd(value)) %>% 
   as.data.frame() %>% 
   right_join(adat, by="com") %>%
-  #select(!nnses_dsize) %>% 
-  mutate(nnses_dsize =  (dsize_nn - mean) / sd) %>% 
+  #select(!c_nnses_dsize) %>% 
+  mutate(c_nnses_dsize =  (dsize_nn - mean) / sd) %>% 
   select(!c(mean, sd))
 
 rm(nn_d_sz_rand)
@@ -322,8 +431,8 @@ adat <- nn_sk_rand %>% group_by(com) %>%
             sd = sd(value)) %>% 
   as.data.frame() %>% 
   right_join(adat, by="com") %>%
-  #select(!nnses_sk) %>% 
-  mutate(nnses_sk =  (sk_nn - mean) / sd) %>% 
+  #select(!c_nnses_sk) %>% 
+  mutate(c_nnses_sk =  (sk_nn - mean) / sd) %>% 
   select(!c(mean, sd))
 
 rm(nn_sk_rand )
@@ -365,8 +474,8 @@ adat <- nn_b_sz_rand %>% group_by(com) %>%
             sd = sd(value)) %>% 
   as.data.frame() %>% 
   right_join(adat, by="com") %>%
-  #select(!nnses_Bsz) %>% 
-  mutate(nnses_Bsz =  (Bsz_nn - mean) / sd) %>% 
+  #select(!c_nnses_Bsz) %>% 
+  mutate(c_nnses_Bsz =  (Bsz_nn - mean) / sd) %>% 
   select(!c(mean, sd))
 
 rm(nn_b_sz_rand)
@@ -408,7 +517,7 @@ adat <- nn_tail_rand %>% group_by(com) %>%
             sd = sd(value)) %>% 
   as.data.frame() %>% 
   right_join(adat, by="com") %>%
-  mutate(nnses_Tail =  (Tail_nn - mean) / sd) %>% 
+  mutate(c_nnses_Tail =  (Tail_nn - mean) / sd) %>% 
   select(!c(mean, sd))
 
 rm(nn_tail_rand)
@@ -448,7 +557,7 @@ adat <- nn_hf_rand %>% group_by(com) %>%
             sd = sd(value)) %>% 
   as.data.frame() %>% 
   right_join(adat, by="com") %>%
-  mutate(nnses_HF =  (HF_nn - mean) / sd) %>% 
+  mutate(c_nnses_HF =  (HF_nn - mean) / sd) %>% 
   select(!c(mean, sd))
 
 rm(nn_hf_rand)
@@ -489,7 +598,7 @@ adat <- nn_ear_rand %>% group_by(com) %>%
             sd = sd(value)) %>% 
   as.data.frame() %>% 
   right_join(adat, by="com") %>%
-  mutate(nnses_Ear =  (Ear_nn - mean) / sd) %>% 
+  mutate(c_nnses_Ear =  (Ear_nn - mean) / sd) %>% 
   select(!c(mean, sd))
 
 rm(nn_ear_rand)
@@ -529,7 +638,7 @@ adat <- nn_hb_rand %>% group_by(com) %>%
             sd = sd(value)) %>% 
   as.data.frame() %>% 
   right_join(adat, by="com") %>%
-  mutate(nnses_HB =  (HB_nn - mean) / sd) %>% 
+  mutate(c_nnses_HB =  (HB_nn - mean) / sd) %>% 
   select(!c(mean, sd))
 
 rm(nn_hb_rand )
@@ -569,7 +678,7 @@ adat <- nn_mass_rand %>% group_by(com) %>%
             sd = sd(value)) %>% 
   as.data.frame() %>% 
   right_join(adat, by="com") %>%
-  mutate(nnses_Mass =  (Mass_nn - mean) / sd) %>% 
+  mutate(c_nnses_Mass =  (Mass_nn - mean) / sd) %>% 
   select(!c(mean, sd))
 
 rm(nn_mass_rand)
@@ -610,7 +719,7 @@ adat <- nn_x_shp_rand %>% group_by(com) %>%
             sd = sd(value)) %>% 
   as.data.frame() %>% 
   right_join(adat, by="com") %>%
-  mutate(nnses_ext =  (ext_nn - mean) / sd) %>% 
+  mutate(c_nnses_ext =  (ext_nn - mean) / sd) %>% 
   select(!c(mean, sd))
 
 rm(nn_x_shp_rand)
@@ -658,7 +767,7 @@ adat <- nn_mshp_rand %>% group_by(com) %>%
             sd = sd(value)) %>% 
   as.data.frame() %>% 
   right_join(adat, by="com") %>%
-  mutate(nnses_morpho =  (morpho_nn - mean) / sd) %>% 
+  mutate(c_nnses_morpho =  (morpho_nn - mean) / sd) %>% 
   select(!c(mean, sd))
 
 rm(nn_x_shp_rand)
@@ -667,6 +776,100 @@ rm(nn_x_shp_rand)
 # Isotopes
 ### There are some changes here
 I want load in the community group_level fitted values for estimating the random communities. 
+
+Need to resample the commuities here to limit the isotopes to species within community isotope space (ignoring morphology)
+```{r}
+idat <- read_csv(here("Isotope_Data", "Isotope_Group_Level_Fitted.csv")) 
+
+m_idat <- read_csv(here("Isotope_Data", "Isotope_Group_Level_Fitted.csv")) %>% 
+  group_by(Species) %>% 
+  summarise(across(sN15:sC13, ~ mean(.x, na.rm = TRUE)))
+
+```
+### Get max and min values for each community for each trait
+
+```{r}
+min_max <- list(
+  min = ~min(.x, na.rm = TRUE), 
+  max = ~max(.x, na.rm = TRUE)
+)
+
+mn_mx <- function(sp, data, mountain){
+data %>% 
+    filter(Species %in% {{sp}}) %>% 
+  summarise(across(where(is.numeric), min_max)) %>% 
+    add_column(com = {{mountain}})
+}
+
+com_ls <- list(spamb, spbaw, spbul, spdak, spgan, spkat, splat, spnok, sptor)
+mon_ls <- c("Ambang", "Bawakaraeng", "Buliohuto", "Dako", "GandangDewata", "Katopasa", "Latimojong", "Nokilalaki", "Torompupu")
+
+maxmins <- map2(com_ls, mon_ls, ~ mn_mx(.x, m_idat, .y)) %>% bind_rows()
+
+#maxmins <- full_join(e, d, by = "com") %>% 
+  #full_join(., c, by = "com") %>% relocate(com)
+```
+
+
+#### For Loop
+This filters by the max and min values for each communitiy for each measurement. 
+
+```{r}
+dlist <- list()
+for (i in 1:9){
+  dat1 <- m_idat %>% 
+  filter(case_when(
+    sN15    > maxmins$sN15_max[i]     ~ F,
+    sN15    < maxmins$sN15_min[i]     ~ F,
+    is.na(sN15) ~ T,
+    sC13 > maxmins$sC13_max[i]  ~ F,
+    sC13 < maxmins$sC13_min[i]  ~ F,
+    is.na(sC13 ) ~ T,
+    TRUE ~ T)) %>% select(Species) %>% as.vector()
+  dlist[i] <- dat1
+}
+names(dlist) <- NULL
+names(dlist) <- maxmins$com
+```
+
+
+### Sample Species
+
+```{r}
+sample_com <- function(com, list) {
+dlist <- list()
+for (i in 1:10){
+  #THIS IS THE PART I CHANGED
+  sp_ses <- subset(sp_ses, select = names(sp_ses) %in% {{list}})
+  # This is unchanged
+  b <- picante::randomizeMatrix(sp_ses, null.model = "trialswap", iterations = 1000) %>% 
+    as_tibble() %>% 
+    bind_cols(com = c("Ambang", "Bawakaraeng", "Buliohuto", "Dako", "Gandangdewata", "Katopasa", "Latimojong", "Nokilalaki", "Torompupu")) %>% 
+    pivot_longer(cols = -com, names_to = 'species') %>%
+    filter(as.logical(value)) %>%
+    select(-value) %>%
+    filter(com == {{com}}) %>% 
+    select(-com) %>%
+    pull(species)
+  dlist[[i]] <- b
+  }
+dlist
+}
+```
+
+Here i need to add the list of overlapping species
+```{r}
+sp_amb <- sample_com("Ambang", dlist$Ambang )
+sp_baw <- sample_com("Bawakaraeng", dlist$Bawakaraeng)
+sp_bul <- sample_com("Buliohuto", dlist$Buliohuto )
+sp_dak <- sample_com("Dako", dlist$Dako )
+sp_gan <- sample_com("Gandangdewata", dlist$GandangDewata )
+sp_kat <- sample_com("Katopasa", dlist$Katopasa)
+sp_lat <- sample_com("Latimojong", dlist$Latimojong)
+sp_nok <- sample_com("Nokilalaki", dlist$Nokilalaki)
+sp_tor <- sample_com("Torompupu", dlist$Torompupu)
+```
+
 #### Carbon
 ```{r}
 idat <- read_csv(here("Isotope_Data", "Isotope_Group_Level_Fitted.csv")) %>% select(Species, .draw, sC13)
@@ -697,7 +900,7 @@ adat <- nn_car_rand %>% group_by(com) %>%
             sd = sd(value)) %>% 
   as.data.frame() %>% 
   right_join(adat, by="com") %>%
-  mutate(nnses_C13 =  (C13_nn - mean) / sd) %>% 
+  mutate(c_nnses_C13 =  (C13_nn - mean) / sd) %>% 
   select(!c(mean, sd))
 rm(nn_car_rand)
 ```
@@ -733,7 +936,7 @@ adat <- nn_car_rand %>% group_by(com) %>%
             sd = sd(value)) %>% 
   as.data.frame() %>% 
   right_join(adat, by="com") %>%
-  mutate(nnses_N15 =  (N15_nn - mean) / sd) %>% 
+  mutate(c_nnses_N15 =  (N15_nn - mean) / sd) %>% 
   select(!c(mean, sd))
 rm(nn_car_rand)
 ```
@@ -768,7 +971,7 @@ adat <- nn_car_rand %>% group_by(com) %>%
             sd = sd(value)) %>% 
   as.data.frame() %>% 
   right_join(adat, by="com") %>%
-  mutate(nnses_iso =  (iso_nn - mean) / sd) %>% 
+  mutate(c_nnses_iso =  (iso_nn - mean) / sd) %>% 
   select(!c(mean, sd))
 rm(nn_car_rand)
 ```
@@ -821,7 +1024,7 @@ nnlat <- rdl_nn(splat, "Latimojong")
 nnnok <- rdl_nn(spnok, "Nokilalaki")
 nntor <- rdl_nn(sptor, "Torompupu")
 
-rdlnn<- bind_rows(nnamb,nnbaw,nnbul,nndak,nngan,nnkat, nnlat, nnnok, nntor) %>% rename(nn_rda = value)
+rdlnn<- bind_rows(nnamb,nnbaw,nnbul,nndak,nngan,nnkat, nnlat, nnnok, nntor) %>% rename(c_nn_rda = value)
 rdlnn
 rm(nnamb,nnbaw,nnbul,nndak,nngan,nnkat, nnlat, nnnok, nntor)
 ```
@@ -831,10 +1034,13 @@ rm(nnamb,nnbaw,nnbul,nndak,nngan,nnkat, nnlat, nnnok, nntor)
 
 All in one go. 
 ```{r}
-nn_summary <- function( sp, com) {
+nn_summary <- function( sp, com, list) {
   dlist <- list()
 # Then estimate variance of 1000 random samples of species
-for (i in 1:10){
+for (i in 1:100){
+  #THIS IS THE PART I CHANGED
+  sp_ses <- subset(sp_ses, select = names(sp_ses) %in% {{list}})
+  
     b <- picante::randomizeMatrix(sp_ses, null.model = "independentswap", iterations = 1000) %>% 
     as_tibble() %>% 
     bind_cols(com = c("Ambang", "Bawakaraeng", "Buliohuto", "Dako", "Gandangdewata", "Katopasa", "Latimojong", "Nokilalaki", "Torompupu")) %>% 
@@ -859,18 +1065,80 @@ for (i in 1:10){
 }
   bind_rows(dlist)
 }
+
+nn_summary2 <- function( sp, com, list) {
+  dlist <- list()
+# Then estimate variance of 1000 random samples of species
+for (i in 1:100){
+  #THIS IS THE PART I CHANGED
+  sp_ses <- subset(sp_ses, select = names(sp_ses) %in% {{list}})
+  
+    b <- picante::randomizeMatrix(sp_ses, null.model = "frequency", iterations = 1000) %>% 
+    as_tibble() %>% 
+    bind_cols(com = c("Ambang", "Bawakaraeng", "Buliohuto", "Dako", "Gandangdewata", "Katopasa", "Latimojong", "Nokilalaki", "Torompupu")) %>% 
+    pivot_longer(cols = -com, names_to = 'species') %>%
+    filter(as.logical(value)) %>%
+    select(-value) %>%
+    filter(com == {{com}}) %>% 
+    select(-com) %>%
+    pull(species)
+  
+  dat1 <- r.d1 %>% 
+  filter(Species %in% b) %>%
+  select(!Species) %>% 
+  neighbours(which = mean) %>%
+    #unique() %>%
+    mean() %>%
+    as_tibble() %>% 
+    add_column(com = {{com}})
+  #
+   dlist[[i]] <- dat1
+  #return(b)
+}
+  bind_rows(dlist)
+}
+
 ```
 
+troubleshooting
+Keeps hanging when I do the Bawakaraeng samples. Works for Ambang. It's something about the independentswap algorithm that hangs with the Bawa samples. 
+
 ```{r}
-nn_amb <-nn_summary( spamb, "Ambang")
-nn_baw <-nn_summary( spbaw, "Buliohuto")
-nn_bul <-nn_summary( spbul, "Bawakaraeng")
-nn_dak <-nn_summary( spdak, "Dako")
-nn_gan <-nn_summary( spgan, "Gandangdewata")
-nn_kat <-nn_summary( spkat, "Katopasa")
-nn_lat <-nn_summary( splat, "Latimojong")
-nn_nok <-nn_summary( spnok, "Nokilalaki")
-nn_tor <-nn_summary( sptor, "Torompupu")
+tt_baw <- subset(sp_ses, select = names(sp_ses) %in% dlist$Bawakaraeng)
+tt_amb <- subset(sp_ses, select = names(sp_ses) %in% dlist$Ambang)
+
+library(picante)
+
+randomizeMatrix(tt_baw, null.model = "richness")
+
+```
+
+
+b <- picante::randomizeMatrix(sp_ses2, null.model = "independentswap", iterations = 1000) 
+
+
+#%>% 
+    as_tibble() %>% 
+    bind_cols(com = c("Ambang", "Bawakaraeng", "Buliohuto", "Dako", "Gandangdewata", "Katopasa", "Latimojong", "Nokilalaki", "Torompupu")) %>% 
+    pivot_longer(cols = -com, names_to = 'species') %>%
+    filter(as.logical(value)) %>%
+    select(-value) %>%
+    filter(com == {{com}}) %>% 
+    select(-com) %>%
+    pull(species)
+
+
+
+```{r}
+nn_amb <-nn_summary( spamb, "Ambang", dlist$Ambang)
+nn_baw <-nn_summary2( spbaw, "Bawakaraeng", dlist$Bawakaraeng)
+nn_bul <-nn_summary2( spbul, "Buliohuto", dlist$Buliohuto)
+nn_dak <-nn_summary( spdak, "Dako", dlist$Dako)
+nn_gan <-nn_summary( spgan, "Gandangdewata", dlist$GandangDewata)
+nn_kat <-nn_summary( spkat, "Katopasa", dlist$Katopasa)
+nn_lat <-nn_summary( splat, "Latimojong", dlist$Latimojong)
+nn_nok <-nn_summary( spnok, "Nokilalaki", dlist$Nokilalaki)
+nn_tor <-nn_summary( sptor, "Torompupu", dlist$Torompupu)
 
 
 nn_rand <- bind_rows(nn_amb, nn_baw, nn_bul, nn_dak, nn_gan, nn_kat, nn_lat, nn_nok, nn_tor) 
@@ -884,9 +1152,9 @@ rdlnn <- nn_rand %>% group_by(com) %>%
             sd = sd(value)) %>% 
   as.data.frame() %>% 
   right_join(rdlnn, by = 'com') %>% 
-  mutate(nnses_loc =  (nn_rda - mean) /sd) %>% 
+  mutate(c_nnses_loc =  (c_nn_rda - mean) /sd) %>% 
   select(!c(mean, sd)) %>% 
-  write_csv(here("Locomotion_Data", "NN_NNSES_Locomotor.csv"))
+  write_csv(here("Locomotion_Data", "C_NN_NNSES_Locomotor.csv"))
 ```
 While we are here, we should add all the Locomotor results into one df
 ```{r}

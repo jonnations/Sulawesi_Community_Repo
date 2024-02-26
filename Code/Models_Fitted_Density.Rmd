@@ -165,25 +165,25 @@ The previous way I did this was a work around for dealing with the variance of e
 Lets try that. Going to copy and edit the code above. 
 
 ```{r}
-cdat <- read_csv(here("Cranial_Data", "Cranial_36axes_Fitted.csv"))
+#cdat <- read_csv(here("Cranial_Data", "Cranial_36axes_Fitted.csv"))
 ```
 
 #### NN Estimate
 ```{r}
-cf <- cdat %>% 
-  select(c(Species, .draw, cPC1:cPC36)) 
+#cf <- cdat %>% 
+#  select(c(Species, .draw, cPC1:cPC36)) 
+#
+#amb_nni <- get_mnni(cf, spamb) %>%  mutate(com = "Ambang" )
+#baw_nni <- get_mnni(cf, spbaw) %>%  mutate(com = "Bawakaraeng" )
+#bul_nni <- get_mnni(cf, spbul) %>%  mutate(com = "Buliohuto" )
+#dak_nni <- get_mnni(cf, spdak) %>%  mutate(com = "Dako" )
+#gan_nni <- get_mnni(cf, spgan) %>%  mutate(com = "Gandangdewata" )
+#kat_nni <- get_mnni(cf, spkat) %>%  mutate(com = "Katopasa" )
+#lat_nni <- get_mnni(cf, splat) %>%  mutate(com = "Latimojong" )
+#nok_nni <- get_mnni(cf, spnok) %>%  mutate(com = "Nokilalaki" )
+#tor_nni <- get_mnni(cf, sptor) %>%  mutate(com = "Torompupu" )
 
-amb_nni <- get_mnni(cf, spamb) %>%  mutate(com = "Ambang" )
-baw_nni <- get_mnni(cf, spbaw) %>%  mutate(com = "Bawakaraeng" )
-bul_nni <- get_mnni(cf, spbul) %>%  mutate(com = "Buliohuto" )
-dak_nni <- get_mnni(cf, spdak) %>%  mutate(com = "Dako" )
-gan_nni <- get_mnni(cf, spgan) %>%  mutate(com = "Gandangdewata" )
-kat_nni <- get_mnni(cf, spkat) %>%  mutate(com = "Katopasa" )
-lat_nni <- get_mnni(cf, splat) %>%  mutate(com = "Latimojong" )
-nok_nni <- get_mnni(cf, spnok) %>%  mutate(com = "Nokilalaki" )
-tor_nni <- get_mnni(cf, sptor) %>%  mutate(com = "Torompupu" )
-
-nn_cran2 <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni) %>% rename(c_nn = value)
+#nn_cran2 <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni) %>% rename(c_nn = value)
 ```
 
 ```{r}
@@ -191,30 +191,6 @@ nn_cran2 <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_
 #adat <- adat  %>% bind_cols(dd)
 ```
 
-#### Quick Plot
-```{r}
-myx <- "Mean Nearest Neighbor Distance"
-p1 <- nn_cran %>% 
-  mutate(com = factor(com, level = level_order)) %>% 
- ggplot(aes(y = factor(com, level = level_order), x =c_nn, fill = com)) +
-  stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
-   labs(title="Broken Stick:PCs 1-2", y = "", fill = "Mountain") +
-  xlab(bquote(.(myx)^-1)) +
-  #xlim(1, 3.2) + 
-  theme_bw() + scale_fill_viridis_d(direction = -1, begin = 0, end = 0.9, option = "A") + guides(fill = guide_legend(reverse=T)) + theme(legend.position = "none") 
-p2 <- nn_cran2 %>% 
-  mutate(com = factor(com, level = level_order)) %>% 
- ggplot(aes(y = factor(com, level = level_order), x =c_nn, fill = com)) +
-  stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
-   labs(title="PCs 1-36", y = "", fill = "Mountain") +
-  xlab(bquote(.(myx)^-1)) +
-  #xlim(1, 3.2) + 
-  theme_bw() + scale_fill_viridis_d(direction = -1, begin = 0, end = 0.9, option = "A") + guides(fill = guide_legend(reverse=T)) + theme(legend.position = "none")
-
-(p1 | p2)
-```
-
-Moving on!
 
 # Cranial Size Estimate
 ```{r}
@@ -564,7 +540,7 @@ lat_nni <- get_mnni(idat, splat) %>%  mutate(com = "Latimojong" )
 #tor_nni <- get_mnni(idat, sptor) %>%  mutate(com = "Torompupu" )
 
 
-nn_N <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, lat_nni) %>% rename(N15_nn_group = value) %>% mutate(.draw = rep(1:4000, 6))
+nn_N <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, lat_nni) %>% rename(N15_nn = value) %>% mutate(.draw = rep(1:4000, 6))
 
 adat <- adat  %>% 
   full_join(nn_N, by = c(".draw", "com"))
@@ -586,7 +562,7 @@ lat_nni <- get_mnni(idat, splat) %>%  mutate(com = "Latimojong" )
 #tor_nni <- get_mnni(idat, sptor) %>%  mutate(com = "Torompupu" )
 
 
-nn_C <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, lat_nni) %>% rename(C13_nn_group = value) %>% mutate(.draw = rep(1:4000, 6))
+nn_C <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, lat_nni) %>% rename(C13_nn = value) %>% mutate(.draw = rep(1:4000, 6))
 
 adat <- adat  %>% 
   full_join(nn_C, by = c(".draw", "com"))
@@ -608,7 +584,7 @@ lat_nni <- get_mnni(idat, splat) %>%  mutate(com = "Latimojong" )
 #tor_nni <- get_mnni(idat, sptor) %>%  mutate(com = "Torompupu" )
 
 
-nn_i <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, lat_nni) %>% rename(iso_nn_group = value) %>% mutate(.draw = rep(1:4000, 6))
+nn_i <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, lat_nni) %>% rename(iso_nn = value) %>% mutate(.draw = rep(1:4000, 6))
 
 adat <- adat  %>% 
   full_join(nn_i, by = c(".draw", "com"))
