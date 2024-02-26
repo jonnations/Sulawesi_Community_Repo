@@ -10,7 +10,7 @@ I am only using the SES estimates, not the raw volume and density values.
 
 ## Load Up
 ```{r}
-pacman::p_load(here, tidyverse, tidybayes, brms, modelr, purrr, cmdstanr, patchwork)
+pacman::p_load(here, tidyverse, tidybayes, brms, modelr, purrr, cmdstanr, patchwork, qs)
 options(brms.backend = "cmdstanr")
 
 here::i_am('Code/Regression_Analyses.Rmd')
@@ -157,12 +157,14 @@ ttt <- ttt %>% mutate(fits = future_map(d, ~update(fit, newdata = .x, refresh = 
 
 plan(sequential)
 
-write_rds(ttt, here("Models", "All_Regression_Models_List2.rds"))
+
+qsave(ttt, here("Models", "All_Regression_Models_List2.qs"))
 ```
 
 ### Cleanup
 ```{r}
-ttt <- readRDS(here("Models", "All_Regression_Models_List2.rds"))
+ttt <- qread(here("Models", "All_Regression_Models_List2.qs"))
+
 b <- ttt %>%  mutate(beta = map(fits, cleanup)) %>%
                 unnest(beta) %>% 
                 rename(b_lower = "Q5.5",

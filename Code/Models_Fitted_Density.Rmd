@@ -9,7 +9,7 @@ This script estimates the density of traits in the communities using the Mean Ne
 Load packages and data and functions
 Most of these are different species lists.
 ```{r}
-pacman::p_load(here, tidyverse, tidybayes, brms, modelr, furrr, dispRity, patchwork)
+pacman::p_load(here, tidyverse, tidybayes, modelr, furrr, dispRity, patchwork)
 
 here::i_am('Code/Models_Fitted_Variance.Rmd')
 

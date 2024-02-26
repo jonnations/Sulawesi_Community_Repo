@@ -26,7 +26,7 @@ p1 <- fin %>%
   geom_vline(xintercept = 0, linetype = 2 ) + 
   geom_pointrange(size = 1.25, show.legend = F) +
   labs(x = expression(beta[italic(richness)]), y="") +
-  xlim(-.23, .43) +
+  xlim(-.41, .45) +
   ggtitle("Combined Trait NN Distance") +
   theme_classic()+
   theme(axis.title.x = element_text(size = 17))
@@ -57,7 +57,7 @@ p3 <- fin %>%
   scale_color_viridis_c(direction = -1, option = "B", end = 0.9) +
   geom_vline(xintercept = 0, linetype = 2 ) + 
   geom_pointrange(size = 1.25, show.legend = F) +
-  xlim(-.233, .45) +
+  xlim(-.41, .45) +
   labs(x = expression(beta[italic(richness)]), y="") +
   scale_y_discrete(labels = c("Nitrogen 15 Isotope" = expression(delta^15~N),
                               "Carbon 13 Isotope" = expression(delta^13~C))) +

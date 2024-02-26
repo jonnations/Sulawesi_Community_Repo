@@ -13,7 +13,7 @@ All of these scripts rely heavily on the **tidyverse**, **tidybayes**, and the B
 
 Load some general packages and write some common functions
 ```{r}
-pacman::p_load(here, tidyverse, brms, tidybayes, patchwork, modelr, cmdstanr, paletteer)
+pacman::p_load(here, tidyverse, brms, tidybayes, patchwork, modelr, cmdstanr, paletteer, qs)
 
 here::i_am('Code/Models_Fitted_Variance.Rmd')
 
@@ -99,8 +99,10 @@ mvcPC2<- brm(mvcmod,
           refresh = 0,
           cores = 4,
           #DEFAULT PRIORS ARE GOOD HERE! Student-t distribution. 
-          file = here("Models","Cranium_36_PC_fitted"),
+          #file = here("Models","Cranium_36_PC_fitted"),
           backend = 'cmdstanr')
+
+qsave(mvcPC2, here("Models","Cranium_36_PC_fitted.qs"))
 ```
 
 
@@ -191,8 +193,10 @@ mvdPC2<- brm(mvdmod,
           warmup = 4000,
           refresh = 0,
           cores = 4,
-          file = here("Models", "Dentary_20_PC_fitted"),
+          #file = here("Models", "Dentary_20_PC_fitted"),
           backend = "cmdstan")
+
+qsave(mvdPC2, here("Models", "Dentary_20_PC_fitted.qs"))
 ``` 
 
 ## Dentary Fitted Values
@@ -290,8 +294,10 @@ m.ex1<- brm(exmod,
           warmup = 4000,
           refresh = 0,
           cores = 4,
-          file = here("Models", "External_Measurement_Fitted"),
+          #file = here("Models", "External_Measurement_Fitted"),
           backend = 'cmdstanr')
+
+qsave(m.ex1, here("Models", "External_Measurement_Fitted.qs"))
 ```
 
 ## External Fitted
@@ -391,9 +397,11 @@ m.iso <- brm(imod,
           cores = 4,
           #DEFAULT PRIORS ARE GOOD HERE!
           control = list(adapt_delta = .99,
-                         max_treedepth = 12),
-          file = here("Models", "iso_fitted_Com_Grouping"))
+                         max_treedepth = 12)#,
+          #file = here("Models", "iso_fitted_Com_Grouping")
+          )
 
+qsave(m.iso, here("Models", "iso_fitted_Com_Grouping.qs"))
 ```
 
 ## Isotope  fitted
@@ -495,4 +503,3 @@ vLoc <- bind_rows(locamb, locbaw, locbul, locdak, locgan, lockat, loclat, locnok
   mutate(nsp = c(13,7,10,12,23,12,13,17,15)) %>% 
 write_csv(here("Locomotion_Data", "All_Locomotor_var.csv"))
 ```
-

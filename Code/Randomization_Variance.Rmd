@@ -107,7 +107,7 @@ get_xvar <- function(sp, data, mountain) {
     map(~ .x[, -c(1:2)]) %>%
     map_dfr(function(df) {
       # Pre-calculate variances to avoid repeating the same calculation
-      # surprisingly, this saves a lot of time (25% faster)
+      # surprisingly, this saves a lot of time (25% decrease)
       vHB <- var(df$HB)
       vrHF <- var(df$rHF)
       vrTail <- var(df$rTail)
@@ -121,7 +121,8 @@ get_xvar <- function(sp, data, mountain) {
         vEar = vrEar,
         vMass = vlMass,
         vBsz = (vHB + vlMass) / 2,
-        vExt = (vHB + vrHF + vrTail + vrEar + vlMass) / 5)
+        vExt = (vHB + vrHF + vrTail + vrEar + vlMass) / 5
+      )
     }) %>%
     sample_n(size = 100) %>%
     mutate(com = mountain)
