@@ -67,7 +67,7 @@ very helpful: https://stackoverflow.com/questions/61740025/dplyr-how-to-collapse
 ```{r}
 sample_com <- function(com) {
 dlist <- list()
-for (i in 1:50){
+for (i in 1:10){
   b <- picante::randomizeMatrix(sp_ses, null.model = "independentswap", iterations = 1000) %>% 
     as_tibble() %>% 
     bind_cols(com = c("Ambang", "Bawakaraeng", "Buliohuto", "Dako", "Gandangdewata", "Katopasa", "Latimojong", "Nokilalaki", "Torompupu")) %>% 
@@ -137,7 +137,7 @@ This will take an hour or so
 ```{r}
 furrr_options(seed = TRUE)
 options(future.rng.onMisuse="ignore")
-plan(multisession, workers = 6)
+plan(multisession, workers = 8)
 ```
 
 
@@ -229,7 +229,7 @@ get_cvar <- function(sp, data, mountain) {
 #### Estimate simulated communities
 Warning:: this may take hours depending on furrr & future settings. Using `workers = 6` on an Apple M1 takes about 4 minutes per community, or 36 min total.
 ```{r}
-plan(multisession, workers = 6)
+plan(multisession, workers = 8)
 tictoc::tic()
 camb <- future_map(sp_amb, ~ get_cvar(.x, cdat, "Ambang"), chunks = 1000) %>% bind_rows()
 cbaw <- future_map(sp_baw, ~ get_cvar(.x, cdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
@@ -294,7 +294,7 @@ get_dvar <- function(sp, data, mountain) {
 ```
 
 ```{r}
-plan(multisession, workers = 6)
+plan(multisession, workers = 8)
 tictoc::tic()
 damb <- future_map(sp_amb, ~ get_dvar(.x, ddat, "Ambang"), chunks = 1000) %>% bind_rows()
 dbaw <- future_map(sp_baw, ~ get_dvar(.x, ddat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
@@ -360,7 +360,7 @@ get_skvar <- function(sp, data, mountain) {
 
 ```{r}
 tictoc::tic()
-plan(multisession, workers = 6)
+plan(multisession, workers = 8)
 skamb <- future_map(sp_amb, ~ get_skvar(.x, skdat, "Ambang"), chunks = 1000) %>% bind_rows()
 skbaw <- future_map(sp_baw, ~ get_skvar(.x, skdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
 skbul <- future_map(sp_bul, ~ get_skvar(.x, skdat, "Buliohuto"), chunks = 1000) %>% bind_rows()
@@ -425,7 +425,7 @@ get_mvar <- function(sp, data, mountain) {
 ## Morpho Calculations 
 
 ```{r}
-plan(multisession, workers = 6)
+plan(multisession, workers = 8)
 tictoc::tic()
 mamb <- future_map(sp_amb, ~ get_mvar(.x, mdat, "Ambang"), chunks = 1000) %>% bind_rows()
 mbaw <- future_map(sp_baw, ~ get_mvar(.x, mdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
@@ -494,7 +494,7 @@ get_ivar <- function(sp, data, mountain) {
 
 #### Isotope calculation
 ```{r}
-plan(multisession, workers = 6)
+plan(multisession, workers = 8)
 
 iamb <- future_map(sp_amb, ~ get_ivar(.x, ifit, "Ambang"       ), chunks = 1000) %>% bind_rows()
 ibaw <- future_map(sp_baw, ~ get_ivar(.x, ifit, "Bawakaraeng"  ), chunks = 1000) %>% bind_rows()

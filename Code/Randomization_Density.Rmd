@@ -169,7 +169,7 @@ ddat <- read_csv(here("Dentary_Data", "Dentary_20axes_Fitted.csv")) %>%
 # Parallel computing options
 furrr_options(seed = TRUE)
 options(future.rng.onMisuse="ignore")
-plan(multisession, workers = 6)
+plan(multisession, workers = 8)
 
 dskamb <- future_map(sp_amb, ~ get_mnni(.x, ddat, "Ambang"), chunks = 1000) %>% bind_rows()
 dskbaw <- future_map(sp_baw, ~ get_mnni(.x, ddat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
@@ -209,7 +209,7 @@ cdat <- read_csv(here("Cranial_Data", "Cranial_36axes_Fitted.csv")) %>%
 # Parallel computing options
 furrr_options(seed = TRUE)
 options(future.rng.onMisuse="ignore")
-plan(multisession, workers = 6)
+plan(multisession, workers = 8)
 
 cszamb <- future_map(sp_amb, ~ get_mnni(.x, cdat, "Ambang"), chunks = 1000) %>% bind_rows()
 cszbaw <- future_map(sp_baw, ~ get_mnni(.x, cdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
@@ -250,7 +250,7 @@ ddat <- read_csv(here("Dentary_Data", "Dentary_20axes_Fitted.csv")) %>%
 # Parallel computing options
 furrr_options(seed = TRUE)
 options(future.rng.onMisuse="ignore")
-plan(multisession, workers = 6)
+plan(multisession, workers = 8)
 
 dszamb <- future_map(sp_amb, ~ get_mnni(.x, ddat, "Ambang"), chunks = 1000) %>% bind_rows()
 dszbaw <- future_map(sp_baw, ~ get_mnni(.x, ddat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
@@ -296,7 +296,7 @@ rm(cdat, ddat)
 # Parallel computing options
 furrr_options(seed = TRUE)
 options(future.rng.onMisuse="ignore")
-plan(multisession, workers = 6)
+plan(multisession, workers = 8)
 
 skamb <- future_map(sp_amb, ~ get_mnni(.x, skdat, "Ambang"), chunks = 1000) %>% bind_rows()
 skbaw <- future_map(sp_baw, ~ get_mnni(.x, skdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
@@ -340,7 +340,7 @@ xdat <- read_csv(here("External_Measurement_Data", "External_Fitted.csv")) %>%
 # Parallel computing options
 furrr_options(seed = TRUE)
 options(future.rng.onMisuse="ignore")
-plan(multisession, workers = 6)
+plan(multisession, workers = 8)
 
 bszamb <- future_map(sp_amb, ~ get_mnni(.x, xdat, "Ambang"), chunks = 1000) %>% bind_rows()
 bszbaw <- future_map(sp_baw, ~ get_mnni(.x, xdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
@@ -383,7 +383,7 @@ xdat <- read_csv(here("External_Measurement_Data", "External_Fitted.csv")) %>%
 # Parallel computing options
 furrr_options(seed = TRUE)
 options(future.rng.onMisuse="ignore")
-plan(multisession, workers = 6)
+plan(multisession, workers = 8)
 
 tailamb <- future_map(sp_amb, ~ get_mnni(.x, xdat, "Ambang"), chunks = 1000) %>% bind_rows()
 tailbaw <- future_map(sp_baw, ~ get_mnni(.x, xdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
@@ -423,7 +423,7 @@ xdat <- read_csv(here("External_Measurement_Data", "External_Fitted.csv")) %>%
 # Parallel computing options
 furrr_options(seed = TRUE)
 options(future.rng.onMisuse="ignore")
-plan(multisession, workers = 6)
+plan(multisession, workers = 8)
 
 hfamb <- future_map(sp_amb, ~ get_mnni(.x, xdat, "Ambang"), chunks = 1000) %>% bind_rows()
 hfbaw <- future_map(sp_baw, ~ get_mnni(.x, xdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
@@ -464,7 +464,7 @@ xdat <- read_csv(here("External_Measurement_Data", "External_Fitted.csv")) %>%
 # Parallel computing options
 furrr_options(seed = TRUE)
 options(future.rng.onMisuse="ignore")
-plan(multisession, workers = 6)
+plan(multisession, workers = 8)
 
 earamb <- future_map(sp_amb, ~ get_mnni(.x, xdat, "Ambang"), chunks = 1000) %>% bind_rows()
 earbaw <- future_map(sp_baw, ~ get_mnni(.x, xdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
@@ -504,7 +504,7 @@ xdat <- read_csv(here("External_Measurement_Data", "External_Fitted.csv")) %>%
 # Parallel computing options
 furrr_options(seed = TRUE)
 options(future.rng.onMisuse="ignore")
-plan(multisession, workers = 6)
+plan(multisession, workers = 8)
 
 hbamb <- future_map(sp_amb, ~ get_mnni(.x, xdat, "Ambang"), chunks = 1000) %>% bind_rows()
 hbbaw <- future_map(sp_baw, ~ get_mnni(.x, xdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
@@ -544,7 +544,7 @@ xdat <- read_csv(here("External_Measurement_Data", "External_Fitted.csv")) %>%
 # Parallel computing options
 furrr_options(seed = TRUE)
 options(future.rng.onMisuse="ignore")
-plan(multisession, workers = 6)
+plan(multisession, workers = 8)
 
 massamb <- future_map(sp_amb, ~ get_mnni(.x, xdat, "Ambang"), chunks = 1000) %>% bind_rows()
 massbaw <- future_map(sp_baw, ~ get_mnni(.x, xdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
@@ -584,7 +584,7 @@ xdat <- read_csv(here("External_Measurement_Data", "External_Fitted.csv")) %>%
 # Parallel computing options
 furrr_options(seed = TRUE)
 options(future.rng.onMisuse="ignore")
-plan(multisession, workers = 6)
+plan(multisession, workers = 8)
 
 x_shpamb <- future_map(sp_amb, ~ get_mnni(.x, xdat, "Ambang"), chunks = 1000) %>% bind_rows()
 x_shpbaw <- future_map(sp_baw, ~ get_mnni(.x, xdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
@@ -634,7 +634,7 @@ rm(cdat, ddat, xdat)
 # Parallel computing options
 furrr_options(seed = TRUE)
 options(future.rng.onMisuse="ignore")
-plan(multisession, workers = 6)
+plan(multisession, workers = 8)
 
 mshpamb <- future_map(sp_amb, ~ get_mnni(.x, morphdat, "Ambang"), chunks = 1000) %>% bind_rows()
 mshpbaw <- future_map(sp_baw, ~ get_mnni(.x, morphdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
@@ -674,7 +674,7 @@ idat <- read_csv(here("Isotope_Data", "Isotope_Group_Level_Fitted.csv")) %>% sel
 # Parallel computing options
 furrr_options(seed = TRUE)
 options(future.rng.onMisuse="ignore")
-plan(multisession, workers = 6)
+plan(multisession, workers = 8)
 
 camb <- future_map(sp_amb, ~ get_mnni(.x, idat, "Ambang"), chunks = 1000) %>%  bind_rows()
 cbaw <- future_map(sp_baw, ~ get_mnni(.x, idat, "Buliohuto"), chunks = 1000) %>%  bind_rows()
@@ -710,7 +710,7 @@ idat <- read_csv(here("Isotope_Data", "Isotope_Group_Level_Fitted.csv")) %>% sel
 # Parallel computing options
 furrr_options(seed = TRUE)
 options(future.rng.onMisuse="ignore")
-plan(multisession, workers = 6)
+plan(multisession, workers = 8)
 
 camb <- future_map(sp_amb, ~ get_mnni(.x, idat, "Ambang"), chunks = 1000) %>%  bind_rows()
 cbaw <- future_map(sp_baw, ~ get_mnni(.x, idat, "Buliohuto"), chunks = 1000) %>%  bind_rows()
@@ -746,7 +746,7 @@ idat <- read_csv(here("Isotope_Data", "Isotope_Group_Level_Fitted.csv")) %>% sel
 # Parallel computing options
 furrr_options(seed = TRUE)
 options(future.rng.onMisuse="ignore")
-plan(multisession, workers = 6)
+plan(multisession, workers = 8)
 
 camb <- future_map(sp_amb, ~ get_mnni(.x, idat, "Ambang"), chunks = 1000) %>%  bind_rows()
 cbaw <- future_map(sp_baw, ~ get_mnni(.x, idat, "Buliohuto"), chunks = 1000) %>%  bind_rows()
