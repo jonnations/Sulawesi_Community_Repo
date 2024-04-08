@@ -33,7 +33,10 @@ options(readr.show_col_types = FALSE)
 plan(multisession, workers = 6)
 ```
 
-#### Nearest Neighbor Function
+## Functions   
+
+#### Nearest Neighbor Function  
+
 This function gets a mean nearest neighbor value for each Bayesian draw of the trait estimate. So 1000 draws (what I am using) yields 1000 Mean Nearest Neighbor values.
 
  Neighbours function that allows NA's
@@ -81,7 +84,8 @@ check.dist.matrix2 <- function(matrix, method, just.check = FALSE, ...) {
 
 ```
 
-
+#### Nearest Neighbor Function2
+This function runs the previous NN function on all dataframes. 
 ```{r}
 get_mnni <- function(data, sp) {
   data %>% 
@@ -102,73 +106,13 @@ get_mnni <- function(data, sp) {
   }
 ```
 
-# Cranial Nearest Neighbor
-Load the necessary data
+## Cranial Nearest Neighbor
 
 ```{r}
 cdat <- read_csv(here("Cranial_Data", "Cranial_36axes_Fitted.csv"))
 ```
-#### Broken Stick
 
-Nearest neighbor requires all the axes to be treated the same (unlike what we did in the sum of variance method). Because of this, it isn't a good idea to use ALL or nearly ALL of the axes, as the nearest neighbor on axis 17 isn't nearly as biologically meaningful as the nearest neighbor on axis 1 or 2. So we need to do some PC selection. Using the broken stick method from `PCDimension` package:
-
-```{r}
-a = rep(1:36)
-#these are the PC variance values for the cranial Procrusted PCA
-true = c(0.204147859, 0.147885771, 0.064424297, 0.060399156, 0.043421343, 0.038126757, 0.036660724, 0.033351233, 0.030241809, 0.027281399, 0.023312389, 0.020690302, 0.017886499, 0.016987085, 0.016170664, 0.015161306, 0.014232396, 0.01234345, 0.011657948, 0.0105006, 0.009831498, 0.009525746, 0.009019535, 0.008004607, 0.007836483, 0.007517283, 0.007160749, 0.006919011, 0.00631384, 0.005867241, 0.005440684, 0.005212542, 0.005101055, 0.004628909, 0.004261733, 0.003790978)
-expected = PCDimension::brokenStick(1:36, 36)
-c_bs = data.frame(a, true, expected)
-c_bs
-```
-Looking at this, the %variation falls below the expected variation on the 3rd PC
-
-#### Cranial NN Estimate
-Estimate Cranial Shape Nearest Neighbor for each community
-```{r}
-cf <- cdat %>% 
-  select(c(Species, .draw, cPC1, cPC2)) 
-
-amb_nni <- get_mnni(cf, spamb) %>%  mutate(com = "Ambang" )
-baw_nni <- get_mnni(cf, spbaw) %>%  mutate(com = "Bawakaraeng" )
-bul_nni <- get_mnni(cf, spbul) %>%  mutate(com = "Buliohuto" )
-dak_nni <- get_mnni(cf, spdak) %>%  mutate(com = "Dako" )
-gan_nni <- get_mnni(cf, spgan) %>%  mutate(com = "Gandangdewata" )
-kat_nni <- get_mnni(cf, spkat) %>%  mutate(com = "Katopasa" )
-lat_nni <- get_mnni(cf, splat) %>%  mutate(com = "Latimojong" )
-nok_nni <- get_mnni(cf, spnok) %>%  mutate(com = "Nokilalaki" )
-tor_nni <- get_mnni(cf, sptor) %>%  mutate(com = "Torompupu" )
-
-nn_cran <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni) %>% rename(c_nn = value)
-```
-
-```{r}
-dd <- nn_cran %>% select(c_nn)
-adat <- adat  %>% bind_cols(dd)
-```
-
-test plot
-```{r}
-myx <- "Mean Nearest Neighbor Distance"
-nn_cran %>% 
-  mutate(com = factor(com, level = level_order)) %>% 
- ggplot(aes(y = factor(com, level = level_order), x =c_nn, fill = com)) +
-  stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
-   labs(title="Broken Stick: PC's 1&2", y = "", fill = "Mountain") +
-  xlab(bquote(.(myx)^-1)) +
-  #xlim(1, 3.2) + 
-  theme_bw() + scale_fill_viridis_d(direction = -1, begin = 0, end = 0.9, option = "A") + guides(fill = guide_legend(reverse=T)) + theme(legend.position = "none") 
-```
-
-# Cranial NN - All 36 Axes
-The previous way I did this was a work around for dealing with the variance of each PC axis, but turns out that that was only a problem because I was SCALING the data. The natural cumulative variance of each PC axis is intrinsic in the values themselves, so in theory I could do NN analyses without using broken stick.
-
-Lets try that. Going to copy and edit the code above. 
-
-```{r}
-#cdat <- read_csv(here("Cranial_Data", "Cranial_36axes_Fitted.csv"))
-```
-
-#### NN Estimate
+### NN Estimate 
 ```{r}
 cf <- cdat %>% 
   select(c(Species, .draw, cPC1:cPC36)) 
@@ -186,8 +130,7 @@ tor_nni <- get_mnni(cf, sptor) %>%  mutate(com = "Torompupu" )
 nn_cran2 <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni) %>% rename(c_nn36 = value)
 ```
 
-Saved as 'c_nn36'
-
+#### Write to `All_Traits`  
 ```{r}
 dd <- nn_cran2 %>% select(c_nn36)
 adat <- read_csv(here("All_Traits.csv"))
@@ -195,21 +138,22 @@ adat <- adat  %>% bind_cols(dd)
 adat %>% write_csv(here("All_Traits.csv"))
 ```
 
-
+#### Cranium Plot
 ```{r}
 myx <- "Mean Nearest Neighbor Distance"
 nn_cran2 %>% 
   mutate(com = factor(com, level = level_order)) %>% 
- ggplot(aes(y = factor(com, level = level_order), x =c_nn36, fill = com)) +
+  ggplot(aes(y = factor(com, level = level_order), x =c_nn36, fill = com)) +
   stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
-   labs(title="PC's 1-36", y = "", fill = "Mountain") +
-  xlab(bquote(.(myx)^-1)) +
-  #xlim(1, 3.2) + 
-  theme_bw() + scale_fill_viridis_d(direction = -1, begin = 0, end = 0.9, option = "A") + guides(fill = guide_legend(reverse=T)) + theme(legend.position = "none") 
+  labs(title="PC's 1-36", y = "", fill = "Mountain") +
+  theme_bw() +
+  guides(fill = guide_legend(reverse=T)) + 
+  theme(legend.position = "none") 
 ```
 
 
-# Cranial Size Estimate
+### Cranial Size Estimate  
+
 ```{r}
 cf <- cdat %>% 
   select(c(Species, .draw, cCsize)) 
@@ -226,65 +170,24 @@ tor_nni <- get_mnni(cf, sptor) %>%  mutate(com = "Torompupu" )
 
 
 nn_csize <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni) %>% rename(csize_nn = value)
+```
 
+#### Write to `All_Traits`
+```{r}
 dd <- nn_csize %>% select(csize_nn)
 adat <- adat  %>% bind_cols(dd)
 
 ```
 
-
-
-
-# Dentary Nearest Neighbor
+## Dentary Nearest Neighbor
 
 ```{r}
 ddat <- read_csv(here("Dentary_Data", "Dentary_20axes_Fitted.csv"))
 ```
 
 
-#### Broken Stick
-```{r}
-a = rep(1:20)
-#these are the PC variance values for the dentary Procrustes PCA
-true = c(0.2821, 0.1529, 0.1424, 0.0693, 0.0548, 0.0393, 0.0345, 0.0269, 0.0241, 0.0212, 0.0173, 0.0164, 0.0126, 0.0117, 0.0102, 0.0097, 0.0089, 0.0082, 0.0066, 0.0059)
-expected = PCDimension::brokenStick(1:20, 20)
-d_bs = data.frame(a, true, expected)
-d_bs %>% round(digits = 3)
-```
-Keep the first 3 PCs of the dentary shape.
+### NN Estimate  
 
-#### Dentary NN Estimate
-Estimate Dentary Shape Nearest Neighbor for each community
-```{r}
-df <- ddat %>% 
-  select(c(Species, .draw, dPC1, dPC2, dPC3)) 
-
-amb_nni <- get_mnni(df, spamb) %>%  mutate(com = "Ambang" )
-baw_nni <- get_mnni(df, spbaw) %>%  mutate(com = "Bawakaraeng" )
-bul_nni <- get_mnni(df, spbul) %>%  mutate(com = "Buliohuto" )
-dak_nni <- get_mnni(df, spdak) %>%  mutate(com = "Dako" )
-gan_nni <- get_mnni(df, spgan) %>%  mutate(com = "Gandangdewata" )
-kat_nni <- get_mnni(df, spkat) %>%  mutate(com = "Katopasa" )
-lat_nni <- get_mnni(df, splat) %>%  mutate(com = "Latimojong" )
-nok_nni <- get_mnni(df, spnok) %>%  mutate(com = "Nokilalaki" )
-tor_nni <- get_mnni(df, sptor) %>%  mutate(com = "Torompupu" )
-
-myx <- "Mean Nearest Neighbor Distance"
-
-nn_dent <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni) %>% rename(d_nn = value)
-```
-
-
-```{r}
-dd <- nn_dent %>% select(d_nn)
-adat <- read_csv(here("All_Traits.csv"))
-adat <- adat  %>% bind_cols(dd)
-adat %>% write_csv(here("All_Traits.csv"))
-```
-
-
-
-## Dentary NN- All 20 Axes
 ```{r}
 df <- ddat %>% 
   select(c(Species, .draw, dPC1:dPC20)) 
@@ -301,35 +204,24 @@ tor_nni <- get_mnni(df, sptor) %>%  mutate(com = "Torompupu" )
 
 myx <- "Mean Nearest Neighbor Distance"
 
-nn_dent2 <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni) %>% rename(d_nn20 = value)
+nn_dent <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni) %>% rename(d_nn20 = value)
 ```
 
-
+#### Dentary Plot
 ```{r}
-
-p1 <- nn_dent %>% 
-  mutate(com = factor(com, level = level_order)) %>% 
- ggplot(aes(y = factor(com, level = level_order), x =d_nn, fill = com)) +
+nn_dent %>% 
+  mutate(com = factor(com, level = level_order)) %>%  
+  ggplot(aes(y = factor(com, level = level_order), x =d_nn20, fill = com)) +
   stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
-   labs(title="PC's 1-3", y = "", fill = "Mountain") +
+  labs(title="PC's 1-20", y = "", fill = "Mountain") +
   xlab(bquote(.(myx))) +
-  #xlim(1, 3.2) + 
-  theme_bw() + scale_fill_viridis_d(direction = -1, begin = 0, end = 0.9, option = "A") + guides(fill = guide_legend(reverse=T)) + theme(legend.position = "none") 
-
-p2 <- nn_dent2 %>% 
-  mutate(com = factor(com, level = level_order)) %>% 
- ggplot(aes(y = factor(com, level = level_order), x =d_nn20, fill = com)) +
-  stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
-   labs(title="PC's 1-20", y = "", fill = "Mountain") +
-  xlab(bquote(.(myx))) +
-  #xlim(1, 3.2) + 
-  theme_bw() + scale_fill_viridis_d(direction = -1, begin = 0, end = 0.9, option = "A") + guides(fill = guide_legend(reverse=T)) + theme(legend.position = "none") 
-
-p1 / p2
+  theme_bw() +
+  guides(fill = guide_legend(reverse=T)) + 
+  theme(legend.position = "none") 
 ```
 
 
-
+#### Write to `All_Traits`
 ```{r}
 dd <- nn_dent2 %>% select(d_nn20)
 adat <- read_csv(here("All_Traits.csv"))
@@ -339,7 +231,7 @@ adat %>% write_csv(here("All_Traits.csv"))
 
 Very similar to cranial!
 
-## Dentary Size Estimate
+### Dentary Size Estimate
 ```{r}
 df <- ddat %>% 
   select(c(Species, .draw, dCsize)) 
@@ -355,58 +247,25 @@ nok_nni <- get_mnni(df, spnok) %>%  mutate(com = "Nokilalaki" )
 tor_nni <- get_mnni(df, sptor) %>%  mutate(com = "Torompupu" )
 
 nn_dsize <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni) %>% rename(dsize_nn = value)
+```
 
+#### Write to `All_Traits`
+```{r}
 
 dd <- nn_dsize %>% select(dsize_nn)
 adat <- adat  %>% bind_cols(dd)
 ```
 
 
+## Skull Nearest Neighbor 
 
-
-#Skull Nearest Neighbor
-How do I do this?
 ```{r}
 skdat <- ddat  %>% select(!.row) %>% 
   full_join(cdat, by = c(".draw", "Species"))
 ```
-I guess I need to figure a way around the NAs
-The only issue is the Paucidentomys in Latimojong and Gandang
-
-## Skull NN Estimate
-```{r}
-df <- skdat %>% 
-  select(c(Species, .draw, dPC1, dPC2, dPC3, cPC1, cPC2)) 
-
-amb_nni <- get_mnni(df, spamb) %>%  mutate(com = "Ambang" )
-baw_nni <- get_mnni(df, spbaw) %>%  mutate(com = "Bawakaraeng" )
-bul_nni <- get_mnni(df, spbul) %>%  mutate(com = "Buliohuto" )
-dak_nni <- get_mnni(df, spdak) %>%  mutate(com = "Dako" )
-gan_nni <- get_mnni(df, spgan) %>%  mutate(com = "Gandangdewata" )
-kat_nni <- get_mnni(df, spkat) %>%  mutate(com = "Katopasa" )
-lat_nni <- get_mnni(df, splat) %>%  mutate(com = "Latimojong" )
-nok_nni <- get_mnni(df, spnok) %>%  mutate(com = "Nokilalaki" )
-tor_nni <- get_mnni(df, sptor) %>%  mutate(com = "Torompupu" )
-
-nn_sk <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni) %>% rename(sk_nn = value)
-
-rm(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni)
-
-dd <- nn_sk %>% select(sk_nn)
-adat <- adat %>% bind_cols(dd)
-```
 
 
-#Skull Nearest Neighbor 56
-How do I do this?
-```{r}
-skdat <- ddat  %>% select(!.row) %>% 
-  full_join(cdat, by = c(".draw", "Species"))
-```
-I guess I need to figure a way around the NAs
-The only issue is the Paucidentomys in Latimojong and Gandang
-
-## Skull NN Estimate
+### Skull NN Estimate
 ```{r}
 df <- skdat %>% 
   select(c(Species, .draw, dPC1:dPC20, cPC1:cPC36)) 
@@ -424,22 +283,23 @@ tor_nni <- get_mnni(df, sptor) %>%  mutate(com = "Torompupu" )
 nn_sk2 <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni) %>% rename(sk_nn56 = value)
 
 rm(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni)
+```
 
+#### Write to `All_Traits`
+```{r}
 dd <- nn_sk2 %>% select(sk_nn56)
 adat <- adat %>% bind_cols(dd)
 ```
 
 
 
-
-
-# External Measurements
+## External Measurements
 
 ```{r}
 edat <- read_csv(here("External_Measurement_Data", "External_Fitted.csv"))
 ```
 
-## Head-Body NN
+### Head-Body NN
 ```{r}
 df <- edat %>% 
   select(c(Species, .draw, HB)) 
@@ -455,20 +315,15 @@ nok_nni <- get_mnni(df, spnok) %>%  mutate(com = "Nokilalaki" )
 tor_nni <- get_mnni(df, sptor) %>%  mutate(com = "Torompupu" )
 
 nn_HB <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni) %>% rename(HB_nn = value)
-
-dd <- nn_HB %>% select(HB_nn)
-adat <- adat %>% bind_cols(dd)
-
-nn_HB %>% 
-  mutate(com = factor(com, level = level_order)) %>% 
- ggplot(aes(y = factor(com, level = level_order), x = 1/HB_nn, fill = com)) +
-  stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
-   labs(title="HB",x="Mean Nearest Neighbor Distance", y = "", fill = "Mountain") +
-  xlim(2, 11) +
-  theme_bw() + scale_fill_viridis_d(direction = -1, begin = 0, end = 0.9, option = "A") + guides(fill = guide_legend(reverse=T)) + theme(legend.position = "none") 
 ```
 
-## Tail NN
+#### Write  
+```{r}
+dd <- nn_HB %>% select(HB_nn)
+adat <- adat %>% bind_cols(dd)
+```
+
+### Tail NN
 ```{r}
 df <- edat %>% 
   select(c(Species, .draw, rTail)) 
@@ -484,12 +339,15 @@ nok_nni <- get_mnni(df, spnok) %>%  mutate(com = "Nokilalaki" )
 tor_nni <- get_mnni(df, sptor) %>%  mutate(com = "Torompupu" )
 
 nn_Tail <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni) %>% rename(Tail_nn = value)
+```
 
+#### Write  
+```{r}
 dd <- nn_Tail %>% select(Tail_nn)
 adat <- adat %>% bind_cols(dd)
 ```
 
-## HF NN
+### HF NN
 ```{r}
 df <- edat %>% 
   select(c(Species, .draw, rHF)) 
@@ -505,13 +363,16 @@ nok_nni <- get_mnni(df, spnok) %>%  mutate(com = "Nokilalaki" )
 tor_nni <- get_mnni(df, sptor) %>%  mutate(com = "Torompupu" )
 
 nn_HF <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni) %>% rename(HF_nn = value)
+```
 
+#### write
+```{r}
 dd <- nn_HF %>% select(HF_nn)
 adat <- adat %>% bind_cols(dd)
 ```
 
 
-## Ear NN
+### Ear NN
 ```{r}
 df <- edat %>% 
   select(c(Species, .draw, rEar)) 
@@ -527,12 +388,15 @@ nok_nni <- get_mnni(df, spnok) %>%  mutate(com = "Nokilalaki" )
 tor_nni <- get_mnni(df, sptor) %>%  mutate(com = "Torompupu" )
 
 nn_Ear <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni) %>% rename(Ear_nn = value)
+```
 
+#### write
+```{r}
 dd <- nn_Ear %>% select(Ear_nn)
 adat <- adat %>% bind_cols(dd)
 ```
 
-## Mass NN
+### Mass NN
 ```{r}
 df <- edat %>% 
   select(c(Species, .draw, lMass)) 
@@ -548,13 +412,16 @@ nok_nni <- get_mnni(df, spnok) %>%  mutate(com = "Nokilalaki" )
 tor_nni <- get_mnni(df, sptor) %>%  mutate(com = "Torompupu" )
 
 nn_Mass <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni) %>% rename(Mass_nn = value)
+```
 
+#### write
+```{r}
 dd <- nn_Mass %>% select(Mass_nn)
 adat <- adat %>% bind_cols(dd)
 ```
 
 
-## Bsz NN
+### Body size NN
 ```{r}
 df <- edat %>% 
   select(c(Species, .draw, lMass, HB)) 
@@ -570,12 +437,15 @@ nok_nni <- get_mnni(df, spnok) %>%  mutate(com = "Nokilalaki" )
 tor_nni <- get_mnni(df, sptor) %>%  mutate(com = "Torompupu" )
 
 nn_Bsz <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni) %>% rename(Bsz_nn = value)
+```
 
+#### write
+```{r}
 dd <- nn_Bsz %>% select(Bsz_nn)
 adat <- adat %>% bind_cols(dd)
 ```
 
-## All External NN
+### All External NN
 
 ```{r}
 df <- edat %>% 
@@ -592,12 +462,15 @@ nok_nni <- get_mnni(df, spnok) %>%  mutate(com = "Nokilalaki" )
 tor_nni <- get_mnni(df, sptor) %>%  mutate(com = "Torompupu" )
 
 nn_ext <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni) %>% rename(ext_nn = value)
+```
 
+#### Write
+```{r}
 dd <- nn_ext %>% select(ext_nn)
 adat <- adat %>% bind_cols(dd)
 ```
 
-# Morpho NN
+### Morpho NN
 This is skull shape and external measurements hb, tail, hf, lmass, ear
 
 ```{r}
@@ -619,7 +492,10 @@ nok_nni <- get_mnni(df, spnok) %>%  mutate(com = "Nokilalaki" )
 tor_nni <- get_mnni(df, sptor) %>%  mutate(com = "Torompupu" )
 
 nn_morph <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_nni) %>% rename(morpho_nn = value)
+```
 
+#### write
+```{r}
 dd <- nn_morph %>% select(morpho_nn)
 adat <- adat %>% bind_cols(dd)
 
@@ -632,10 +508,10 @@ rm(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_nni, nok_nni, tor_n
 adat %>% write_csv(here("All_Traits.csv"))
 ```
 
-# Isotope GROUP Nearest Neighbor
+## Isotope GROUP Nearest Neighbor
 
 Realized I have to use the grouping data again. Thats ok. It'll be just like any of the other variables.
-## N15 Group
+### N15 Group NN
 ```{r}
 idat <- read_csv(here("Isotope_Data", "Isotope_Group_Level_Fitted.csv")) %>% select(Species, .draw, sN15)
 
@@ -652,12 +528,15 @@ lat_nni <- get_mnni(idat, splat) %>%  mutate(com = "Latimojong" )
 
 
 nn_N <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, lat_nni) %>% rename(N15_nn = value) %>% mutate(.draw = rep(1:4000, 6))
+```
 
+#### write
+```{r}
 adat <- adat  %>% 
   full_join(nn_N, by = c(".draw", "com"))
 ```
 
-## C13 Group
+### C13 Group NN
 ```{r}
 idat <- read_csv(here("Isotope_Data", "Isotope_Group_Level_Fitted.csv")) %>% select(Species, .draw, sC13)
 
@@ -674,12 +553,15 @@ lat_nni <- get_mnni(idat, splat) %>%  mutate(com = "Latimojong" )
 
 
 nn_C <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, lat_nni) %>% rename(C13_nn = value) %>% mutate(.draw = rep(1:4000, 6))
+```
 
+#### Write
+```{r}
 adat <- adat  %>% 
   full_join(nn_C, by = c(".draw", "com"))
 ```
 
-## Iso Group
+### Iso Group NN
 ```{r}
 idat <- read_csv(here("Isotope_Data", "Isotope_Group_Level_Fitted.csv")) %>% select(Species, .draw, sC13, sN15)
 
@@ -696,12 +578,15 @@ lat_nni <- get_mnni(idat, splat) %>%  mutate(com = "Latimojong" )
 
 
 nn_i <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, lat_nni) %>% rename(iso_nn = value) %>% mutate(.draw = rep(1:4000, 6))
+```
 
+#### write
+```{r}
 adat <- adat  %>% 
   full_join(nn_i, by = c(".draw", "com"))
 ```
 
-#Write All Data
+## Write Data to File
 ```{r}
 adat %>% write_csv(here("All_Traits.csv"))
 ```
