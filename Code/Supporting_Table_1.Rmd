@@ -1,0 +1,379 @@
+---
+title: "Supp_Table_1"
+author: "Jon Nations"
+date: "3/8/2022"
+output: html_document
+---
+
+# Supporting table 1
+
+
+Making a big html table of the median and 89% CIs of the v, vses, nn and nnses of all traits. 
+
+# Load Packages and Models
+```{r}
+pacman::p_load(tidyverse,tidybayes, kableExtra)
+
+dat <- read_csv('All_Traits.csv')
+```
+
+
+I think i need to make a function that generates the median and 89% ci's for all traits in the "all_traits" db. Then I need to arrange the table properly. I am thinking:
+
+```{r}
+dt <- data.frame(trait = c(rep("a", 9), rep("b", 9)),
+                               com = rep(LETTERS[1:9], times = 2),
+                 v = 1:18,
+                 vses = 1:18)
+kbl(dt, align = "c") %>%
+  kable_paper(full_width = F) %>%
+  column_spec(1, bold = T) %>%
+  collapse_rows(columns = 1:2, valign = "top")
+```
+This way I don't really have to worry about the seperate row for the CI, I can jsut put them in parentheses next to the value.
+
+Bottom answer [here](https://stackoverflow.com/questions/34781769/rmarkdown-table-with-cells-that-have-two-values) is the inspiration.
+
+```{r}
+mypaste <- function(x, y, z) {
+              paste0(x, " (", y,", ", z, ") ")
+}
+```
+
+
+Pulling some scripts from the model script in the Sulawesi Community project
+
+
+SO... I need to summarise each value for each community, then put them in order, then sort?
+
+## V Data
+I Think it works best to make 4 dataframes, then add the columns together by trait. I will also need to standardize the traits. 
+```{r}
+vdat <- 
+  dat %>% select(com, contains("v"), ext_scaled) %>% 
+  select(!contains("ses")) %>% 
+  #select(!c(vN15, vC13, iso_var)) %>% 
+  group_by(com) %>% 
+  summarise_at(vars(1:16),
+               list(u89 = ~quantile(., c(0.945), na.rm = TRUE),
+                    l89 = ~quantile(., c(0.055), na.rm = TRUE),
+                    mean = ~mean(.,  na.rm = TRUE)),
+               .names = "{.fn}") %>% 
+  pivot_longer(!com ) %>% 
+  separate(name, into = c("trait", "stat"), sep="_(?=[^_]+$)") %>% 
+  pivot_wider(names_from = stat) %>% 
+  select(trait, com, mean, l89, u89) %>% 
+  mutate_if(is.numeric, ~round(., 2))
+
+nam <- vdat$com
+trt <- vdat$trait
+x = vdat$mean
+y = vdat$l89
+z = vdat$u89
+df2 <- as.data.frame(mypaste(x, y, z))
+
+vdf <- bind_cols(nam, trt, df2) %>% 
+  rename(Community = "...1",
+         Trait = "...2",
+         "Volume" = "mypaste(x, y, z)") %>% 
+  select(2,1,3) %>% 
+  #arrange(Trait, Community) %>% 
+  mutate(Trait = recode(Trait, 
+                        "sk_var" = "Head Shape",
+                        "dv_wei" = "Dentary Shape",
+                        'cv_wei' = 'Cranium Shape',
+                        'iso_var' = "Isospace" ,
+                        'morpho_var' = "Morphology",
+                        'vBsz' = "Body Size",
+                        'vC13' = "Carbon13",
+                        'vN15' = 'Nitrogen15',
+                        'vdCsize' = 'Dentary Size',
+                        'vcCsize' = 'Cranium Size',
+                        'vEar' = 'Ear Length',
+                        'vHB' = 'Head-Body Length',
+                        'vHF' = 'Hind Foot Length',
+                        'vMass' = 'Mass',
+                        'vTail' = 'Tail Length',
+                        'ext_scaled' = 'External Proportions'),
+         comb = case_when(Trait %in% c('Skull Shape', 
+                                       'Body Size',
+                                       'Isospace',
+                                       'Morphology',
+                                       'External Proportions') ~ 'A',
+                          TRUE ~ 'B')) %>% 
+  arrange(comb, Trait, Community) #%>%
+```
+
+```{r}
+vdf %>% select(!comb) %>% kbl( align = "c") %>%
+  kable_paper(full_width = F) %>%
+  column_spec(1, bold = T) %>%
+  collapse_rows(columns = 1:2, valign = "top") 
+```
+
+## V SES Data
+
+```{r}
+vsdat <- 
+  dat %>% select(com, contains("ses")) %>% 
+  select(!contains("nn")) %>% 
+  group_by(com) %>% 
+  summarise_at(vars(1:16),
+               list(u89 = ~quantile(., c(0.945), na.rm = TRUE),
+                    l89 = ~quantile(., c(0.055), na.rm = TRUE),
+                    mean = ~mean(.,  na.rm = TRUE)),
+               .names = "{.fn}") %>% 
+  pivot_longer(!com ) %>% 
+  separate(name, into = c("trait", "stat"), sep="_(?=[^_]+$)") %>% 
+  pivot_wider(names_from = stat) %>% 
+  select(trait, com, mean, l89, u89) %>% 
+  mutate_if(is.numeric, ~round(., 2))
+
+nam <- vsdat$com
+trt <- vsdat$trait
+x = vsdat$mean
+y = vsdat$l89
+z = vsdat$u89
+df2 <- as.data.frame(mypaste(x, y, z))
+
+vsdf <- bind_cols(nam, trt, df2) %>% 
+  rename(Community = "...1",
+         Trait = "...2",
+         "Volume SES" = "mypaste(x, y, z)") %>% 
+  select(2,1,3) %>% 
+  #arrange(Trait, Community) %>% 
+  mutate(Trait = recode(Trait, 
+                        "ses_vsk" = "Head Shape",
+                        "ses_dv_wei" = "Dentary Shape",
+                        'ses_cv_wei' = 'Cranium Shape',
+                        'ses_vIso_group' = "Isospace" ,
+                        'ses_morpho' = "Morphology",
+                        'ses_vBsz' = "Body Size",
+                        'ses_vC13_group' = "Carbon13",
+                        'ses_vN15_group' = 'Nitrogen15',
+                        'ses_vdCsize' = 'Dentary Size',
+                        'ses_vcCsize' = 'Cranium Size',
+                        'ses_vEar' = 'Ear Length',
+                        'ses_vHB' = 'Head-Body Length',
+                        'ses_vHF' = 'Hind Foot Length',
+                        'ses_vMass' = 'Mass',
+                        'ses_vTail' = 'Tail Length',
+                        'ses_ext' = 'External Proportions'),
+         comb = case_when(Trait %in% c('Skull Shape', 
+                                       'Body Size',
+                                       'Isospace',
+                                       'Morphology',
+                                       'External Proportions') ~ 'A',
+                          TRUE ~ 'B')) %>% 
+  arrange(comb, Trait, Community)
+```
+
+## NN Table
+
+```{r}
+ndat <- 
+  dat %>% select(com, contains("nn")) %>% 
+  select(!contains("ses")) %>% 
+  group_by(com) %>% 
+  summarise_at(vars(1:16),
+               list(u89 = ~quantile(., c(0.945), na.rm = TRUE),
+                    l89 = ~quantile(., c(0.055), na.rm = TRUE),
+                    mean = ~mean(.,  na.rm = TRUE)),
+               .names = "{.fn}") %>% 
+  pivot_longer(!com ) %>% 
+  separate(name, into = c("trait", "stat"), sep="_(?=[^_]+$)") %>% 
+  pivot_wider(names_from = stat) %>% 
+  select(trait, com, mean, l89, u89) %>% 
+  mutate_if(is.numeric, ~round(., 2))
+
+nam <- ndat$com
+trt <- ndat$trait
+x = ndat$mean
+y = ndat$l89
+z = ndat$u89
+df2 <- as.data.frame(mypaste(x, y, z))
+
+ndf <- bind_cols(nam, trt, df2) %>% 
+  rename(Community = "...1",
+         Trait = "...2",
+         "Density" = "mypaste(x, y, z)") %>% 
+  select(2,1,3) %>% 
+  #arrange(Trait, Community) %>% 
+  mutate(Trait = recode(Trait, 
+                        "sk_nn" = "Head Shape",
+                        "d_nn" = "Dentary Shape",
+                        'c_nn' = 'Cranium Shape',
+                        'iso_nn' = "Isospace" ,
+                        'morpho_nn' = "Morphology",
+                        'Bsz_nn' = "Body Size",
+                        'C13_nn' = "Carbon13",
+                        'N15_nn' = 'Nitrogen15',
+                        'dsize_nn' = 'Dentary Size',
+                        'csize_nn' = 'Cranium Size',
+                        'Ear_nn' = 'Ear Length',
+                        'HB_nn' = 'Head-Body Length',
+                        'HF_nn' = 'Hind Foot Length',
+                        'Mass_nn' = 'Mass',
+                        'Tail_nn' = 'Tail Length',
+                        'ext_nn' = 'External Proportions'),
+         comb = case_when(Trait %in% c('Skull Shape', 
+                                       'Body Size',
+                                       'Isospace',
+                                       'Morphology',
+                                       'External Proportions') ~ 'A',
+                          TRUE ~ 'B')) %>% 
+  arrange(comb, Trait, Community)
+```
+
+## NNSES Table
+
+```{r}
+nsdat <- 
+  dat %>% select(com, contains("nnses")) %>% 
+  group_by(com) %>% 
+  summarise_at(vars(1:16),
+               list(u89 = ~quantile(., c(0.945), na.rm = TRUE),
+                    l89 = ~quantile(., c(0.055), na.rm = TRUE),
+                    mean = ~mean(.,  na.rm = TRUE)),
+               .names = "{.fn}") %>% 
+  pivot_longer(!com ) %>% 
+  separate(name, into = c("trait", "stat"), sep="_(?=[^_]+$)") %>% 
+  pivot_wider(names_from = stat) %>% 
+  select(trait, com, mean, l89, u89) %>% 
+  mutate_if(is.numeric, ~round(., 2))
+
+nam <- nsdat$com
+trt <- nsdat$trait
+x = nsdat$mean
+y = nsdat$l89
+z = nsdat$u89
+df2 <- as.data.frame(mypaste(x, y, z))
+
+nsdf <- bind_cols(nam, trt, df2) %>% 
+  rename(Community = "...1",
+         Trait = "...2",
+         "Density SES" = "mypaste(x, y, z)") %>% 
+  select(2,1,3) %>% 
+  #arrange(Trait, Community) %>% 
+  mutate(Trait = recode(Trait, 
+                        "nnses_sk" = "Head Shape",
+                        "nnses_d" = "Dentary Shape",
+                        'nnses_c' = 'Cranium Shape',
+                        'nnses_iso' = "Isospace" ,
+                        'nnses_morpho' = "Morphology",
+                        'nnses_Bsz' = "Body Size",
+                        'nnses_C13' = "Carbon13",
+                        'nnses_N15' = 'Nitrogen15',
+                        'nnses_dsize' = 'Dentary Size',
+                        'nnses_csize' = 'Cranium Size',
+                        'nnses_Ear' = 'Ear Length',
+                        'nnses_HB' = 'Head-Body Length',
+                        'nnses_HF' = 'Hind Foot Length',
+                        'nnses_Mass' = 'Mass',
+                        'nnses_Tail' = 'Tail Length',
+                        'nnses_ext' = 'External Proportions'),
+         comb = case_when(Trait %in% c('Skull Shape', 
+                                       'Body Size',
+                                       'Isospace',
+                                       'Morphology',
+                                       'External Proportions') ~ 'A',
+                          TRUE ~ 'B')) %>% 
+  arrange(comb, Trait, Community)
+```
+# Finalize Table
+
+## Data Wrangle
+```{r}
+tabl <- vdf %>% 
+  select(!comb) %>% 
+  right_join(vsdf, by=c('Trait', 'Community')) %>% 
+  right_join(ndf, by=c('Trait', 'Community')) %>% 
+  right_join(nsdf, by=c('Trait', 'Community')) %>% 
+  select(!c(comb.x, comb.y)) %>%
+  arrange(comb, Trait, Community)
+
+tabl %>% write_csv("Table/Table_S1_output.csv")
+```
+
+Added Phylogenetic Diversity and Locomotor Variance/density manually. Read this back in. Also changing the Isotope NA values to just an NA so it prints better. Then I need to drop_na in the Vses column to eliminate the non-important coms. 
+
+This is in "Table_SI_output2.csv"
+
+```{r}
+tabl <- read_csv("Table/Table_S1_output2.csv") %>%
+  mutate_if(is.numeric, ~round(., 2)) %>% 
+  mutate_at(vars(3:6), ~ifelse(. == 'NaN (NA, NA)', NA, .)) %>% 
+  drop_na(Volume)
+```
+
+
+## Print Table
+```{r}
+opts <- options(knitr.kable.NA = "")
+
+tabl %>% select(!comb) %>% kbl( align = "c") %>%
+  kable_classic_2(full_width = F) %>%
+  column_spec(1, bold = T) %>%
+  collapse_rows(columns = 1:2, valign = "top") %>% 
+  row_spec(0, bold = TRUE, hline_after = TRUE) %>% 
+  #scroll_box(width = "1600px", height = "1000px") %>% 
+  save_kable("Table/Table_S1.pdf") 
+
+tabl %>% select(!comb) %>% kbl( align = "c") %>%
+  kable_classic_2(full_width = F) %>%
+  column_spec(1, bold = T) %>%
+  collapse_rows(columns = 1:2, valign = "top") %>% 
+  row_spec(0, bold = TRUE, hline_after = TRUE) %>% 
+  #scroll_box(width = "1600px", height = "1000px") %>% 
+  save_kable("Table/Table_S1.png") 
+```
+
+##Split Table in two! 
+
+```{r}
+opts <- options(knitr.kable.NA = "")
+
+tabl %>% select(!comb) %>% 
+  filter(Trait %in% c("Body Size","External Proportions","Isospace","Morphology","Carbon13","Cranium Shape", "Cranium Size","Dentary Shape","Dentary Size" )) %>% 
+  kbl( align = "c") %>%
+  kable_classic_2(full_width = F) %>%
+  column_spec(1, bold = T) %>%
+  collapse_rows(columns = 1:2, valign = "top") %>% 
+  row_spec(0, bold = TRUE, hline_after = TRUE) %>% 
+  #scroll_box(width = "1600px", height = "1000px") %>% 
+  save_kable("Table_S1_split1.pdf") 
+
+tabl %>% select(!comb) %>% 
+  filter(Trait %in% c("Body Size","External Proportions","Isospace","Morphology","Carbon13","Cranium Shape", "Cranium Size","Dentary Shape","Dentary Size" )) %>% 
+  kbl( align = "c") %>%
+  kable_classic_2(full_width = F) %>%
+  column_spec(1, bold = T) %>%
+  collapse_rows(columns = 1:2, valign = "top") %>% 
+  row_spec(0, bold = TRUE, hline_after = TRUE) %>% 
+  #scroll_box(width = "1600px", height = "1000px") %>% 
+  save_kable("Table_S1_split1.png") 
+
+tabl %>% select(!comb) %>% 
+  filter(Trait %in% c("Ear Length", "Head Shape", "Head-Body Length",
+"Hind Foot Length", "Mass", "Nitrogen15",
+"Tail Length", "Locomotion", "Phylogenetic Diversity")) %>% 
+  kbl( align = "c") %>%
+  kable_classic_2(full_width = F) %>%
+  column_spec(1, bold = T) %>%
+  collapse_rows(columns = 1:2, valign = "top") %>% 
+  row_spec(0, bold = TRUE, hline_after = TRUE) %>% 
+  #scroll_box(width = "1600px", height = "1000px") %>% 
+  save_kable("Table_S1_split2.pdf") 
+
+tabl %>% select(!comb)  %>% 
+  filter(Trait %in% c("Ear Length", "Head Shape", "Head-Body Length",
+"Hind Foot Length", "Mass", "Nitrogen15",
+"Tail Length", "Locomotion", "Phylogenetic Diversity")) %>% 
+  kbl( align = "c") %>%
+  kable_classic_2(full_width = F) %>%
+  column_spec(1, bold = T) %>%
+  collapse_rows(columns = 1:2, valign = "top") %>% 
+  row_spec(0, bold = TRUE, hline_after = TRUE) %>% 
+  #scroll_box(width = "1600px", height = "1000px") %>% 
+  save_kable("Table_S1_split2.png") 
+```

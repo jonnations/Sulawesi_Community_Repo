@@ -1,0 +1,238 @@
+---
+title: "ALL REGRESSION PLOTS"
+date: "`r Sys.Date()`"
+---
+
+# Plotting for FIg 3
+
+This csv I am reading in contains some updated fields that I added manually. These describe the traits or trait types, and are there for organizing. All numeric values are the same as the regression outputs.
+```{r}
+pacman::p_load(here, tidyverse, tidybayes, brms, modelr, patchwork, scales)
+here::i_am("Code/Fig2_Regression_Plots.Rmd")
+fin <- read_csv(here("Regression", "Fig2_Regression_Plot_Data.csv")) %>% drop_na() %>% 
+  filter(!name %in% c("Dentary Shape 3 Axes", "Head Shape 5 Axes", "Cranial Shape 2 Axes"))
+```
+
+#### Same plot magma
+```{r}
+p1 <- fin %>% 
+  filter(type == "v_ses",
+         ntraits == "multi") %>% 
+  mutate(name = recode(name, Isospace = 'Isotopic Niche Space',)) %>% 
+    arrange(Beta) %>%  
+ ggplot(aes(y = factor(name, levels=name),
+            x = Beta, 
+            xmin = b_lower, 
+            xmax = b_upper, 
+            color = Beta)) +
+  scale_colour_gradientn(colours=c( "#CCEC5A","#3BBCAC","#830CAB"),
+                         values=rescale(c(-0.1,0.13,0.35)), 
+                         space = "Lab") +
+  geom_vline(xintercept = 0, linetype = 2 ) + 
+  geom_pointrange(size = 1.25, show.legend = F) +
+  xlim(-.13, .33) +
+  labs(title = "Functional Space Volume",
+       subtitle = "Multivariate Traits",
+       x = NULL, y= NULL) +
+  theme_classic() +
+  theme(axis.title.x = element_text(size = 17),
+        plot.subtitle=element_text(size=13.3),
+        plot.title=element_text(size=14.2),
+        axis.text.x= element_text(size = 11),
+        axis.text.y = element_text(size = 12),
+        plot.margin = unit(c(0, 0, -10, 0), "lines"))
+
+p2 <- fin %>% 
+  filter(type == "v_ses",
+         ntraits == "multi") %>% 
+    arrange(Beta)  %>% 
+  ggplot(aes(y = factor(name, levels=name), 
+             x = R2sm, 
+             xmin = R2sm_lower, 
+             xmax = R2sm_upper)) +
+  scale_color_manual(values = cols) +
+  geom_pointrange(size = 0.45, color = 'grey50') +
+  labs(x = NULL, y = NULL) +
+  scale_x_continuous(breaks = c(0, 0.5, 1), limits = c(0,1)) +
+  theme_classic() +
+  theme(axis.text.y=element_blank(),
+        axis.text.x= element_text(size = 11),
+        plot.margin = unit(c(0, 0.5, -10,0), "lines"))
+
+p3 <- fin %>% 
+  filter(type == "v_ses",
+         ntraits == "one") %>% 
+    arrange(Beta) %>%  
+ ggplot(aes(y = factor(name, levels=name), 
+            x = Beta, 
+            xmin = b_lower, 
+            xmax = b_upper, 
+            color = Beta)) +
+  scale_colour_gradientn(colours=c( "#CCEC5A","#3BBCAC","#830CAB"),
+                         values=rescale(c(-0.1,0.13,0.35)), 
+                         space = "Lab") +
+  geom_vline(xintercept = 0, linetype = 2 ) + 
+  geom_pointrange(size = 1.25, show.legend = F) +
+  xlim(-.13, .33) +
+  labs(subtitle = "Individual Traits",
+       x = expression(atop(beta[italic(richness)], "Increasing Volume" %->% NULL)),
+       y="") +
+  scale_y_discrete(labels = c("Nitrogen 15 Isotope" = expression(delta^15~N),
+                              "Carbon 13 Isotope" = expression(delta^13~C))) +
+  theme_classic() +
+  theme(axis.title.x = element_text(size = 15),
+        plot.subtitle=element_text(size=13.3),
+        axis.text.x= element_text(size = 11),
+        axis.text.y = element_text(size = 12),
+        plot.margin = unit(c(-10, 0, 0,0), "lines"))
+
+p4 <- fin %>% 
+  filter(type == "v_ses",
+         ntraits == "one") %>% 
+    arrange(Beta)  %>% 
+  ggplot(aes(y = factor(name, levels=name), 
+             x = R2sm, 
+             xmin = R2sm_lower, 
+             xmax = R2sm_upper)) +
+  scale_color_manual(values = cols) +
+  geom_pointrange(size = 0.45, color = 'grey50') +
+  labs(x = expression(atop(paste("", R^{2})), ""), 
+       y = "") +
+  scale_x_continuous(breaks = c(0, 0.5, 1), 
+                     limits = c(0,1)) +
+  theme_classic() +
+  theme(axis.text.y=element_blank(),
+        axis.title.x = element_text(size = 15),
+        axis.text.x= element_text(size = 11),
+        plot.margin = unit(c(-10, 0.5, 0,0), "lines"))
+
+
+layout <- "
+AAAAAAAAAABBB
+CCCCCCCCCCDDD
+CCCCCCCCCCDDD
+"
+
+p1 + p2 + p3 + p4 + plot_layout(design = layout, guides = "collect", tag_level = 'new') + plot_annotation(tag_levels = list(c('A', '', 'B', '')))
+```
+
+# Plot NN SES
+
+```{r}
+pp1 <- fin %>% 
+  filter(type == "nn_ses",
+         ntraits == "multi") %>% 
+  mutate(name = recode(name, Isospace = 'Isotopic Niche Space',)) %>% 
+    arrange(Beta) %>%  
+ ggplot(aes(y = factor(name, levels=name), 
+            x = Beta, 
+            xmin = b_lower, 
+            xmax = b_upper, 
+            color = Beta)) +
+    scale_colour_gradientn(colours=c( "#CCEC5A","#3BBCAC","#830CAB"),
+                         values=rescale(c(-0.1,0.13,0.35)), 
+                         space = "Lab") +
+  geom_vline(xintercept = 0, linetype = 2 ) + 
+  geom_pointrange(size = 1.25, show.legend = F) +
+  labs(x = NULL, y=NULL) +
+  xlim(-.23, .43) +
+  labs(title = "Functional Space Density",
+       subtitle = "Multivariate Traits") +
+  theme_classic()+
+  theme(axis.title.x = element_text(size = 17),
+        plot.subtitle=element_text(size=13.3),
+        plot.title=element_text(size=14.2),
+        axis.text.y = element_text(size = 12),
+        axis.text.x = element_text(size = 11),
+        plot.margin = unit(c(0, 0, -10 ,1), "lines"))
+
+pp2 <- fin %>% 
+  filter(type == "nn_ses",
+         ntraits == "multi") %>% 
+    arrange(Beta)  %>% 
+  ggplot(aes(y = factor(name, levels=name),
+             x = R2sm,
+             xmin = R2sm_lower, 
+             xmax = R2sm_upper)) +
+  scale_color_manual(values = cols) +
+  geom_pointrange(size = 0.45, color = 'grey50') +
+  labs(x = NULL, y = NULL) +
+  scale_x_continuous(breaks = c(0, 0.5, 1), limits = c(0,1)) +
+  theme_classic() +
+  theme(axis.text.y=element_blank(),
+        axis.text.x= element_text(size = 11),
+        axis.title.x = element_text(size = 12),
+        plot.margin = unit(c(0, 0.5, -10, 0), "lines"))
+
+
+
+pp3 <- fin %>% 
+  filter(type == "nn_ses",
+         ntraits == "one") %>% 
+    arrange(Beta) %>%  
+ ggplot(aes(y = factor(name, levels=name), 
+            x = Beta, 
+            xmin = b_lower, 
+            xmax = b_upper, 
+            color = Beta)) +
+  scale_colour_gradientn(colours=c( "#CCEC5A","#3BBCAC","#830CAB"),
+                         values=rescale(c(-0.1,0.13,0.35)), 
+                         space = "Lab") +
+  geom_vline(xintercept = 0, linetype = 2 ) + 
+  geom_pointrange(size = 1.25, show.legend = F) +
+  xlim(-.23, .43) +
+  labs(subtitle = "Individual Traits",
+       x = expression(atop(beta[italic(richness)], NULL %<-%"Increasing Density")),
+       y="") +
+  scale_y_discrete(labels = c("Nitrogen 15 Isotope" = expression(delta^15~N),
+                              "Carbon 13 Isotope" = expression(delta^13~C))) +
+  theme_classic() +
+  theme(axis.title.x = element_text(size = 15),
+        axis.text.x= element_text(size = 11),
+        plot.subtitle=element_text(size=13.3),
+        axis.text.y = element_text(size = 12),
+        plot.margin = unit(c(-10, 0, 0,1), "lines"))
+
+pp4 <- fin %>% 
+  filter(type == "nn_ses",
+         ntraits == "one") %>% 
+    arrange(Beta)  %>% ggplot(aes(y = factor(name, levels=name), 
+                                  x = R2sm, 
+                                  xmin = R2sm_lower, 
+                                  xmax = R2sm_upper
+                                  )) +
+  scale_color_manual(values = cols) +
+  geom_pointrange(size = 0.45, color = 'grey50') +
+  labs(x = expression(atop(paste("", R^{2})), ""), y = "") +
+  scale_x_continuous(breaks = c(0, 0.5, 1), limits = c(0,1)) + 
+  theme_classic() +
+  theme(axis.text.y=element_blank(),
+        axis.title.x = element_text(size = 15),
+        axis.text.x= element_text(size = 11),
+        plot.margin = unit(c(-10, 0.5, 0,0), "lines"))
+
+layout <- "
+AAAAAAAAAABBB
+CCCCCCCCCCDDD
+CCCCCCCCCCDDD
+"
+
+pp1 + pp2 + pp3 + pp4 + plot_layout(design = layout, guides = "collect", tag_level = 'new') + plot_annotation(tag_levels = list(c('C', '', 'D', '')))
+```
+
+```{r}
+layout <- "
+AAAAAAAAAABBBEEEEEEEEEEFFF
+CCCCCCCCCCDDDGGGGGGGGGGHHH
+CCCCCCCCCCDDDGGGGGGGGGGHHH
+"
+
+p1 + p2 + p3 + p4 + pp1 + pp2 + pp3 + pp4 + 
+  plot_layout(design = layout, guides = "collect", tag_level = 'new') + 
+  plot_annotation(tag_levels = list(c('a', '', 'b', '', 'c', '', 'd', ''))) & 
+  theme(plot.tag = element_text(size = 16, face = "bold"))
+
+ggsave(here("Plots", "Fig2.pdf"), width = 11, height = 8, useDingbats = F)
+ggsave(here("Plots", "Fig2.png"), width = 11, height = 8)
+```
+

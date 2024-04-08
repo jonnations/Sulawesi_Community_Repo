@@ -1,0 +1,443 @@
+---
+title: "Volume and MNND Regression"
+---
+
+# Regression analyses
+
+Does species richness have an effect on ecospace volume or density? These regression analyses will help to answer this question. This is a series of Bayesian regression analyses using `brms`. The input data are n_species as a predictor, the (sum of) variance(s) and density as responses, but the responses INCLUDE a parameter of the standard error of each ecospace metric. This greatly improves the models as it incorporates a lot of information that would otherwise be missing, which effectively integrates uncertainty into the models. 
+
+I am only using the SES estimates, not the raw volume and density values.
+
+## Load Up
+```{r}
+pacman::p_load(here, tidyverse, tidybayes, brms, modelr, purrr, cmdstanr, patchwork, qs)
+options(brms.backend = "cmdstanr")
+
+here::i_am('Code/Regression_Analyses.Rmd')
+
+
+load(here("Species_Data", "Species_Lists.Rdata"))
+
+
+level_order <-  c( 'Bawakaraeng', 'Buliohuto','Dako', "Katopasa", "Ambang", "Latimojong", "Torompupu", "Nokilalaki", "Gandangdewata")
+adat <- read_csv(here("All_Traits.csv"))
+dat <- read_csv(here("All_Traits.csv")) %>% select(-.draw) %>% select(contains(c("ses", "com")))
+
+```
+## SE function
+Get mean and se of each value for each community. The measurement error models require standard error.
+
+```{r}
+se <- function(x) {
+sd(x)/sqrt(length(x))
+}
+```
+
+#### Seperate Iso and The Rest
+I need to make 2 tibbles, one with the iso traits (6 coms), and one without(9 coms)
+
+```{r}
+keepcoms <- c('Bawakaraeng', 'Buliohuto','Dako', "Ambang", "Latimojong", "Gandangdewata")
+
+isodat <- dat %>% select(c(com, ses_vIso, ses_vC13, ses_vN15, nnses_C13, nnses_N15, nnses_iso)) %>% filter(com %in% keepcoms)
+
+adat <- dat %>% select(!c(ses_vIso, ses_vC13, ses_vN15, nnses_C13, nnses_N15, nnses_iso)) 
+
+rm(dat)
+```
+
+#### Cleanup Functions
+
+These 4 functions pull out the important metrics from the models. They remove the mean and 89% Credible Interval values of Slope, Intercept, Sigma (error parameter), and Bayesian R^2. These values later get put in a table for plotting and tables. 
+
+```{r}
+cleanup <- function(brmsfit){
+  fixef({{brmsfit}}, probs = c(0.055, 0.945), pars =  "nsp") %>% 
+  as_tibble() %>% 
+    rename(Beta = "Estimate") %>% 
+    select(-Est.Error) %>% 
+    mutate(across(everything(), round, 3))
+}
+
+cleanupI <- function(brmsfit){
+  fixef({{brmsfit}}, probs = c(0.055, 0.945), pars =  "Intercept") %>% 
+  as_tibble() %>% 
+    rename(Intercept = "Estimate") %>% 
+    select(-Est.Error) %>% 
+    mutate(across(everything(), round, 3))
+}
+
+cleanupS <- function(brmsfit){
+  posterior_summary({{brmsfit}}, probs = c(0.055, 0.945), pars =  "sigma") %>% 
+  as_tibble() %>% 
+    rename(sigma = "Estimate") %>% 
+    select(-Est.Error) %>% 
+    mutate(across(everything(), round, 3))
+}
+
+cleanupR <- function(brmsfit){
+  bayes_R2({{brmsfit}}, probs = c(0.055, 0.945)) %>% 
+  as_tibble() %>% 
+    rename(R2 = "Estimate") %>% 
+    select(-Est.Error) %>% 
+    mutate(across(everything(), round, 3))
+}
+
+cleanupRsm <- function(brmsfit){
+  bayes_R2({{brmsfit}}, probs = c(0.125, 0.875)) %>% 
+  as_tibble() %>% 
+    rename(R2sm = "Estimate") %>% 
+    select(-Est.Error) %>% 
+    mutate(across(everything(), round, 3))
+}
+
+```
+
+
+## Now run the 9 com traits
+```{r}
+mycols <- adat %>% select(-com) %>% colnames()
+#names(mycols) <- mycols
+```
+I asked the question here, then modified it:
+https://stackoverflow.com/questions/66287922/r-split-dataframe-into-list-by-column-while-retaining-a-second-column-then-re
+```{r}
+tt <- adat %>%
+ pivot_longer(cols = all_of(mycols)) %>%
+ split(.$name) %>%
+ map(~.x %>% select(-name)%>% 
+          group_by(com) %>% 
+          summarise(mean = mean(value), se = se(value))) 
+
+var <- rep(as.vector(names(tt)), each = 9)
+# the second number is ncolumns
+nsp <- rep(c(13, 7, 10, 12, 23, 12, 13, 17,15), length(tt))
+
+# This is the big nested dataset to run via purrr::map
+ttt <- bind_rows(tt) %>% 
+  add_column(var, nsp) %>% 
+  group_by(var) %>% 
+  nest() %>% 
+  rename(d = "data") 
+
+```
+
+
+# Model Time
+I need to run a model, then use the update function to re-run it repeatedly over all the variables in the dataframe. 
+```{r}
+# Take first row of big nested data to make the first fit
+lildat <- ttt[1,] %>% unnest()
+
+fit <- brm(data = lildat, 
+           formula = mean | se(se, sigma = TRUE) ~ nsp,
+           prior = c(prior(normal(0, 0.5), class = b),
+                     prior(normal(0, 0.5), class = Intercept),
+                     prior(normal(0, 0.5), class = sigma)),
+           iter = 4000, 
+           warmup = 2000, 
+           chains = 4, 
+           cores = 4, 
+           refresh = 0) 
+
+cleanupS(fit)
+```
+
+
+Results in a nice dataframe with beta and 89% intervals and Intercept and 95% intervals
+
+```{r}
+pacman::p_load(furrr)
+furrr_options(seed = TRUE)
+options(future.rng.onMisuse="ignore")
+plan(multisession, workers = 6)
+```
+
+```{r echo = T, results = 'hide', message=FALSE}
+ttt <- ttt %>% mutate(fits = future_map(d, ~update(fit, newdata = .x, refresh = 0)))
+
+plan(sequential)
+
+
+write_rds(ttt, here("Models", "All_Regression_Models_List2.Rds"))
+```
+
+### Cleanup
+```{r}
+ttt <- read_rds(here("Models", "All_Regression_Models_List2.Rds"))
+
+b <- ttt %>%  mutate(beta = map(fits, cleanup)) %>%
+                unnest(beta) %>% 
+                rename(b_lower = "Q5.5",
+                       b_upper = "Q94.5") %>% 
+                select(-c(d, fits))
+i <- ttt %>%  mutate(int = map(fits, cleanupI)) %>% 
+                unnest(int) %>%
+                rename(I_lower = "Q5.5",
+                       I_upper = "Q94.5") %>%
+                ungroup() %>% 
+                select(-c(d, fits, var))
+s <- ttt %>%  mutate(sig = map(fits, cleanupS)) %>% 
+                unnest(sig) %>%
+                rename(s_lower = "Q5.5",
+                       s_upper = "Q94.5") %>%
+                ungroup() %>% 
+                select(-c(d, fits, var))
+r <- ttt %>%  mutate(r2 = map(fits, cleanupR)) %>% 
+                unnest(r2) %>%
+                rename(R2_lower = "Q5.5",
+                       R2_upper = "Q94.5") %>%
+                ungroup() %>% 
+                select(-c(d, fits, var))
+
+rsm <- ttt %>%  mutate(r2sm = map(fits, cleanupRsm)) %>% 
+                unnest(r2sm) %>%
+                rename(R2sm_lower = "Q12.5",
+                       R2sm_upper = "Q87.5") %>%
+                ungroup() %>% 
+                select(-c(d, fits, var))
+
+fin <- bind_cols(b, i, s, r, rsm) 
+```
+
+
+# Iso Traits
+
+```{r}
+mycols <- isodat %>% select(-com) %>% colnames()
+#names(mycols) <- mycols
+```
+I asked the question here, then modified it:
+https://stackoverflow.com/questions/66287922/r-split-dataframe-into-list-by-column-while-retaining-a-second-column-then-re
+```{r}
+tt <- isodat %>%
+ pivot_longer(cols = all_of(mycols)) %>%
+ split(.$name) %>%
+ map(~.x %>% select(-name)%>% 
+          group_by(com) %>% 
+          summarise(mean = mean(value), se = se(value))) 
+
+var <- rep(as.vector(names(tt)), each = 6)
+# the second number is ncolumns
+nsp <- rep(c(13, 7, 10, 12, 23, 13), length(tt))
+ttt <- bind_rows(tt) %>% 
+  add_column(var, nsp) %>% 
+  group_by(var) %>% 
+  nest() %>% 
+  rename(d = "data")
+```
+
+
+# Iso Model Time
+This fit works pretty well, and can be used for the rest of the data
+```{r}
+# Take first row of big nested data to make the first fit
+lildat <- ttt[1,] %>% unnest()
+
+fit <- brm(data = lildat, 
+           formula = mean | se(se, sigma = TRUE) ~ nsp,
+           prior = c(prior(normal(0, 0.5), class = b),
+                     prior(normal(0, 1), class = Intercept),
+                     prior(normal(0, 0.5), class = sigma)),
+           iter = 4000, 
+           warmup = 2000, 
+           chains = 4, 
+           cores = 4, 
+           refresh = 0) 
+```
+
+### Iso Cleanup
+```{r echo=FALSE, results='hide'}
+
+plan(multisession, workers = 6)
+
+ttt <- ttt %>% mutate(fits = future_map(d, ~update(fit, newdata = .x, refresh = 0)))
+
+plan(sequential)
+
+b <- ttt %>%  mutate(beta = map(fits, cleanup)) %>%
+                unnest(beta) %>% 
+                rename(b_lower = "Q5.5",
+                       b_upper = "Q94.5") %>% 
+                select(-c(d, fits))
+i <- ttt %>%  mutate(int = map(fits, cleanupI)) %>% 
+                unnest(int) %>%
+                rename(I_lower = "Q5.5",
+                       I_upper = "Q94.5") %>%
+                ungroup() %>% 
+                select(-c(d, fits, var))
+s <- ttt %>%  mutate(sig = map(fits, cleanupS)) %>% 
+                unnest(sig) %>%
+                rename(s_lower = "Q5.5",
+                       s_upper = "Q94.5") %>%
+                ungroup() %>% 
+                select(-c(d, fits, var))
+r <- ttt %>%  mutate(r2 = map(fits, cleanupR)) %>% 
+                unnest(r2) %>%
+                rename(R2_lower = "Q5.5",
+                       R2_upper = "Q94.5") %>%
+                ungroup() %>% 
+                select(-c(d, fits, var))
+
+rsm <- ttt %>%  mutate(r2sm = map(fits, cleanupRsm)) %>% 
+                unnest(r2sm) %>%
+                rename(R2sm_lower = "Q12.5",
+                       R2sm_upper = "Q87.5") %>%
+                ungroup() %>% 
+                select(-c(d, fits, var))
+
+iso_fin <- bind_cols(b, i, s, r, rsm) 
+```
+
+
+
+#### Combine Iso and All fits together
+```{r}
+all_fin <- bind_rows(fin, iso_fin) %>% write_csv(here("Regression", "Regression_Results2.csv"))
+
+rm(adat, isodat)
+```
+
+
+#LOCOMOTOR REGRESSION
+
+Separate Models, no SE in model because they are not distributions.
+```{r}
+locdat <- read_csv(here("Locomotion_Data", "All_Locomotor_var.csv"))
+```
+
+
+```{r message=FALSE}
+l.1 <- brm(data = locdat, 
+           formula = vloc ~ nsp,
+           prior = c(prior(normal(0, 0.5), class = b),
+                     prior(normal(0, 0.5), class = Intercept),
+                     prior(normal(0, 0.5), class = sigma)),
+           iter = 4000, 
+           warmup = 2000, 
+           chains = 4, 
+           cores = 4, 
+           refresh = 0) 
+l.2 <- update(l.1, formula = ses_loc ~ nsp, newdata = locdat, refresh = 0)
+l.3 <- update(l.1, formula = nn_rda ~ nsp, newdata = locdat, refresh = 0)
+l.4 <- update(l.1, formula = nnses_loc ~ nsp, newdata = locdat, refresh = 0)
+```
+These values were *manually* added to the `Regression_Results.csv`
+
+```{r}
+l1 <- bind_cols((cleanup(l.1) %>% rename(b_lower = "Q5.5",
+                       b_upper = "Q94.5")),
+          (cleanupI(l.1)%>% rename(I_lower = "Q5.5",
+                       I_upper = "Q94.5")),
+(cleanupS(l.1)%>% rename(s_lower = "Q5.5",
+                       s_upper = "Q94.5")),
+(cleanupR(l.1)%>% rename(R2_lower = "Q5.5",
+                       R2_upper = "Q94.5")),
+(cleanupRsm(l.1)%>% rename(R2sm_lower = "Q12.5",
+                       R2sm_upper = "Q87.5"))) %>% add_column(var = "vLoc")
+          
+l2 <- bind_cols((cleanup(l.2) %>% rename(b_lower = "Q5.5",
+                       b_upper = "Q94.5")),
+          (cleanupI(l.2)%>% rename(I_lower = "Q5.5",
+                       I_upper = "Q94.5")),
+(cleanupS(l.2)%>% rename(s_lower = "Q5.5",
+                       s_upper = "Q94.5")),
+(cleanupR(l.2)%>% rename(R2_lower = "Q5.5",
+                       R2_upper = "Q94.5")),
+(cleanupRsm(l.2)%>% rename(R2sm_lower = "Q12.5",
+                       R2sm_upper = "Q87.5"))) %>% add_column(var = "ses_loc")
+
+l3 <- bind_cols((cleanup(l.3) %>% rename(b_lower = "Q5.5",
+                       b_upper = "Q94.5")),
+          (cleanupI(l.3)%>% rename(I_lower = "Q5.5",
+                       I_upper = "Q94.5")),
+(cleanupS(l.3)%>% rename(s_lower = "Q5.5",
+                       s_upper = "Q94.5")),
+(cleanupR(l.3)%>% rename(R2_lower = "Q5.5",
+                       R2_upper = "Q94.5")),
+(cleanupRsm(l.3)%>% rename(R2sm_lower = "Q12.5",
+                       R2sm_upper = "Q87.5"))) %>% add_column(var = "nn_rda")
+
+l4 <- bind_cols((cleanup(l.4) %>% rename(b_lower = "Q5.5",
+                       b_upper = "Q94.5")),
+          (cleanupI(l.4)%>% rename(I_lower = "Q5.5",
+                       I_upper = "Q94.5")),
+(cleanupS(l.4)%>% rename(s_lower = "Q5.5",
+                       s_upper = "Q94.5")),
+(cleanupR(l.4)%>% rename(R2_lower = "Q5.5",
+                       R2_upper = "Q94.5")),
+(cleanupRsm(l.4)%>% rename(R2sm_lower = "Q12.5",
+                       R2sm_upper = "Q87.5"))) %>% add_column(var = "nn_ses_loc")
+
+all_fin <- bind_rows(l1, l2, l3, l4, all_fin)
+```
+
+#Phylogenetic Diversity Regression
+
+```{r  message=FALSE}
+phydat <-  read_csv(here("Phylogenetic_Diversity", "PD_Results.csv")) %>% rename(nspec = ntaxa)
+                    
+phydat2 <- read_csv(here("Phylogenetic_Diversity", "PD_Results_no_Hae.csv")) %>% rename(nspec = ntaxa)
+
+scale2 <- function(x, na.rm = FALSE) (x - mean(x, na.rm = na.rm)) / sd(x, na.rm) 
+  
+phydat <- phydat %>% mutate(pd = scale2(pd.obs)) %>% rename(nsp = "nspec")
+phydat2 <- phydat2 %>% mutate(pd = scale2(pd.obs)) %>% rename(nsp = "nspec")
+p.1 <- update(l.1, formula = pd ~ nsp, newdata = phydat, refresh = 0)
+p.2 <- update(l.1, formula = pd_ses ~ nsp, newdata = phydat, refresh = 0)
+p.3 <- update(l.1, formula = pd ~ nsp, newdata = phydat2, refresh = 0)
+p.4 <- update(l.1, formula = pd_ses ~ nsp, newdata = phydat2, refresh = 0)
+```
+
+Results added *manually* to `Regression_Results.csv`
+```{r}
+p1 <- bind_cols((cleanup(p.1) %>% rename(b_lower = "Q5.5",
+                       b_upper = "Q94.5")),
+          (cleanupI(p.1)%>% rename(I_lower = "Q5.5",
+                       I_upper = "Q94.5")),
+(cleanupS(p.1)%>% rename(s_lower = "Q5.5",
+                       s_upper = "Q94.5")),
+(cleanupR(p.1)%>% rename(R2_lower = "Q5.5",
+                       R2_upper = "Q94.5")),
+(cleanupRsm(p.1)%>% rename(R2sm_lower = "Q12.5",
+                       R2sm_upper = "Q87.5"))) %>% add_column(var = "vphy")
+          
+p2 <- bind_cols((cleanup(p.2) %>% rename(b_lower = "Q5.5",
+                       b_upper = "Q94.5")),
+          (cleanupI(p.2)%>% rename(I_lower = "Q5.5",
+                       I_upper = "Q94.5")),
+(cleanupS(p.2)%>% rename(s_lower = "Q5.5",
+                       s_upper = "Q94.5")),
+(cleanupR(p.2)%>% rename(R2_lower = "Q5.5",
+                       R2_upper = "Q94.5")),
+(cleanupRsm(p.2)%>% rename(R2sm_lower = "Q12.5",
+                       R2sm_upper = "Q87.5"))) %>% add_column(var = "ses_phy")
+
+p3 <- bind_cols((cleanup(p.3) %>% rename(b_lower = "Q5.5",
+                       b_upper = "Q94.5")),
+          (cleanupI(p.3)%>% rename(I_lower = "Q5.5",
+                       I_upper = "Q94.5")),
+(cleanupS(p.3)%>% rename(s_lower = "Q5.5",
+                       s_upper = "Q94.5")),
+(cleanupR(p.3)%>% rename(R2_lower = "Q5.5",
+                       R2_upper = "Q94.5")),
+(cleanupRsm(p.3)%>% rename(R2sm_lower = "Q12.5",
+                       R2sm_upper = "Q87.5"))) %>% add_column(var = "vphy2")
+          
+p4 <- bind_cols((cleanup(p.4) %>% rename(b_lower = "Q5.5",
+                       b_upper = "Q94.5")),
+          (cleanupI(p.4)%>% rename(I_lower = "Q5.5",
+                       I_upper = "Q94.5")),
+(cleanupS(p.4)%>% rename(s_lower = "Q5.5",
+                       s_upper = "Q94.5")),
+(cleanupR(p.4)%>% rename(R2_lower = "Q5.5",
+                       R2_upper = "Q94.5")),
+(cleanupRsm(p.4)%>% rename(R2sm_lower = "Q12.5",
+                       R2sm_upper = "Q87.5"))) %>% add_column(var = "ses_phy2")
+
+all_fin <- bind_rows(p1, p2, p3, p4, all_fin)
+```
+
+```{r}
+all_fin %>%  write_csv(here("Regression", "Regression_Results.csv"))
+```

@@ -1,0 +1,169 @@
+---
+title: "Phylogenetic Diversity"
+---
+
+# Phylogenetic Diversity
+Estimating Phylognetic Diversity for each assembly using picante::pd and pd.ses. This is Faith's metric of PD. 
+
+First I need to select only Sulawesi species from the large murine phylogeny. Then I need to add in the 4 missing species. 
+
+Once this is done, I can calculate the phylogenetic diversity and the pd standardized effect size for each community. 
+
+*Haeromys minahassae* is an interesting case as it is distantly related to all other species, and looks like an "outgroup" in this tree. I need to see if the effect is large.
+
+Load tree
+```{r}
+pacman::p_load(here, tidyverse, phytools, picante)
+
+here::i_am("Code/Phylogenetic_Diversity.Rmd")
+
+tr <- read.nexus(here("Phylogenetic_Diversity", "397_MCC.tree"))
+# Need to take care of some 0 length tips
+tr <- drop.tip(tr, c("Pelomys_fallax", "Taeromys_hamatus"))
+# This is a matrix of binary 1 or 0 for each species for each community
+sp_ses <- read.csv(here("Phylogenetic_Diversity", "Species_SES.csv")) %>% select(!X)
+#Species lists
+load(here("Species_Data", "Species_Lists.Rdata"))
+load(here("Species_Data", "Species_Extant.Rdata"))
+# list for initial trim
+load(here("Species_Data", "Species_Extant_Tree.Rdata"))
+# Order
+level_order <-  c( 'Bawakaraeng', 'Buliohuto','Dako', "Katopasa", "Ambang", "Latimojong", "Torompupu", "Nokilalaki", "Gandangdewata")
+# Just need a DF with species as column names, and one row of data
+mdat <- read_csv(here("External_Measurement_Data", "Measurement_Data_Museum.csv")) %>% 
+  select(c(Species, Total)) %>% 
+  group_by(Species) %>% 
+  summarise(mTot = mean(Total)) %>% 
+  pivot_wider(names_from = Species, values_from = mTot)
+```
+
+Trim tree, add tips
+What tips are missing from the new species lists?
+```{r}
+tr %>% keep.tip(., ext_sp)
+```
+
+There we go.
+
+#### Maxomys
+In Achmadi 2010, wattsi is closely related to rajah, so I can simply change name of rajah to wattsi. 
+```{r}
+tr$tip.label <- recode(tr$tip.label, Maxomys_rajah = "Maxomys_wattsi")
+```
+
+#### Taeromys
+Taeromys_sp_katopasa is sister to callitrichus.
+In the big Nations 2020 tree, hamatus and callitrichus are likely the same species. I dropped hamatus when I read in the tree. Now I need to rename punicans -> hamatus
+```{r}
+tr$tip.label <- recode(tr$tip.label, Taeromys_punicans = "Taeromys_hamatus")
+```
+
+Ok Now I need to add on the sp_katopasa. It is on the branch with callitrichus.
+However there are some branch length issues somewhere in the tree. First I think I need to drop everything but the sulawesi species
+
+```{r}
+ext_sp2 <- ext_sp[! ext_sp %in% c("Rattus_botanus",  "Rattus_marmosurus", "Rattus_mollicomulus", "Taeromys_sp_katopasa")]
+tr <- tr %>% keep.tip(., ext_sp2)
+```
+
+This is critical here to continue! Must solve whatever 0 branch length there is in the tree at this stage.
+```{r}
+tr <- force.ultrametric(tr)
+```
+
+Now add sp_katopasa
+This is working and not messing with the node ages, I checked!!
+```{r}
+node <- which(tr$tip.label=="Taeromys_callitrichus")
+tr <- bind.tip(tr, tip.label="Taeromys_sp_katopasa", 
+                  where=node, position=1)
+plot(tr)
+axisPhylo()
+```
+
+```{r}
+tr %>% keep.tip(., ext_sp)
+```
+
+Ok, down to the three rats.
+
+From Manuscript:
+We collected trait data for two species that are not included in this phylogeny: Rattus bontanus and Rattus mollicomulus. Previous morphological studies concluded that Rattus bontanus is in the Rattus xanthurus species group, and Rattus mollicomulus is sister to Rattus hoffmani (Musser and Carlton 2005). We added these two taxa in their appropriate locations using the bind.tip() function in phytools (Revell 2012). 
+Add to manuscript: In MSW, marmosurus is commonly listed as a subspecies of xanthurus, but sometimes it's own species. So put it in a tip close to xanthurus.
+
+I need to add botanus first, then marmosurus bc marmo is closer to xanthurus than botanus
+```{r}
+node <- which(tr$tip.label=="Rattus_xanthurus")
+tr <- bind.tip(tr, tip.label="Rattus_botanus", 
+                  where=node, position=0.9)
+plot(tr)
+axisPhylo()
+```
+
+Ok, now botanus. It needs to be 
+```{r}
+node <- which(tr$tip.label=="Rattus_xanthurus")
+tr <- bind.tip(tr, tip.label="Rattus_marmosurus", 
+                  where=node, position=0.2)
+plot(tr)
+axisPhylo()
+```
+Down to Rattus_mollicomulus in the hoffmani group
+
+```{r}
+node <- which(tr$tip.label=="Rattus_hoffmani")
+tr <- bind.tip(tr, tip.label="Rattus_mollicomulus", 
+                  where=node, position=1)
+plot(tr)
+axisPhylo()
+```
+
+#### Write Tree
+
+```{r}
+write.tree(tr, file = here("Phylogenetic_Diversity", "Clean_Sulawesi_Tree.tre"))
+```
+
+
+## PDSES Function
+
+```{r}
+set.seed(111)
+sespd <- ses.pd(sp_ses, tr, null.model="independentswap", runs=999, iterations = 1000, include.root=F) %>% as_tibble() %>% arrange(ntaxa) %>% add_column(com = level_order) %>% select(-runs)
+sespd <- sespd %>% rename(pd_ses = pd.obs.z) %>% write_csv(file = here("Phylogenetic_Diversity", "PD_Results.csv"))
+sespd
+```
+
+```{r}
+p1 <- sespd %>% mutate(com = factor(com, level = level_order)) %>% ggplot(aes(x = ntaxa, y=pd_ses, color = com, fill = com)) + 
+#geom_point(size = 10) + 
+geom_jitter(size = 5, width = 1.25, alpha = 0.85) +
+ylim(-2.5, 2.5) + 
+  geom_hline(yintercept = 0) + scale_color_viridis_d(direction = -1, begin = 0, end = 0.95,  option = "A") + theme_classic() + ggtitle("Phylo Div") +
+  guides(fill = guide_legend(reverse=T), color = guide_legend(reverse=T),
+         color = guide_legend(override.aes = list(size = 1)))
+p1
+```
+
+## PD Without Haeromys
+
+```{r}
+sp_ses2 <- sp_ses %>% select(!Haeromys_minahassae)
+tr2 <- drop.tip(tr, "Haeromys_minahassae")
+sespd2 <- ses.pd(sp_ses2, tr2, null.model="independentswap", runs=999, iterations = 1000, include.root=F) %>% as_tibble() %>% arrange(ntaxa) %>% add_column(com = level_order) %>% select(-runs)
+sespd2 <- sespd2 %>% 
+  rename(pd_ses = pd.obs.z) %>% 
+  write_csv(file = here("Phylogenetic_Diversity", "PD_Results_no_Hae.csv"))
+```
+
+
+```{r}
+p1.2 <- sespd2 %>% mutate(com = factor(com, level = level_order)) %>% ggplot(aes(x = ntaxa, y=pd_ses, color = com, fill = com)) + 
+#geom_point(size = 10) + 
+geom_jitter(size = 5, width = 1.25, alpha = 0.85) +
+ylim(-2.5, 2.5) + 
+  geom_hline(yintercept = 0) + scale_color_viridis_d(direction = -1, begin = 0, end = 0.95,  option = "A") + theme_classic() + ggtitle("Phylo Div") +
+  guides(fill = guide_legend(reverse=T), color = guide_legend(reverse=T),
+         color = guide_legend(override.aes = list(size = 1)))
+p1.2
+```
