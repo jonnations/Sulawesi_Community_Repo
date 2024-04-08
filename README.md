@@ -15,8 +15,7 @@ University of Chicago
 
 - All scripts were run in R version 4.3.2
 
-here, tidyverse, tidybayes, brms, modelr, patchwork, scales
-here, tidyverse, brms, tidybayes, patchwork, modelr, cmdstanr
+here, tidyverse, tidybayes, brms, modelr, patchwork, scales, cmdstanr, dispRity, patchwork, forcats, picante, furrr, dispRity, purrr
 
 
 - `pacman` v.0.5.3, `here` v.1.0.1, `brms` 2.18.8, `cmdstanr` v.0.5.3, `tidyverse` v.1.3.2, `tidybayes`v.3.0.3, `phytools`v.1.2-0, `geiger`v.2.0.10, `mclust`v.6.0.0, `polycor`v.0.8-1, `NbClust`v.3.0.1, `ggstar`v.1.0.4, `janitor`v.2.1.0, `caret` v.6.0-9.3, `scico`v.1.3.1, `paletteer`v.1.5.0, & `furrr`v.0.3.1 (for parallel computing)
