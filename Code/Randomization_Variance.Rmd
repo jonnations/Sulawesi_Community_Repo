@@ -6,8 +6,7 @@ title: "Randomization"
 
 This notebook generates null distributions of trait variance for each community by sampling species at random from the entire Sulawesi species pool. The richness of each community is held constant.
 
-
-IMPORTANTLY: Values are being drawn from and added to the `sesdat` dataset stored at `Randomization_Data/All_Variances+ses.csv` and will be updated. This way I will have all the estimates, ses, and ses in one datasheet.
+***Warning*** -  These functions take a long time to run. On my 2020 Mac M1 it takes ~10 hours. Just so that you are aware before running them. Also, I use `furrr` to run these in parallel, and set the number of workers to 8, which maxes out my laptop's computing power. Change the number of `workers` in the `plan(multisession, workers = 8)` command. More workers should take less time, but be wary of crashing your computer. 
 
 
 #### Load Packages and Data  
@@ -67,7 +66,7 @@ very helpful: https://stackoverflow.com/questions/61740025/dplyr-how-to-collapse
 ```{r}
 sample_com <- function(com) {
 dlist <- list()
-for (i in 1:500){
+for (i in 1:1000){
   b <- picante::randomizeMatrix(sp_ses, null.model = "independentswap", iterations = 1000) %>% 
     as_tibble() %>% 
     bind_cols(com = c("Ambang", "Bawakaraeng", "Buliohuto", "Dako", "Gandangdewata", "Katopasa", "Latimojong", "Nokilalaki", "Torompupu")) %>% 
@@ -133,7 +132,7 @@ get_xvar <- function(sp, data, mountain) {
 ```
 
 External Variance and Summaries
-This will take an hour or so
+This may take a few hours
 
 `furrr` options for multithreading. 
 ```{r}
@@ -142,7 +141,7 @@ options(future.rng.onMisuse="ignore")
 plan(multisession, workers = 8)
 ```
 
-
+### Estimate Simulated Communities
 ```{r}
 tictoc::tic()
 xamb <- future_map(sp_amb, ~ get_xvar(.x, edat, "Ambang"), chunks = 1000) %>% bind_rows()
@@ -155,6 +154,7 @@ xlat <- future_map(sp_lat, ~ get_xvar(.x, edat, "Latimojong"), chunks = 1000) %>
 xnok <- future_map(sp_nok, ~ get_xvar(.x, edat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
 xtor <- future_map(sp_tor, ~ get_xvar(.x, edat, "Torompupu"), chunks = 1000) %>% bind_rows()
 
+#this returns the script to a single core, which is normal R behavior.
 plan(sequential)
 
 x_rand <- bind_rows(xamb, xbaw, xbul, xdak, xgan, xkat, xlat, xnok, xtor) 
@@ -195,9 +195,7 @@ adat <-
 
 
 
-### Add data to file
-This is hashed out because it only should be done once, and data needs to be looked at to confirm that it is correct and safe to add. Definitely inspect before saving!!!
-
+#### Write
 
 ```{r}
 adat %>% write_csv(here("All_Traits.csv"))
@@ -206,7 +204,7 @@ rm(x_rand, xamb, xbaw, xbul, xdak, xgan, xkat, xlat, xnok, xtor)
 
 
 
-## Cranial Randomization 36 Axes
+## Cranial Randomization 
 
 ### Cranium Variance Function  
 similar to the last one...
@@ -228,8 +226,10 @@ get_cvar <- function(sp, data, mountain) {
 ```
 
 
-### Estimate simulated communities
-Warning:: this may take hours depending on furrr & future settings. Using `workers = 8` on an Apple M1 takes about 4 minutes per community, or 36 min total.
+### Estimate Simulated Communities
+
+Warning:: this may take hours depending on furrr & future settings. Using `workers = 8` on an Apple M1 takes about 4 minutes per community.
+
 ```{r}
 plan(multisession, workers = 8)
 tictoc::tic()
@@ -268,81 +268,12 @@ adat <- c_rand %>% group_by(com) %>%
 ```
 
 
-### Add data to file
-This is hashed out because it only should be done once, and data needs to be looked at to confirm that it is correct and safe to add. Definitely inspect before saving!!!
+### Write  
+
 ```{r}
 adat %>% write_csv(here("All_Traits.csv"))
 rm(c_rand)
 ```
-
-
-
-## Cranial Randomization 2 Axes
-
-### Cranium 2 Variance Function  
-similar to the last one...
-```{r}
-get_cvar <- function(sp, data, mountain) {
-  data %>% 
-    filter(Species %in% {{sp}}) %>% 
-  split(.$.draw) %>% 
-  map(., ~ .x[ ,-c(1:2)]) %>% 
-  map(~ .x %>% summarise(across(cPC1:cPC2, ~ var(.x, na.rm = TRUE)))) %>% 
-    bind_rows() %>% 
-    as_tibble() %>%
-      mutate(vc = select(., cPC1:cPC2) %>% rowSums(na.rm = TRUE)) %>% 
-  sample_n(., size = 100) %>% 
-    add_column(com = {{mountain}})
-}
-```
-
-
-### Estimate simulated communities
-Warning:: this may take hours depending on furrr & future settings. Using `workers = 8` on an Apple M1 takes about 4 minutes per community, or 36 min total.
-```{r}
-plan(multisession, workers = 8)
-tictoc::tic()
-camb <- future_map(sp_amb, ~ get_cvar(.x, cdat, "Ambang"), chunks = 1000) %>% bind_rows()
-cbaw <- future_map(sp_baw, ~ get_cvar(.x, cdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
-cbul <- future_map(sp_bul, ~ get_cvar(.x, cdat, "Buliohuto"), chunks = 1000) %>% bind_rows()
-cdak <- future_map(sp_dak, ~ get_cvar(.x, cdat, "Dako"), chunks = 1000) %>% bind_rows()
-cgan <- future_map(sp_gan, ~ get_cvar(.x, cdat, "Gandangdewata"), chunks = 1000) %>% bind_rows()
-ckat <- future_map(sp_kat, ~ get_cvar(.x, cdat, "Katopasa"), chunks = 1000) %>% bind_rows()
-clat <- future_map(sp_lat, ~ get_cvar(.x, cdat, "Latimojong"), chunks = 1000) %>% bind_rows()
-cnok <- future_map(sp_nok, ~ get_cvar(.x, cdat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
-ctor <- future_map(sp_tor, ~ get_cvar(.x, cdat, "Torompupu"), chunks = 1000) %>% bind_rows()
-
-plan(sequential)
-
-c_rand2 <- bind_rows(camb, cbaw, cbul, cdak, cgan, ckat, clat, cnok, ctor) 
-rm(camb, cbaw, cbul, cdak, cgan, ckat, clat, cnok, ctor)
-tictoc::toc()
-```
-
-### Cranium 2 SES
-```{r}
-adat <- c_rand2 %>% group_by(com) %>% 
-  summarise(vmean = mean(vc),
-            vsd = sd(vc)) %>% 
-  as.data.frame() %>% 
-  right_join(adat, by="com") %>%
-  mutate(ses_cv_wei2 =  (cv_wei2 - vmean) / vsd) %>% 
-  select(!c(vmean, vsd))
-
-
-```
-
-
-### Add data to file
-This is hashed out because it only should be done once, and data needs to be looked at to confirm that it is correct and safe to add. Definitely inspect before saving!!!
-```{r}
-adat %>% write_csv(here("All_Traits.csv"))
-rm(c_rand2)
-```
-
-
-
-
 
 ## Dentary Randomization
 
@@ -363,6 +294,8 @@ get_dvar <- function(sp, data, mountain) {
     add_column(com = {{mountain}})
 }
 ```
+
+### Estimate sim. coms  
 
 ```{r}
 plan(multisession, workers = 8)
@@ -398,79 +331,17 @@ adat <- d_rand %>% group_by(com) %>%
   select(!c(mean_d, sd_d, mean_sd, sd_sd))
 ```
 
-### Add to File
+### write
 ```{r}
 adat %>% write_csv(here("All_Traits.csv"))
 rm(d_rand)
 ```
 
 
-
-
-## Dentary Randomization 3 Axes
-
-### Dentary 3 Randomization Function
-```{r}
-get_dvar <- function(sp, data, mountain) {
-  data %>% 
-    filter(Species %in% {{sp}}) %>% 
-  split(.$.draw) %>% 
-  map(., ~ .x[ ,-c(1:2)]) %>% 
-  map(~ .x %>% summarise(across(dPC1:dPC3, ~ var(.x, na.rm = TRUE)))) %>% 
-    bind_rows() %>% 
-    as_tibble() %>%
-    mutate(vd = select(., dPC1:dPC3) %>% rowSums(na.rm = TRUE)) %>%
-    select(vd) %>%
-    sample_n(., size = 100) %>% 
-    add_column(com = {{mountain}})
-}
-```
-
-```{r}
-plan(multisession, workers = 8)
-tictoc::tic()
-damb <- future_map(sp_amb, ~ get_dvar(.x, ddat, "Ambang"), chunks = 1000) %>% bind_rows()
-dbaw <- future_map(sp_baw, ~ get_dvar(.x, ddat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
-dbul <- future_map(sp_bul, ~ get_dvar(.x, ddat, "Buliohuto"), chunks = 1000) %>% bind_rows()
-ddak <- future_map(sp_dak, ~ get_dvar(.x, ddat, "Dako"), chunks = 1000) %>% bind_rows()
-dgan <- future_map(sp_gan, ~ get_dvar(.x, ddat, "Gandangdewata"), chunks = 1000) %>% bind_rows()
-dkat <- future_map(sp_kat, ~ get_dvar(.x, ddat, "Katopasa"), chunks = 1000) %>% bind_rows()
-dlat <- future_map(sp_lat, ~ get_dvar(.x, ddat, "Latimojong"), chunks = 1000) %>% bind_rows()
-dnok <- future_map(sp_nok, ~ get_dvar(.x, ddat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
-dtor <- future_map(sp_tor, ~ get_dvar(.x, ddat, "Torompupu"), chunks = 1000) %>% bind_rows()
-
-plan(sequential)
-
-d_rand2 <- bind_rows(damb, dbaw, dbul, ddak, dgan, dkat, dlat, dnok, dtor) 
-rm(damb, dbaw, dbul, ddak, dgan, dkat, dlat, dnok, dtor)
-tictoc::toc()
-```
-
-### Dentry 3 SES
-```{r}
-adat <- d_rand2 %>% group_by(com) %>% 
-  summarise(mean_d = mean(vd),
-            sd_d = sd(vd)) %>% 
-  as.data.frame() %>% 
-  right_join(adat, by="com") %>%
-  mutate(ses_dv_wei3 =  (dv_wei3 - mean_d) / sd_d) %>% 
-  select(!c(mean_d, sd_d))
-```
-
-### Add to File
-```{r}
-adat %>% write_csv(here("All_Traits.csv"))
-rm(d_rand2)
-```
-
-
-
-
-
 ## Skull Shape Random All Axes
 
 ### Skull Variance
-Really Big Function
+Quite a big function
 
 ```{r}
 get_skvar <- function(sp, data, mountain) {
@@ -492,6 +363,8 @@ get_skvar <- function(sp, data, mountain) {
 
 
 ### Estimated Simulatied Communities
+
+56 PC axes, so takes a very long time!
 ```{r}
 tictoc::tic()
 plan(multisession, workers = 8)
@@ -526,80 +399,12 @@ adat <- sk_rand %>% group_by(com) %>%
 
 ```
 
-### Add Data to File
+### write
 
 ```{r}
 adat %>% write_csv(here("All_Traits.csv"))
 rm(sk_rand)
 ```
-
-## Skull Shape Random 5 axes
-
-### Skull Variance
-Really Big Function
-
-```{r}
-get_skvar <- function(sp, data, mountain) {
-  data %>% 
-    filter(Species %in% {{sp}}) %>% 
-    split(.$.draw) %>% 
-    map(., ~ .x[ ,-c(1:2)]) %>% 
-    map(~ .x %>% summarise(across(c(cPC1:cPC2, dPC1:dPC3), ~ var(.x, na.rm = TRUE)))) %>% 
-    bind_rows() %>% 
-    as_tibble() %>%
-    mutate(vc = select(., cPC1:cPC2) %>% rowSums(na.rm = TRUE),
-           vd = select(., dPC1:dPC3) %>% rowSums(na.rm = TRUE),
-           vsk5 = (vd + vc) / 2) %>%  
-      select(vsk5) %>%
-  sample_n(., size = 100) %>% 
-    add_column(com = {{mountain}})
-}
-```
-
-
-### Estimated Simulatied Communities
-```{r}
-tictoc::tic()
-plan(multisession, workers = 8)
-skamb <- future_map(sp_amb, ~ get_skvar(.x, skdat, "Ambang"), chunks = 1000) %>% bind_rows()
-skbaw <- future_map(sp_baw, ~ get_skvar(.x, skdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
-skbul <- future_map(sp_bul, ~ get_skvar(.x, skdat, "Buliohuto"), chunks = 1000) %>% bind_rows()
-skdak <- future_map(sp_dak, ~ get_skvar(.x, skdat, "Dako"), chunks = 1000) %>% bind_rows()
-skgan <- future_map(sp_gan, ~ get_skvar(.x, skdat, "Gandangdewata"), chunks = 1000) %>% bind_rows()
-skkat <- future_map(sp_kat, ~ get_skvar(.x, skdat, "Katopasa"), chunks = 1000) %>% bind_rows()
-sklat <- future_map(sp_lat, ~ get_skvar(.x, skdat, "Latimojong"), chunks = 1000) %>% bind_rows()
-sknok <- future_map(sp_nok, ~ get_skvar(.x, skdat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
-sktor <- future_map(sp_tor, ~ get_skvar(.x, skdat, "Torompupu"), chunks = 1000) %>% bind_rows()
-
-plan(sequential)
-
-sk_rand2 <- bind_rows(skamb, skbaw, skbul, skdak, skgan, skkat, sklat, sknok, sktor) 
-rm(skamb, skbaw, skbul, skdak, skgan, skkat, sklat, sknok, sktor)
-tictoc::toc()
-```
-
-### Skull 5 axes SES  
-
-```{r}
-
-adat <- sk_rand2 %>% group_by(com) %>% 
-  summarise(mean = mean(vsk5),
-            sd = sd(vsk5)) %>% 
-  as.data.frame() %>% 
-  right_join(adat, by="com") %>%
-  mutate(ses_vsk5 =  (((cv_wei2 + dv_wei3)/2) - mean) / sd) %>% 
-  select(!c(mean, sd))
-
-```
-
-### Add Data to File
-
-```{r}
-adat %>% write_csv(here("All_Traits.csv"))
-rm(sk_rand2)
-```
-
-
 
 ## Morpho Randomization
 
@@ -626,7 +431,7 @@ get_mvar <- function(sp, data, mountain) {
 ```
 
 
-### Morpho Calculations 
+### Estimate Simulated Communities 
 
 ```{r}
 plan(multisession, workers = 8)
@@ -665,7 +470,7 @@ adat <- m_rand %>% group_by(com) %>%
 
 ```
 
-### Add Data to file
+### write
 ```{r}
 
 adat %>% write_csv(here("All_Traits.csv"))
@@ -676,7 +481,6 @@ rm(camb, cbaw, cbul, cdak, ckat, cgan, clat, cnok, ctor, c_rand)
 ## Isotope Randomization
 
 ### Isotope Randomization function
-
 
 ```{r}
 get_ivar <- function(sp, data, mountain) {
@@ -696,7 +500,7 @@ get_ivar <- function(sp, data, mountain) {
 }
 ```
 
-### Isotope Estimate simulated communities  
+### Estimate simulated communities  
 
 ```{r}
 plan(multisession, workers = 8)
@@ -745,7 +549,7 @@ adat <-
   select(!c(mC , sdC, mN , sdN, mI , sdI))
 ```
 
-### Add Data to File  
+### write  
 
 ```{r}
 adat  %>% write_csv(here("All_Traits.csv"))
@@ -773,7 +577,7 @@ get_lvar <- function(sp, data, mountain) {
 }
 ```
 
-
+### Estimate simulated communities
 ```{r}
 lamb <- map(sp_amb, ~ get_lvar(.x, locdat, "Ambang")) %>% bind_rows()
 lbaw <- map(sp_baw, ~ get_lvar(.x, locdat, "Bawakaraeng")) %>% bind_rows()
@@ -795,6 +599,7 @@ l_rand %>%
   as.data.frame()
 ```
 
+### write locomotion data
 Simple calculations!
 ```{r}
 df5$var = locvar$vloc
