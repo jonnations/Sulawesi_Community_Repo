@@ -9,10 +9,6 @@ output: html_document
 
 This script generates Figure 4 to demonstrate differences in ecospace occupancy between clades and traits.
 
-
-The line widths of the convex hulls are really large in a pdf of this file. Here is info on linewidth in pdfs with ggsave:
-https://stackoverflow.com/questions/47519624/how-is-the-line-width-size-defined-in-ggplot2/47521808#47521808
-
 ```{r}
 pacman::p_load(here, tidyverse, tidybayes, patchwork, modelr, ggstar, pals)
 scale2 <- function(x, na.rm = TRUE) (x - mean(x, na.rm = na.rm)) / sd(x, na.rm)
@@ -538,6 +534,11 @@ e_plot3
 ```
 
 # Plot Together
+
+The line widths of the convex hulls are really large in a pdf of this file. Here is info on linewidth in pdfs with ggsave:
+https://stackoverflow.com/questions/47519624/how-is-the-line-width-size-defined-in-ggplot2/47521808#47521808
+
+However, I couldn't figure it out. Saving as png's
 
 ```{r}
 p1 <-  e_plot1 + e_plot2 + e_plot3 + plot_spacer() + guide_area() + plot_spacer() +
