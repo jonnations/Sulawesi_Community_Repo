@@ -139,6 +139,7 @@ adat %>% write_csv(here("All_Traits.csv"))
 ```
 
 #### Cranium Plot
+test plot
 ```{r}
 myx <- "Mean Nearest Neighbor Distance"
 nn_cran2 %>% 
@@ -208,6 +209,7 @@ nn_dent <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_n
 ```
 
 #### Dentary Plot
+test plot
 ```{r}
 nn_dent %>% 
   mutate(com = factor(com, level = level_order)) %>%  

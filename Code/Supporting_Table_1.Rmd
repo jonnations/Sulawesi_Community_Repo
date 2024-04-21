@@ -5,16 +5,17 @@ date: "3/8/2022"
 output: html_document
 ---
 
-# Supporting table 1
+# Supporting Table 2
 
 
-Making a big html table of the median and 89% CIs of the v, vses, nn and nnses of all traits. 
+Making a big table of the median and 89% CIs of the values and SES's of the Variance and Density of each trait.
 
 # Load Packages and Models
 ```{r}
-pacman::p_load(tidyverse,tidybayes, kableExtra)
+pacman::p_load(here,tidyverse,tidybayes, kableExtra)
+here::i_am('Code/Models_Fitted_Variance.Rmd') 
 
-dat <- read_csv('All_Traits.csv')
+dat <- read_csv(here('All_Traits.csv'))
 ```
 
 
@@ -292,88 +293,18 @@ tabl <- vdf %>%
   select(!c(comb.x, comb.y)) %>%
   arrange(comb, Trait, Community)
 
-tabl %>% write_csv("Table/Table_S1_output.csv")
+tabl %>% write_csv(here("Table", "Table_S1_temp.csv"))
 ```
 
 Added Phylogenetic Diversity and Locomotor Variance/density manually. Read this back in. Also changing the Isotope NA values to just an NA so it prints better. Then I need to drop_na in the Vses column to eliminate the non-important coms. 
 
-This is in "Table_SI_output2.csv"
+This writes a .csv that serves as Table S2
 
 ```{r}
-tabl <- read_csv("Table/Table_S1_output2.csv") %>%
+tabl <- read_csv(here("Table", "Table_S1_temp2.csv")) %>%
   mutate_if(is.numeric, ~round(., 2)) %>% 
   mutate_at(vars(3:6), ~ifelse(. == 'NaN (NA, NA)', NA, .)) %>% 
-  drop_na(Volume)
+  drop_na(Volume) %>% 
+  select(!comb) %>% write_csv(here("Table", "Table_S2.csv"))
 ```
 
-
-## Print Table
-```{r}
-opts <- options(knitr.kable.NA = "")
-
-tabl %>% select(!comb) %>% kbl( align = "c") %>%
-  kable_classic_2(full_width = F) %>%
-  column_spec(1, bold = T) %>%
-  collapse_rows(columns = 1:2, valign = "top") %>% 
-  row_spec(0, bold = TRUE, hline_after = TRUE) %>% 
-  #scroll_box(width = "1600px", height = "1000px") %>% 
-  save_kable("Table/Table_S1.pdf") 
-
-tabl %>% select(!comb) %>% kbl( align = "c") %>%
-  kable_classic_2(full_width = F) %>%
-  column_spec(1, bold = T) %>%
-  collapse_rows(columns = 1:2, valign = "top") %>% 
-  row_spec(0, bold = TRUE, hline_after = TRUE) %>% 
-  #scroll_box(width = "1600px", height = "1000px") %>% 
-  save_kable("Table/Table_S1.png") 
-```
-
-##Split Table in two! 
-
-```{r}
-opts <- options(knitr.kable.NA = "")
-
-tabl %>% select(!comb) %>% 
-  filter(Trait %in% c("Body Size","External Proportions","Isospace","Morphology","Carbon13","Cranium Shape", "Cranium Size","Dentary Shape","Dentary Size" )) %>% 
-  kbl( align = "c") %>%
-  kable_classic_2(full_width = F) %>%
-  column_spec(1, bold = T) %>%
-  collapse_rows(columns = 1:2, valign = "top") %>% 
-  row_spec(0, bold = TRUE, hline_after = TRUE) %>% 
-  #scroll_box(width = "1600px", height = "1000px") %>% 
-  save_kable("Table_S1_split1.pdf") 
-
-tabl %>% select(!comb) %>% 
-  filter(Trait %in% c("Body Size","External Proportions","Isospace","Morphology","Carbon13","Cranium Shape", "Cranium Size","Dentary Shape","Dentary Size" )) %>% 
-  kbl( align = "c") %>%
-  kable_classic_2(full_width = F) %>%
-  column_spec(1, bold = T) %>%
-  collapse_rows(columns = 1:2, valign = "top") %>% 
-  row_spec(0, bold = TRUE, hline_after = TRUE) %>% 
-  #scroll_box(width = "1600px", height = "1000px") %>% 
-  save_kable("Table_S1_split1.png") 
-
-tabl %>% select(!comb) %>% 
-  filter(Trait %in% c("Ear Length", "Head Shape", "Head-Body Length",
-"Hind Foot Length", "Mass", "Nitrogen15",
-"Tail Length", "Locomotion", "Phylogenetic Diversity")) %>% 
-  kbl( align = "c") %>%
-  kable_classic_2(full_width = F) %>%
-  column_spec(1, bold = T) %>%
-  collapse_rows(columns = 1:2, valign = "top") %>% 
-  row_spec(0, bold = TRUE, hline_after = TRUE) %>% 
-  #scroll_box(width = "1600px", height = "1000px") %>% 
-  save_kable("Table_S1_split2.pdf") 
-
-tabl %>% select(!comb)  %>% 
-  filter(Trait %in% c("Ear Length", "Head Shape", "Head-Body Length",
-"Hind Foot Length", "Mass", "Nitrogen15",
-"Tail Length", "Locomotion", "Phylogenetic Diversity")) %>% 
-  kbl( align = "c") %>%
-  kable_classic_2(full_width = F) %>%
-  column_spec(1, bold = T) %>%
-  collapse_rows(columns = 1:2, valign = "top") %>% 
-  row_spec(0, bold = TRUE, hline_after = TRUE) %>% 
-  #scroll_box(width = "1600px", height = "1000px") %>% 
-  save_kable("Table_S1_split2.png") 
-```

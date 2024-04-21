@@ -3,11 +3,11 @@ title: "R Notebook"
 output: html_notebook
 ---
 
-FIx LAst Table!
+Fix Last Table!
 
 ```{r}
 pacman::p_load(tidyverse)
-
+here::i_am('Code/Models_Fitted_Variance.Rmd')
 df <- read_csv("Regression/Regression_Results.csv")
 ```
 

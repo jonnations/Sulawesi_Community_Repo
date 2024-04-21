@@ -6,7 +6,7 @@ date: "`r Sys.Date()`"
 
 This script includes all the models of trait estimates, the fitted mean values for each species, and the estimates of the variances for each community. 
 
-There are some really big multivariate models and big functions here. The Notebook becomes really long because of this, but I thought it would be easier to look in one place for all of these functions rather than across a different script for each trait. 
+There are some really big multivariate models and big functions here. The notebook becomes really long because of this, but I thought it would be easier to look in one place for all of these functions rather than across a different script for each trait. 
 
 I will split them up into sections be headers, and explain as much about what I am doing in them as I can.
 
@@ -30,20 +30,7 @@ level_order <-  c( 'Bawakaraeng', 'Buliohuto','Dako', "Katopasa", "Ambang", "Lat
 
 # Cranium
 
-Principal Components separates different axes by variance. So PC1 has more information about the variance of Cranial Shape than PC2, PC3, etc. Each axes should be valued **based on the amount of variance it contributes to the shape**. Therefore, adjust the importance of each axis by the amount of variance it describes. To do this I will need to
-
-  + Find all axes that lead to 95% of overall variance  
-  + Determine the amount of Cranial variance explained by each axis
-  + adjust this variance to % (out of 100)
-  + multiply the estimated mountain variance of each axis by the percentage of overall PC variance the axis has
-  + Sum all of these, resulting in a shape volume = 1 that can be added to other trait volumes.
-  
-example: If PC1 is 25% of the entire PCA variance, and PC2 is 20%, it will look something like this
-`var(PC1)*0.25 + var(PC2)*.2` rather than `(var(PC1) + var(PC2))/2`
-
-The cumulative variances are stored in a file called `Cranial_PCA_Eigen_Variance.csv` in the `~/Cranial_Data/landmarks` directory. Same for Dentary Data (in Dentary directory).
-
-# Cranium  
+Cranium data
 
 ## Cranial Model 36 axes
 
@@ -158,6 +145,7 @@ write_csv(cct, here("Cranial_Data","Community_Cranial_Variance_Weighted.csv"))
 ```
 
 #### Cranium Plot
+test plot
 ```{r}
 cct %>% mutate(com = factor(com, level = level_order)) %>% 
 ggplot(aes(y = com, x = cv_wei)) +
@@ -270,7 +258,8 @@ rm(dambt, dbawt, dbult, ddakt, dgant, dkatt, dlatt, dnokt, dtort)
 write_csv(dct, here("Dentary_Data","Community_Dental_Variance_Weighted.csv"))
 ```
 
-### Dentary Plot Plot
+### Dentary Plot
+test plot
 ```{r}
 dct %>% mutate(com = factor(com, level = level_order)) %>% 
 ggplot(aes(y = com, x = dv_wei)) +
@@ -369,6 +358,7 @@ write_csv(ext, here("External_Measurement_Data", "Community_External_Variance_Fi
 ```
 
 #### External Plot
+test plot
 ```{r}
 ext %>% mutate(com = factor(com, level = level_order)) %>% 
 ggplot(aes(y = com, x = vTail)) +
@@ -453,7 +443,8 @@ rm(dambt, dbawt, dbult, ddakt, dgant, dlatt)
 write_csv(ivar, here("Isotope_Data", "Isotope_Group_Level_Variance.csv"))
 ```
 
-#### Quick Plot
+#### Isotope Plot
+test plot
 ```{r}
 ivar %>% mutate(com = factor(com, level = level_order)) %>% 
 ggplot(aes(y = com, x = vN15)) +
