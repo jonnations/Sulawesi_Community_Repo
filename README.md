@@ -18,7 +18,7 @@ Zenodo upload to be associated with the Dryad Repo.
 
 This repo contains all the data and scripts for this project. There are many steps involved, from generating data to running predictive models to randomization analyses. I will walk through the steps in this README. *Most individual .Rmd scripts are heavily annotated*.
 
-***Libraries Used in this Repo***: pacman, here, tidyverse, tidybayes, brms, pacman, purrr, furrr, dispRity, geomorph, PCDimension, phytools, vegan, picante, modelr, cmdstanr, ggstar, and patchwork. 
+***Libraries Used in this Repo***: rmarkdown, pacman, here, tidyverse, tidybayes, brms, pacman, purrr, furrr, dispRity, geomorph, PCDimension, phytools, vegan, picante, modelr, cmdstanr, ggstar, and patchwork. 
 
 
 - All of these packages should be available in CRAN. See the brms [FAQ](https://github.com/paul-buerkner/brms#faq) for details on installing Stan, cmndstanr, and brms
