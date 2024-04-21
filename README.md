@@ -3,6 +3,11 @@ The roles of isolation and interspecific interaction in generating the functiona
 
 ## Repository of Data and Code
 
+
+[![DOI](https://zenodo.org/badge/462824230.svg)](https://zenodo.org/doi/10.5281/zenodo.11013381)
+
+
+
 Welcome to the GitHub repo for this manuscript. All scripts necessary to perform the analyses and generate the plots are found here.
 
 #### Author Information:

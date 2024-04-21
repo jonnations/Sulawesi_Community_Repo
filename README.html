@@ -357,6 +357,7 @@ display: none;
 the functional diversity of an insular mammal radiation</h1>
 <div id="repository-of-data-and-code" class="section level2">
 <h2>Repository of Data and Code</h2>
+<p><a href="https://zenodo.org/doi/10.5281/zenodo.11013381"><img src="data:image/svg+xml; charset=utf-8;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciCiAgICAgd2lkdGg9IjE5MC44NTkzNzUiIGhlaWdodD0iMjAiPgogICAgICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYiIgeDI9IjAiIHkyPSIxMDAlIj4KICAgICAgICAgICAgPHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjYmJiIiBzdG9wLW9wYWNpdHk9Ii4xIi8+CiAgICAgICAgICAgIDxzdG9wIG9mZnNldD0iMSIgc3RvcC1vcGFjaXR5PSIuMSIvPgogICAgICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICAgICAgPG1hc2sgaWQ9ImEiIHdpZHRoPSIxOTAuODU5Mzc1IiBoZWlnaHQ9IjIwIj4KICAgICAgICAgICAgPHJlY3Qgd2lkdGg9IjE5MC44NTkzNzUiIGhlaWdodD0iMjAiIHJ4PSIzIgogICAgICAgICAgICBmaWxsPSIjZmZmIi8+CiAgICAgICAgPC9tYXNrPgogICAgICAgIDxnIG1hc2s9InVybCgjYSkiPgogICAgICAgICAgICA8cGF0aCBmaWxsPSIjNTU1IiBkPSJNMCAwaDMxLjM3NXYyMEgweiIgLz4KICAgICAgICAgICAgPHBhdGggZmlsbD0iIzAwN2VjNiIKICAgICAgICAgICAgZD0iTTMxLjM3NSAwaDE1OS40ODQzNzV2MjBIMzEuMzc1eiIKICAgICAgICAgICAgLz4KICAgICAgICAgICAgPHBhdGggZmlsbD0idXJsKCNiKSIgZD0iTTAgMGgxOTAuODU5Mzc1djIwSDB6IiAvPgogICAgICAgIDwvZz4KICAgICAgICA8ZyBmaWxsPSIjZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iRGVqYVZ1IFNhbnMsCiAgICAgICAgVmVyZGFuYSxHZW5ldmEsc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMSI+CiAgICAgICAgICAgIDx0ZXh0IHg9IjE2LjE4NzUiIHk9IjE1IiBmaWxsPSIjMDEwMTAxIgogICAgICAgICAgICBmaWxsLW9wYWNpdHk9Ii4zIj4KICAgICAgICAgICAgICAgIERPSQogICAgICAgICAgICA8L3RleHQ+CiAgICAgICAgICAgIDx0ZXh0IHg9IjE2LjE4NzUiIHk9IjE0Ij4KICAgICAgICAgICAgICAgIERPSQogICAgICAgICAgICA8L3RleHQ+CiAgICAgICAgICAgIDx0ZXh0IHg9IjExMC42MTcxODc1IgogICAgICAgICAgICB5PSIxNSIgZmlsbD0iIzAxMDEwMSIgZmlsbC1vcGFjaXR5PSIuMyI+CiAgICAgICAgICAgICAgICAxMC41MjgxL3plbm9kby4xMTAxMzM4MgogICAgICAgICAgICA8L3RleHQ+CiAgICAgICAgICAgIDx0ZXh0IHg9IjExMC42MTcxODc1IiB5PSIxNCI+CiAgICAgICAgICAgICAgICAxMC41MjgxL3plbm9kby4xMTAxMzM4MgogICAgICAgICAgICA8L3RleHQ+CiAgICAgICAgPC9nPgogICAgPC9zdmc+" alt="DOI" /></a></p>
 <p>Welcome to the GitHub repo for this manuscript. All scripts necessary
 to perform the analyses and generate the plots are found here.</p>
 <div id="author-information" class="section level4">
@@ -374,10 +375,10 @@ be associated with the Dryad Repo.</li>
 are many steps involved, from generating data to running predictive
 models to randomization analyses. I will walk through the steps in this
 README. <em>Most individual .Rmd scripts are heavily annotated</em>.</p>
-<p><strong><em>Libraries Used in this Repo</em></strong>: here,
-tidyverse, tidybayes, brms, pacman, purrr, furrr, dispRity, geomorph,
-PCDimension, phytools, vegan, picante, modelr, cmdstanr, ggstar, and
-patchwork.</p>
+<p><strong><em>Libraries Used in this Repo</em></strong>: rmarkdown,
+pacman, here, tidyverse, tidybayes, brms, pacman, purrr, furrr,
+dispRity, geomorph, PCDimension, phytools, vegan, picante, modelr,
+cmdstanr, ggstar, and patchwork.</p>
 <ul>
 <li>All of these packages should be available in CRAN. See the brms <a href="https://github.com/paul-buerkner/brms#faq">FAQ</a> for details on
 installing Stan, cmndstanr, and brms</li>
@@ -427,11 +428,12 @@ supporting materials.</p>
 <h2>Order of Operations</h2>
 <p>This repo is meant to work in a certain order. All of the Predicted
 Data and Randomization Data winds up in a dataframe called
-`All_Traits.csv’, which builds on itself. If working through it, please
-follow the order below.</p>
-<p>This repo is set up using the R Package <code>here</code>. If
-installed and loaded, the scripts should run on your machine and
-generate these files in the directories in this repo.</p>
+<code>All_Traits.csv&#39;, which builds on itself. If working through it, please follow the order below. Or, even better--if your computer has time to spare--simply run the</code>Run_All.R`
+script, which executes all the scripts in order. Note that these must be
+run before the plots can be made.</p>
+<p>This repo is set up using the awesome R Package <a href="https://here.r-lib.org/">here</a>. If installed and loaded, the
+scripts should run on your machine and generate these files in the
+directories in this repo.</p>
 <ul>
 <li><strong>Organize and Process Raw Data</strong></li>
 </ul>
@@ -458,19 +460,14 @@ files. They are called
 incorporate the intraspecific variance inherent in any species, I use a
 partial-pooling approach with Bayesian multilevel modeling to estimate
 trait value predictions for each species.</p>
-<p>For the Community Ecospace Variance values, all models and
+<p>For the Community Functional Space Variance values, all models and
 predictions are in the <code>Models_Fitted_Variance.Rmd</code> script.
 <strong>RUN THIS FIRST</strong> This includes Cranial shape &amp; size,
 Dentary shape &amp; size, external measurements, isotopes, and
 locomotion.</p>
-<p>The Community Ecospace Density models and predictions are in
-<code>Models_Fitted_Density.Rmd</code>. The density script includes a
-broken stick estimation. Unlike sum of variance, nearest-neighbor
-density requires all the axes together in one estimation. Therefore I
-can’t weight them. In order not to use extraneous PC axes in these
-analyses, I use a broken stick method to estimate the
-<em>significant</em> axes. In this case it’s the first 2 for Cranial and
-first 3 for Dentary. <strong>RUN THIS SECOND</strong></p>
+<p>The Community Functional Space Density models and predictions are in
+<code>Models_Fitted_Density.Rmd</code>. <strong>RUN THIS
+SECOND</strong></p>
 <ul>
 <li><strong>Locomotor Diversity</strong></li>
 </ul>
@@ -484,37 +481,36 @@ using <code>var()</code> and using <code>disparity()</code> like above.
 All these values are stored in a separate directory, and not added to
 the <code>All_Traits.csv</code> dataframe. There are some times where I
 manually add the Locomotor (and Phylogenetic Diversity) values to some
-dataframes. When I do it, I mention this in the scripts. It’s mostly
-just adding the Regression outputs into the big regression output
-df.</p>
+dataframes. When I do so, I mention it in the scripts. It’s mostly just
+adding the Regression outputs into the big regression output df.</p>
 <ul>
 <li><strong>Phylogenetic Diversity</strong></li>
 </ul>
 <p>Phylogenetic Diversity is estimated differently than trait data. I
-did this using picante. It has a built in function for estimating
-Faith’s metric then generating the SES values. Script is called
-<code>Phylogenetic_Diversity.Rmd</code> and the data are in
+did this using the package picante. It has a built in function for
+estimating Faith’s metric then generating the SES values. Script is
+called <code>Phylogenetic_Diversity.Rmd</code> and the data are in
 <code>~Phylogenetic_Diversity/</code>.</p>
 <ul>
 <li><strong>Randomization and SES Values</strong></li>
 </ul>
 <p>The manuscript uses SES values for each trait for each community.
 <strong>THIS GETS RUN AFTER THE TWO PREDICTED TRAIT VALUES
-SCRIPTS</strong>. These are the standard effect sizes - values of trait
-volumes and densities that account for the size of the community. The
-text has more details, but it’s pretty standard practice. To do this, I
-wrote functions that generate 1000 fake communities using the
+SCRIPTS</strong>. These are the standardized effect sizes - values of
+trait volumes and densities that account for the size of the community.
+The text has more details, but it’s pretty standard practice. To do
+this, I wrote functions that generate 1000 fake communities using the
 independent swap algorithm. Then I estimate variance values for the
 traits for each of these communities. I take the mean and sd of these
 1000 communities, and then subtract the observed variance value for each
 of the 1000 draws from the mean, then divide by the sd, resulting in
-1000 SES values for each trait for each community. The Ecospace
+1000 SES values for each trait for each community. The Functional Space
 size/variance formulas are in the
 <code>Variance_Randomization.Rmd</code> script, and the Density formulas
 are in the <code>Density_randomization.Rmd</code> script.
 <strong><em>WARNING</em></strong> These randomization procedures take a
-long time! Using 6 cores on my M1 laptop, it can take 10-15 hours to run
-all of these.</p>
+long time! Using 6 cores on my M1 laptop, it can take <em>10-15
+hours</em> to run all of these.</p>
 <ul>
 <li><strong>Regression Analyses</strong></li>
 </ul>
@@ -528,10 +524,8 @@ probability distributions).</p>
 <ul>
 <li><strong>Plots</strong></li>
 </ul>
-<p>Figures 3, 4, 5, S3, S4, and S5 were made in R. The scripts are in
-this Repo. Figure 5 has some minor modifications that were done in
-afdesign, namely moving the legend a bit. Otherwise, they are all the
-same as these scripts produce. Fig S5 in particular has a lot of
+<p>Figures 2, 3, 4, S3, S4, and S5 were made in R. The scripts are in
+the <code>Code</code> directory. Fig S5 in particular has a lot of
 analyses that lead up to it, all of which are in the plotting
 script.</p>
 <p>All of the Predicted and SES values are saved together in a dataframe
