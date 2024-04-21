@@ -30,7 +30,7 @@ rm(list = ls())
 
 render(here::here("Code", "Randomization_Density_Constrain.Rmd"))
 
-# ok! 88 variables in adat!
+# 88 variables in adat
 # added c_nnses_c, c_nnses_d, c_nnses_csize, c_nnses_dsize, c_nnses_sk, c_nnses_Bsz, c_nnses_Tail, c_nnses_HF, c_nnses_Ear, c_nnses_HB, c_nnses_Mass, c_nnses_ext, c_nnses_morpho, c_nnses_C13, c_nnses_N15, c_nnses_iso
 
 # Remove all the objects in the environment
