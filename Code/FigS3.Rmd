@@ -44,19 +44,15 @@ Nplot <- epred_draws(m.iso, newdata = idat) %>%
   as_tibble() %>% 
   select(c(Community, Species, .epred)) %>% 
   bind_rows(iso_fit_n) %>%
-  #meanN = 4.27383, sdN = 2.24117
-  # formula = (value * sd) + mean
   mutate(rawN = (.epred * 2.24117) + 4.27383) %>% 
   ggplot(aes(y = Species, x = rawN, fill = Community, alpha = Community)) +
   stat_halfeye(.width = c(0.74, 0.89)) +
-  #geom_vline(xintercept = 0, linetype = 2) +
   #Mean vline
   geom_vline(xintercept = nmean, linetype = 2) +
    labs(x = expression(delta^15~N), y = NULL, fill = "Mountain") +
-    #xlim(c(-4, 4)) + 
   theme_bw() + scale_fill_viridis_d(direction = -1, begin = 0, end = 0.9, option = "A") +
   scale_alpha_manual(values = c(.5, .5, .5, .5, .5, .5, 1), guide = 'none') +
-  guides(fill = guide_legend(reverse=F)) #+ theme(legend.position = "none") 
+  guides(fill = guide_legend(reverse=F)) 
 Nplot
 ```
 
@@ -70,22 +66,17 @@ Cplot <- epred_draws(m.iso, newdata = idat) %>%
   as_tibble() %>% 
   select(c(Community, Species, .epred)) %>% 
   bind_rows(iso_fit_c) %>% 
-  # meanC = -24.32979	sdC = 1.291724	
   mutate(rawC = (.epred * 1.291724) + -24.32979) %>%
   # Raw Carbon Value plot
   ggplot(aes(y = Species, x = rawC, fill = Community, alpha = Community)) +
   stat_halfeye(.width = c(0.74, 0.89)) +
-  #removing standardized intercept line
-  #geom_vline(xintercept = 0, linetype = 2) +
   #mean intercept line
   geom_vline(xintercept = cmean, linetype = 2) +
    labs(x = expression(delta^13~C), y = NULL, fill = "Mountain") +
-    #xlim(c(-4, 4)) + 
   theme_bw() + scale_fill_viridis_d(direction = -1, begin = 0, end = 0.9, option = "A") +
   scale_alpha_manual(values = c(.5, .5, .5, .5, .5, .5, 1), guide = 'none') +
-  guides(fill = guide_legend(reverse=F)) #+ theme(legend.position = "none") 
+  guides(fill = guide_legend(reverse=F)) 
 Cplot
-#ggsave("Plots/group_level_Carbon.pdf", height = 17)
 ```
 
 ## Save Plot
