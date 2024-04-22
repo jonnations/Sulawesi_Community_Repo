@@ -42,7 +42,7 @@ This repo contains all the data and scripts for this project. There are many ste
   
 This repo is meant to work in a certain order. All of the Predicted Data and Randomization Data winds up in a dataframe called `All_Traits.csv`, which builds on itself. If working through it, please follow the order below. Or, even better--if your computer has time to spare--simply run the `Run_All.R` script, which executes all the scripts in order. Note that these must be run before the plots can be made.
 
-This repo is set up using the awesome R Package [here](https://here.r-lib.org/). If installed and loaded, the scripts should run on your machine and generate these files in the directories in this repo. 
+This repo is set up using the awesome R Package [`here`](https://here.r-lib.org/). If installed and loaded, the scripts should run on your machine and generate these files in the directories in this repo. 
 
  - **Organize and Process Raw Data**
 
