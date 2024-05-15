@@ -20,7 +20,9 @@ load(here("Species_Data", "Species_Lists.Rdata"))
 
 
 level_order <-  c( 'Bawakaraeng', 'Buliohuto','Dako', "Katopasa", "Ambang", "Latimojong", "Torompupu", "Nokilalaki", "Gandangdewata")
+
 adat <- read_csv(here("All_Traits.csv"))
+
 dat <- read_csv(here("All_Traits.csv")) %>% select(-.draw) %>% select(contains(c("ses", "com")))
 
 ```
@@ -148,13 +150,13 @@ cleanupS(fit)
 ```
 
 #### Run all models in parallel
-Results in a nice dataframe with beta and 89% intervals and Intercept and 95% intervals
+Results in a nice dataframe with beta and 89% intervals and Intercept and 89% intervals
 
 ```{r echo = T, results = 'hide', message=FALSE}
 pacman::p_load(furrr)
 furrr_options(seed = TRUE)
 options(future.rng.onMisuse="ignore")
-plan(multisession, workers = 6)
+plan(multisession, workers = 16)
 
 nest_data <- nest_data %>% mutate(fits = future_map(d, ~update(fit, newdata = .x, refresh = 0)))
 
@@ -241,7 +243,7 @@ lildat <- nest_data[1,] %>% unnest()
 fit <- brm(data = lildat, 
            formula = mean | se(se, sigma = TRUE) ~ nsp,
            prior = c(prior(normal(0, 0.5), class = b),
-                     prior(normal(0, 1), class = Intercept),
+                     prior(normal(0, 0.5), class = Intercept),
                      prior(normal(0, 0.5), class = sigma)),
            iter = 4000, 
            warmup = 2000, 

@@ -176,8 +176,9 @@ nn_csize <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_
 #### Write to `All_Traits`
 ```{r}
 dd <- nn_csize %>% select(csize_nn)
+adat <- read_csv(here("All_Traits.csv"))
 adat <- adat  %>% bind_cols(dd)
-
+adat %>% write_csv(here("All_Traits.csv"))
 ```
 
 ## Dentary Nearest Neighbor
@@ -225,7 +226,7 @@ nn_dent %>%
 
 #### Write to `All_Traits`
 ```{r}
-dd <- nn_dent2 %>% select(d_nn20)
+dd <- nn_dent %>% select(d_nn20)
 adat <- read_csv(here("All_Traits.csv"))
 adat <- adat  %>% bind_cols(dd)
 adat %>% write_csv(here("All_Traits.csv"))
@@ -256,6 +257,7 @@ nn_dsize <- bind_rows(amb_nni, baw_nni, bul_nni, dak_nni, gan_nni, kat_nni, lat_
 
 dd <- nn_dsize %>% select(dsize_nn)
 adat <- adat  %>% bind_cols(dd)
+adat %>% write_csv(here("All_Traits.csv"))
 ```
 
 

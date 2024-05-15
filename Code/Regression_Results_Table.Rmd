@@ -6,9 +6,14 @@ output: html_notebook
 Fix Last Table!
 
 ```{r}
-pacman::p_load(tidyverse)
+pacman::p_load(tidyverse, here)
 here::i_am('Code/Models_Fitted_Variance.Rmd')
-df <- read_csv("Regression/Regression_Results.csv")
+df <- read_csv(here("Regression", "Regression_Results.csv"))
+df2 <- read_csv(here("Regression", "var_name_type.csv"))
+
+df <- left_join(df, df2, by = 'var') %>% drop_na('name') %>% 
+  #write this csv to use in the Fig 2 regression plots
+  write_csv(here("Regression", "Fig2_Regression_Plot_Data.csv"))
 ```
 
 ```{r}
@@ -21,26 +26,34 @@ mypaste <- function(x, y, z) {
 x = df$Beta
 y = df$b_lower
 z = df$b_upper
-Bet <- as.data.frame(mypaste(x, y, z))
+Bet <- as.data.frame(mypaste(x, y, z)) %>% 
+  rename(Beta = `mypaste(x, y, z)`)
 
 x = df$Intercept
 y = df$I_lower
 z = df$I_upper
-Int <- as.data.frame(mypaste(x, y, z))
+Int <- as.data.frame(mypaste(x, y, z)) %>% 
+  rename(Intercept = `mypaste(x, y, z)`)
 
 x = df$R2
 y = df$R2_lower
 z = df$R2_upper
-r2 <- as.data.frame(mypaste(x, y, z))
+r2 <- as.data.frame(mypaste(x, y, z)) %>% 
+  rename(R2 = `mypaste(x, y, z)`)
 
 x = df$sigma
 y = df$s_lower
 z = df$s_upper 
-sig <- as.data.frame(mypaste(x, y, z))
+sig <- as.data.frame(mypaste(x, y, z)) %>% 
+  rename(sigma = `mypaste(x, y, z)`)
 
-nam <- df$name
-type <- df$type
+nam <- df$name %>% 
+  as.data.frame() %>% 
+  rename(Name = ".")
+type <- df$type %>% 
+  as.data.frame() %>% 
+  rename(Type = ".")
 
-df2 <- bind_cols(nam, type, Bet, Int, sig, r2) %>% write_csv("Regression/Reg_Table.csv")
+df2 <- bind_cols(nam, type, Bet, Int, sig, r2) %>% arrange(desc(Type), Name) %>% write_csv(here("Regression", "Reg_Table.csv"))
 ```
 
