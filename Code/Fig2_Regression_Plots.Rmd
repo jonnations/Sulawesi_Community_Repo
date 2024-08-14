@@ -3,7 +3,7 @@ title: "ALL REGRESSION PLOTS"
 date: "`r Sys.Date()`"
 ---
 
-# Plotting for FIg 3
+# Plotting for Fig 2
 
 This csv I am reading in contains some updated fields that I added manually. These describe the traits or trait types, and are there for organizing. All numeric values are the same as the regression outputs.
 ```{r}
@@ -13,7 +13,7 @@ fin <- read_csv(here("Regression", "Fig2_Regression_Plot_Data.csv")) %>% drop_na
   filter(!name %in% c("Dentary Shape 3 Axes", "Head Shape 5 Axes", "Cranial Shape 2 Axes"))
 ```
 
-#### Same plot magma
+#### Plot Volume
 ```{r}
 p1 <- fin %>% 
   filter(type == "v_ses",
@@ -136,6 +136,7 @@ pp1 <- fin %>%
   geom_pointrange(size = 1.25, show.legend = F) +
   labs(x = NULL, y=NULL) +
   xlim(-.23, .43) +
+  #scale_x_reverse(limits = c(.43, -.23)) +
   labs(title = "Functional Space Density",
        subtitle = "Multivariate Traits") +
   theme_classic()+
@@ -181,9 +182,15 @@ pp3 <- fin %>%
   geom_vline(xintercept = 0, linetype = 2 ) + 
   geom_pointrange(size = 1.25, show.legend = F) +
   xlim(-.23, .43) +
+  #labs(subtitle = "Individual Traits",
+  #     x = expression(atop(beta[italic(richness)], 
+  #                         "Increasing Density" %->% NULL)),
+  #     y="") +
   labs(subtitle = "Individual Traits",
-       x = expression(atop(beta[italic(richness)], NULL %<-%"Increasing Density")),
-       y="") +
+       x = expression(atop(beta[italic(richness)], 
+                           "Decreasing Density" %->% NULL)),
+       y="") +  
+  #scale_x_reverse() +
   scale_y_discrete(labels = c("Nitrogen 15 Isotope" = expression(delta^15~N),
                               "Carbon 13 Isotope" = expression(delta^13~C))) +
   theme_classic() +
