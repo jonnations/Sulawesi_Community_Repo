@@ -11,7 +11,7 @@ This notebook generates null distributions of trait variance for each community 
 
 #### Load Packages and Data  
 ```{r}
-pacman::p_load(here, tidyverse, tidybayes, patchwork, modelr, forcats, picante, furrr)
+pacman::p_load(here, tidyverse, tidybayes, patchwork, modelr, forcats, picante, furrr, vegan)
 #supress dplyr messages for summarise()
 options(dplyr.summarise.inform = FALSE)
 
@@ -20,16 +20,16 @@ here::i_am('Code/Randomization_Variance.Rmd')
 #External Data
 edat <- read_csv(here("External_Measurement_Data", "External_Fitted.csv"))
 # Cranial Data
-cdat <- read_csv(here("Cranial_Data", "Cranial_36axes_Fitted.csv")) %>%
+cdat <- read_csv(here("Cranial_Data", "Cranial_36axes_Fitted.csv")) |>
   mutate_if(is.numeric, round, digits=6)
 # Dentary Data
-ddat <- read_csv(here("Dentary_Data", "Dentary_20axes_Fitted.csv")) %>%
+ddat <- read_csv(here("Dentary_Data", "Dentary_20axes_Fitted.csv")) |>
   mutate_if(is.numeric, round, digits=6)
 
-skdat <- ddat  %>% select(!.row) %>% 
+skdat <- ddat  |> select(!.row) |> 
   full_join(cdat, by = c(".draw", "Species"))
 
-mdat <- edat  %>% select(!.row) %>% 
+mdat <- edat  |> select(!.row) |> 
   full_join(skdat, by = c(".draw", "Species"))
 
 
@@ -40,10 +40,10 @@ lvdat <- read_csv(here("Locomotion_Data", "All_Locomotor_Var.csv")) # variances 
 
 ifit <- read_csv(here("Isotope_Data", "Isotope_Group_Level_Fitted.csv"))
 
-adat <- read_csv(here("All_Traits.csv")) %>% mutate(vBsz = (vdCsize + vcCsize + vHB + vMass) / 4)
+adat <- read_csv(here("All_Traits.csv")) |> mutate(vBsz = (vdCsize + vcCsize + vHB + vMass) / 4)
 
 
-sp_ses <- read.csv(here("Phylogenetic_Diversity", "Species_SES.csv")) %>% select(!X)
+sp_ses <- read.csv(here("Phylogenetic_Diversity", "Species_SES.csv")) |> select(!X)
 
 load(here("Species_Data", "Species_Lists.RData"))
 load(here("Species_Data", "Species_Extant.RData"))
@@ -67,14 +67,14 @@ very helpful: https://stackoverflow.com/questions/61740025/dplyr-how-to-collapse
 sample_com <- function(com) {
 dlist <- list()
 for (i in 1:1000){
-  b <- picante::randomizeMatrix(sp_ses, null.model = "independentswap", iterations = 1000) %>% 
-    as_tibble() %>% 
-    bind_cols(com = c("Ambang", "Bawakaraeng", "Buliohuto", "Dako", "Gandangdewata", "Katopasa", "Latimojong", "Nokilalaki", "Torompupu")) %>% 
-    pivot_longer(cols = -com, names_to = 'species') %>%
-    filter(as.logical(value)) %>%
-    select(-value) %>%
-    filter(com == {{com}}) %>% 
-    select(-com) %>%
+  b <- picante::randomizeMatrix(sp_ses, null.model = "independentswap", iterations = 1000) |> 
+    as_tibble() |> 
+    bind_cols(com = c("Ambang", "Bawakaraeng", "Buliohuto", "Dako", "Gandangdewata", "Katopasa", "Latimojong", "Nokilalaki", "Torompupu")) |> 
+    pivot_longer(cols = -com, names_to = 'species') |>
+    filter(as.logical(value)) |>
+    select(-value) |>
+    filter(com == {{com}}) |> 
+    select(-com) |>
     pull(species)
   dlist[[i]] <- b
   }
@@ -102,10 +102,10 @@ sp_tor <- sample_com("Torompupu")
 
 ```{r}
 get_xvar <- function(sp, data, mountain) {
-  data %>%
-    filter(Species %in% {{sp}}) %>%
-    split(.$.draw) %>%
-    map(~ .x[, -c(1:2)]) %>%
+  data |>
+    filter(Species %in% {{sp}}) |>
+    split(.$.draw) |>
+    map(~ .x[, -c(1:2)]) |>
     map_dfr(function(df) {
       # Pre-calculate variances to avoid repeating the same calculation
       # surprisingly, this saves a lot of time (25% decrease)
@@ -124,8 +124,8 @@ get_xvar <- function(sp, data, mountain) {
         vBsz = (vHB + vlMass) / 2,
         vExt = (vHB + vrHF + vrTail + vrEar + vlMass) / 5
       )
-    }) %>%
-    sample_n(size = 100) %>%
+    }) |>
+    sample_n(size = 100) |>
     mutate(com = mountain)
 }
 
@@ -144,15 +144,15 @@ plan(multisession, workers = 16)
 ### Estimate Simulated Communities
 ```{r}
 tictoc::tic()
-xamb <- future_map(sp_amb, ~ get_xvar(.x, edat, "Ambang"), chunks = 1000) %>% bind_rows()
-xbaw <- future_map(sp_baw, ~ get_xvar(.x, edat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
-xbul <- future_map(sp_bul, ~ get_xvar(.x, edat, "Buliohuto"), chunks = 1000) %>% bind_rows()
-xdak <- future_map(sp_dak, ~ get_xvar(.x, edat, "Dako"), chunks = 1000) %>% bind_rows()
-xgan <- future_map(sp_gan, ~ get_xvar(.x, edat, "Gandangdewata"), chunks = 1000) %>% bind_rows()
-xkat <- future_map(sp_kat, ~ get_xvar(.x, edat, "Katopasa"), chunks = 1000) %>% bind_rows()
-xlat <- future_map(sp_lat, ~ get_xvar(.x, edat, "Latimojong"), chunks = 1000) %>% bind_rows()
-xnok <- future_map(sp_nok, ~ get_xvar(.x, edat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
-xtor <- future_map(sp_tor, ~ get_xvar(.x, edat, "Torompupu"), chunks = 1000) %>% bind_rows()
+xamb <- future_map(sp_amb, ~ get_xvar(.x, edat, "Ambang"), chunks = 1000) |> bind_rows()
+xbaw <- future_map(sp_baw, ~ get_xvar(.x, edat, "Bawakaraeng"), chunks = 1000) |> bind_rows()
+xbul <- future_map(sp_bul, ~ get_xvar(.x, edat, "Buliohuto"), chunks = 1000) |> bind_rows()
+xdak <- future_map(sp_dak, ~ get_xvar(.x, edat, "Dako"), chunks = 1000) |> bind_rows()
+xgan <- future_map(sp_gan, ~ get_xvar(.x, edat, "Gandangdewata"), chunks = 1000) |> bind_rows()
+xkat <- future_map(sp_kat, ~ get_xvar(.x, edat, "Katopasa"), chunks = 1000) |> bind_rows()
+xlat <- future_map(sp_lat, ~ get_xvar(.x, edat, "Latimojong"), chunks = 1000) |> bind_rows()
+xnok <- future_map(sp_nok, ~ get_xvar(.x, edat, "Nokilalaki"), chunks = 1000) |> bind_rows()
+xtor <- future_map(sp_tor, ~ get_xvar(.x, edat, "Torompupu"), chunks = 1000) |> bind_rows()
 
 #this returns the script to a single core, which is normal R behavior.
 plan(sequential)
@@ -166,7 +166,7 @@ tictoc::toc()
 ### External SES  
 ```{r}
 adat <- 
-  x_rand %>% group_by(com) %>% 
+  x_rand |> group_by(com) |> 
   summarise(mHB =   mean(vHB),
             sdHB =    sd(vHB),
             mHF =   mean(vHF),
@@ -180,16 +180,16 @@ adat <-
             mBsz =  mean(vBsz),
             sdBsz =   sd(vBsz),
             mExt =  mean(vExt),
-            sdExt =   sd(vExt)) %>% 
-  as.data.frame() %>% 
-  right_join(adat, by="com") %>%
+            sdExt =   sd(vExt)) |> 
+  as.data.frame() |> 
+  right_join(adat, by="com") |>
   mutate(ses_vHB =  (vHB - mHB) / sdHB,
          ses_vHF = (vHF - mHF) / sdHF,
          ses_vTail = (vTail - mTail) / sdTail,
          ses_vEar = (vEar - mEar) / sdEar,
          ses_vMass = (vMass - mMass) / sdMass,
          ses_vBsz = (vBsz - mBsz) / sdBsz,
-         ses_ext = (ext_scaled - mExt) / sdExt) %>% 
+         ses_ext = (ext_scaled - mExt) / sdExt) |> 
   select(!c(mHB,sdHB, mHF, sdHF, mTail, sdTail, mEar, sdEar, mMass, sdMass, mBsz, sdBsz, mExt, sdExt))
 ```
 
@@ -198,7 +198,7 @@ adat <-
 #### Write
 
 ```{r}
-adat %>% write_csv(here("All_Traits.csv"))
+adat |> write_csv(here("All_Traits.csv"))
 rm(x_rand, xamb, xbaw, xbul, xdak, xgan, xkat, xlat, xnok, xtor)
 ```
 
@@ -210,17 +210,17 @@ rm(x_rand, xamb, xbaw, xbul, xdak, xgan, xkat, xlat, xnok, xtor)
 similar to the last one...
 ```{r}
 get_cvar <- function(sp, data, mountain) {
-  data %>% 
-    filter(Species %in% {{sp}}) %>% 
-  split(.$.draw) %>% 
-  map(., ~ .x[ ,-c(1:2)]) %>% 
-  map(~ .x %>% summarise(across(cPC1:cCsize, ~ var(.x, na.rm = TRUE)))) %>% 
-    bind_rows() %>% 
-    as_tibble() %>%
-      mutate(vc = select(., cPC1:cPC36) %>% rowSums(na.rm = TRUE),
-             vcCsize = cCsize) %>% 
-      select(vc, vcCsize) %>%
-  sample_n(., size = 100) %>% 
+  data |> 
+    filter(Species %in% {{sp}}) |> 
+  split(.$.draw) |> 
+  map(., ~ .x[ ,-c(1:2)]) |> 
+  map(~ .x |> summarise(across(cPC1:cCsize, ~ var(.x, na.rm = TRUE)))) |> 
+    bind_rows() |> 
+    as_tibble() |>
+      mutate(vc = select(., cPC1:cPC36) |> rowSums(na.rm = TRUE),
+             vcCsize = cCsize) |> 
+      select(vc, vcCsize) |>
+  sample_n(., size = 100) |> 
     add_column(com = {{mountain}})
 }
 ```
@@ -233,15 +233,15 @@ Warning:: this may take hours depending on furrr & future settings. Using `worke
 ```{r}
 plan(multisession, workers = 16)
 tictoc::tic()
-camb <- future_map(sp_amb, ~ get_cvar(.x, cdat, "Ambang"), chunks = 1000) %>% bind_rows()
-cbaw <- future_map(sp_baw, ~ get_cvar(.x, cdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
-cbul <- future_map(sp_bul, ~ get_cvar(.x, cdat, "Buliohuto"), chunks = 1000) %>% bind_rows()
-cdak <- future_map(sp_dak, ~ get_cvar(.x, cdat, "Dako"), chunks = 1000) %>% bind_rows()
-cgan <- future_map(sp_gan, ~ get_cvar(.x, cdat, "Gandangdewata"), chunks = 1000) %>% bind_rows()
-ckat <- future_map(sp_kat, ~ get_cvar(.x, cdat, "Katopasa"), chunks = 1000) %>% bind_rows()
-clat <- future_map(sp_lat, ~ get_cvar(.x, cdat, "Latimojong"), chunks = 1000) %>% bind_rows()
-cnok <- future_map(sp_nok, ~ get_cvar(.x, cdat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
-ctor <- future_map(sp_tor, ~ get_cvar(.x, cdat, "Torompupu"), chunks = 1000) %>% bind_rows()
+camb <- future_map(sp_amb, ~ get_cvar(.x, cdat, "Ambang"), chunks = 1000) |> bind_rows()
+cbaw <- future_map(sp_baw, ~ get_cvar(.x, cdat, "Bawakaraeng"), chunks = 1000) |> bind_rows()
+cbul <- future_map(sp_bul, ~ get_cvar(.x, cdat, "Buliohuto"), chunks = 1000) |> bind_rows()
+cdak <- future_map(sp_dak, ~ get_cvar(.x, cdat, "Dako"), chunks = 1000) |> bind_rows()
+cgan <- future_map(sp_gan, ~ get_cvar(.x, cdat, "Gandangdewata"), chunks = 1000) |> bind_rows()
+ckat <- future_map(sp_kat, ~ get_cvar(.x, cdat, "Katopasa"), chunks = 1000) |> bind_rows()
+clat <- future_map(sp_lat, ~ get_cvar(.x, cdat, "Latimojong"), chunks = 1000) |> bind_rows()
+cnok <- future_map(sp_nok, ~ get_cvar(.x, cdat, "Nokilalaki"), chunks = 1000) |> bind_rows()
+ctor <- future_map(sp_tor, ~ get_cvar(.x, cdat, "Torompupu"), chunks = 1000) |> bind_rows()
 
 plan(sequential)
      
@@ -253,15 +253,15 @@ tictoc::toc()
 
 ### Cranium SES
 ```{r}
-adat <- c_rand %>% group_by(com) %>% 
+adat <- c_rand |> group_by(com) |> 
   summarise(vmean = mean(vc),
             vsd = sd(vc),
             vSmean = mean(vcCsize),
-            vSsd = sd(vcCsize)) %>% 
-  as.data.frame() %>% 
-  right_join(adat, by="com") %>%
+            vSsd = sd(vcCsize)) |> 
+  as.data.frame() |> 
+  right_join(adat, by="com") |>
   mutate(ses_cv_wei =  (cv_wei - vmean) / vsd,
-         ses_vcCsize =  (vcCsize - vSmean) / vSsd) %>% 
+         ses_vcCsize =  (vcCsize - vSmean) / vSsd) |> 
   select(!c(vmean, vsd, vSmean, vSsd))
 
 
@@ -271,7 +271,7 @@ adat <- c_rand %>% group_by(com) %>%
 ### Write  
 
 ```{r}
-adat %>% write_csv(here("All_Traits.csv"))
+adat |> write_csv(here("All_Traits.csv"))
 rm(c_rand)
 ```
 
@@ -280,17 +280,17 @@ rm(c_rand)
 ### Dentary Randomization Function
 ```{r}
 get_dvar <- function(sp, data, mountain) {
-  data %>% 
-    filter(Species %in% {{sp}}) %>% 
-  split(.$.draw) %>% 
-  map(., ~ .x[ ,-c(1:2)]) %>% 
-  map(~ .x %>% summarise(across(dPC1:dCsize, ~ var(.x, na.rm = TRUE)))) %>% 
-    bind_rows() %>% 
-    as_tibble() %>%
-    mutate(vd = select(., dPC1:dPC20) %>% rowSums(na.rm = TRUE),
-             vdCsize = dCsize) %>%
-    select(vd, vdCsize) %>%
-    sample_n(., size = 100) %>% 
+  data |> 
+    filter(Species %in% {{sp}}) |> 
+  split(.$.draw) |> 
+  map(., ~ .x[ ,-c(1:2)]) |> 
+  map(~ .x |> summarise(across(dPC1:dCsize, ~ var(.x, na.rm = TRUE)))) |> 
+    bind_rows() |> 
+    as_tibble() |>
+    mutate(vd = select(., dPC1:dPC20) |> rowSums(na.rm = TRUE),
+             vdCsize = dCsize) |>
+    select(vd, vdCsize) |>
+    sample_n(., size = 100) |> 
     add_column(com = {{mountain}})
 }
 ```
@@ -300,15 +300,15 @@ get_dvar <- function(sp, data, mountain) {
 ```{r}
 plan(multisession, workers = 16)
 tictoc::tic()
-damb <- future_map(sp_amb, ~ get_dvar(.x, ddat, "Ambang"), chunks = 1000) %>% bind_rows()
-dbaw <- future_map(sp_baw, ~ get_dvar(.x, ddat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
-dbul <- future_map(sp_bul, ~ get_dvar(.x, ddat, "Buliohuto"), chunks = 1000) %>% bind_rows()
-ddak <- future_map(sp_dak, ~ get_dvar(.x, ddat, "Dako"), chunks = 1000) %>% bind_rows()
-dgan <- future_map(sp_gan, ~ get_dvar(.x, ddat, "Gandangdewata"), chunks = 1000) %>% bind_rows()
-dkat <- future_map(sp_kat, ~ get_dvar(.x, ddat, "Katopasa"), chunks = 1000) %>% bind_rows()
-dlat <- future_map(sp_lat, ~ get_dvar(.x, ddat, "Latimojong"), chunks = 1000) %>% bind_rows()
-dnok <- future_map(sp_nok, ~ get_dvar(.x, ddat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
-dtor <- future_map(sp_tor, ~ get_dvar(.x, ddat, "Torompupu"), chunks = 1000) %>% bind_rows()
+damb <- future_map(sp_amb, ~ get_dvar(.x, ddat, "Ambang"), chunks = 1000) |> bind_rows()
+dbaw <- future_map(sp_baw, ~ get_dvar(.x, ddat, "Bawakaraeng"), chunks = 1000) |> bind_rows()
+dbul <- future_map(sp_bul, ~ get_dvar(.x, ddat, "Buliohuto"), chunks = 1000) |> bind_rows()
+ddak <- future_map(sp_dak, ~ get_dvar(.x, ddat, "Dako"), chunks = 1000) |> bind_rows()
+dgan <- future_map(sp_gan, ~ get_dvar(.x, ddat, "Gandangdewata"), chunks = 1000) |> bind_rows()
+dkat <- future_map(sp_kat, ~ get_dvar(.x, ddat, "Katopasa"), chunks = 1000) |> bind_rows()
+dlat <- future_map(sp_lat, ~ get_dvar(.x, ddat, "Latimojong"), chunks = 1000) |> bind_rows()
+dnok <- future_map(sp_nok, ~ get_dvar(.x, ddat, "Nokilalaki"), chunks = 1000) |> bind_rows()
+dtor <- future_map(sp_tor, ~ get_dvar(.x, ddat, "Torompupu"), chunks = 1000) |> bind_rows()
 
 plan(sequential)
 
@@ -319,21 +319,21 @@ tictoc::toc()
 
 ### Dentry SES
 ```{r}
-adat <- d_rand %>% group_by(com) %>% 
+adat <- d_rand |> group_by(com) |> 
   summarise(mean_d = mean(vd),
             sd_d = sd(vd),
             mean_sd = mean(vdCsize),
-            sd_sd = sd(vdCsize)) %>% 
-  as.data.frame() %>% 
-  right_join(adat, by="com") %>%
+            sd_sd = sd(vdCsize)) |> 
+  as.data.frame() |> 
+  right_join(adat, by="com") |>
   mutate(ses_dv_wei =  (dv_wei - mean_d) / sd_d,
-         ses_vdCsize = (vdCsize - mean_sd) / sd_sd) %>% 
+         ses_vdCsize = (vdCsize - mean_sd) / sd_sd) |> 
   select(!c(mean_d, sd_d, mean_sd, sd_sd))
 ```
 
 ### write
 ```{r}
-adat %>% write_csv(here("All_Traits.csv"))
+adat |> write_csv(here("All_Traits.csv"))
 rm(d_rand)
 ```
 
@@ -345,18 +345,18 @@ Quite a big function
 
 ```{r}
 get_skvar <- function(sp, data, mountain) {
-  data %>% 
-    filter(Species %in% {{sp}}) %>% 
-    split(.$.draw) %>% 
-    map(., ~ .x[ ,-c(1:2)]) %>% 
-    map(~ .x %>% summarise(across(c(cPC1:cPC36, dPC1:dPC20), ~ var(.x, na.rm = TRUE)))) %>% 
-    bind_rows() %>% 
-    as_tibble() %>%
-    mutate(vc = select(., cPC1:cPC36) %>% rowSums(na.rm = TRUE),
-           vd = select(., dPC1:dPC20) %>% rowSums(na.rm = TRUE),
-           vsk = (vd + vc) / 2) %>%  
-      select(vsk) %>%
-  sample_n(., size = 100) %>% 
+  data |> 
+    filter(Species %in% {{sp}}) |> 
+    split(.$.draw) |> 
+    map(., ~ .x[ ,-c(1:2)]) |> 
+    map(~ .x |> summarise(across(c(cPC1:cPC36, dPC1:dPC20), ~ var(.x, na.rm = TRUE)))) |> 
+    bind_rows() |> 
+    as_tibble() |>
+    mutate(vc = select(., cPC1:cPC36) |> rowSums(na.rm = TRUE),
+           vd = select(., dPC1:dPC20) |> rowSums(na.rm = TRUE),
+           vsk = (vd + vc) / 2) |>  
+      select(vsk) |>
+  sample_n(., size = 100) |> 
     add_column(com = {{mountain}})
 }
 ```
@@ -368,15 +368,15 @@ get_skvar <- function(sp, data, mountain) {
 ```{r}
 tictoc::tic()
 plan(multisession, workers = 16)
-skamb <- future_map(sp_amb, ~ get_skvar(.x, skdat, "Ambang"), chunks = 1000) %>% bind_rows()
-skbaw <- future_map(sp_baw, ~ get_skvar(.x, skdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
-skbul <- future_map(sp_bul, ~ get_skvar(.x, skdat, "Buliohuto"), chunks = 1000) %>% bind_rows()
-skdak <- future_map(sp_dak, ~ get_skvar(.x, skdat, "Dako"), chunks = 1000) %>% bind_rows()
-skgan <- future_map(sp_gan, ~ get_skvar(.x, skdat, "Gandangdewata"), chunks = 1000) %>% bind_rows()
-skkat <- future_map(sp_kat, ~ get_skvar(.x, skdat, "Katopasa"), chunks = 1000) %>% bind_rows()
-sklat <- future_map(sp_lat, ~ get_skvar(.x, skdat, "Latimojong"), chunks = 1000) %>% bind_rows()
-sknok <- future_map(sp_nok, ~ get_skvar(.x, skdat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
-sktor <- future_map(sp_tor, ~ get_skvar(.x, skdat, "Torompupu"), chunks = 1000) %>% bind_rows()
+skamb <- future_map(sp_amb, ~ get_skvar(.x, skdat, "Ambang"), chunks = 1000) |> bind_rows()
+skbaw <- future_map(sp_baw, ~ get_skvar(.x, skdat, "Bawakaraeng"), chunks = 1000) |> bind_rows()
+skbul <- future_map(sp_bul, ~ get_skvar(.x, skdat, "Buliohuto"), chunks = 1000) |> bind_rows()
+skdak <- future_map(sp_dak, ~ get_skvar(.x, skdat, "Dako"), chunks = 1000) |> bind_rows()
+skgan <- future_map(sp_gan, ~ get_skvar(.x, skdat, "Gandangdewata"), chunks = 1000) |> bind_rows()
+skkat <- future_map(sp_kat, ~ get_skvar(.x, skdat, "Katopasa"), chunks = 1000) |> bind_rows()
+sklat <- future_map(sp_lat, ~ get_skvar(.x, skdat, "Latimojong"), chunks = 1000) |> bind_rows()
+sknok <- future_map(sp_nok, ~ get_skvar(.x, skdat, "Nokilalaki"), chunks = 1000) |> bind_rows()
+sktor <- future_map(sp_tor, ~ get_skvar(.x, skdat, "Torompupu"), chunks = 1000) |> bind_rows()
 
 plan(sequential)
 
@@ -389,12 +389,12 @@ tictoc::toc()
 
 ```{r}
 
-adat <- sk_rand %>% group_by(com) %>% 
+adat <- sk_rand |> group_by(com) |> 
   summarise(mean = mean(vsk),
-            sd = sd(vsk)) %>% 
-  as.data.frame() %>% 
-  right_join(adat, by="com") %>%
-  mutate(ses_vsk =  (((cv_wei + dv_wei)/2) - mean) / sd) %>% 
+            sd = sd(vsk)) |> 
+  as.data.frame() |> 
+  right_join(adat, by="com") |>
+  mutate(ses_vsk =  (((cv_wei + dv_wei)/2) - mean) / sd) |> 
   select(!c(mean, sd))
 
 ```
@@ -402,7 +402,7 @@ adat <- sk_rand %>% group_by(com) %>%
 ### write
 
 ```{r}
-adat %>% write_csv(here("All_Traits.csv"))
+adat |> write_csv(here("All_Traits.csv"))
 rm(sk_rand)
 ```
 
@@ -413,19 +413,19 @@ vMass + vEar + vHF + vTail + vHB + dv_wei + cv_wei
 I had to change the summarise calculations to include the `na.rm = TRUE` bit so that they would calculate vc and vd with the species are included in ext measurements and not cranial/dent.
 ```{r}
 get_mvar <- function(sp, data, mountain) {
-  data %>% 
-    filter(Species %in% {{sp}}) %>% 
-    split(.$.draw) %>% 
-    map(., ~ .x[ ,-c(1:2)]) %>% 
-    map(~ .x %>% summarise(across(c(HB:dPC20, cPC1:cPC36), 
-                                  ~var(.x, na.rm = TRUE)))) %>%
-    bind_rows() %>% 
-    as_tibble() %>%
-    mutate(vc = select(., cPC1:cPC36) %>% rowSums(na.rm = TRUE),
-           vd = select(., dPC1:dPC20) %>% rowSums(na.rm = TRUE)) %>% 
-      mutate(vMorpho = (lMass + rEar + rHF + rTail + HB + vc + vd ) / 7) %>% 
-      select(vMorpho) %>%
-  sample_n(., size = 100) %>% 
+  data |> 
+    filter(Species %in% {{sp}}) |> 
+    split(.$.draw) |> 
+    map(., ~ .x[ ,-c(1:2)]) |> 
+    map(~ .x |> summarise(across(c(HB:dPC20, cPC1:cPC36), 
+                                  ~var(.x, na.rm = TRUE)))) |>
+    bind_rows() |> 
+    as_tibble() |>
+    mutate(vc = select(., cPC1:cPC36) |> rowSums(na.rm = TRUE),
+           vd = select(., dPC1:dPC20) |> rowSums(na.rm = TRUE)) |> 
+      mutate(vMorpho = (lMass + rEar + rHF + rTail + HB + vc + vd ) / 7) |> 
+      select(vMorpho) |>
+  sample_n(., size = 100) |> 
     add_column(com = {{mountain}})
 }
 ```
@@ -436,15 +436,15 @@ get_mvar <- function(sp, data, mountain) {
 ```{r}
 plan(multisession, workers = 16)
 tictoc::tic()
-mamb <- future_map(sp_amb, ~ get_mvar(.x, mdat, "Ambang"), chunks = 1000) %>% bind_rows()
-mbaw <- future_map(sp_baw, ~ get_mvar(.x, mdat, "Bawakaraeng"), chunks = 1000) %>% bind_rows()
-mbul <- future_map(sp_bul, ~ get_mvar(.x, mdat, "Buliohuto"), chunks = 1000) %>% bind_rows()
-mdak <- future_map(sp_dak, ~ get_mvar(.x, mdat, "Dako"), chunks = 1000) %>% bind_rows()
-mgan <- future_map(sp_gan, ~ get_mvar(.x, mdat, "Gandangdewata"), chunks = 1000) %>% bind_rows()
-mkat <- future_map(sp_kat, ~ get_mvar(.x, mdat, "Katopasa"), chunks = 1000) %>% bind_rows()
-mlat <- future_map(sp_lat, ~ get_mvar(.x, mdat, "Latimojong"), chunks = 1000) %>% bind_rows()
-mnok <- future_map(sp_nok, ~ get_mvar(.x, mdat, "Nokilalaki"), chunks = 1000) %>% bind_rows()
-mtor <- future_map(sp_tor, ~ get_mvar(.x, mdat, "Torompupu"), chunks = 1000) %>% bind_rows()
+mamb <- future_map(sp_amb, ~ get_mvar(.x, mdat, "Ambang"), chunks = 1000) |> bind_rows()
+mbaw <- future_map(sp_baw, ~ get_mvar(.x, mdat, "Bawakaraeng"), chunks = 1000) |> bind_rows()
+mbul <- future_map(sp_bul, ~ get_mvar(.x, mdat, "Buliohuto"), chunks = 1000) |> bind_rows()
+mdak <- future_map(sp_dak, ~ get_mvar(.x, mdat, "Dako"), chunks = 1000) |> bind_rows()
+mgan <- future_map(sp_gan, ~ get_mvar(.x, mdat, "Gandangdewata"), chunks = 1000) |> bind_rows()
+mkat <- future_map(sp_kat, ~ get_mvar(.x, mdat, "Katopasa"), chunks = 1000) |> bind_rows()
+mlat <- future_map(sp_lat, ~ get_mvar(.x, mdat, "Latimojong"), chunks = 1000) |> bind_rows()
+mnok <- future_map(sp_nok, ~ get_mvar(.x, mdat, "Nokilalaki"), chunks = 1000) |> bind_rows()
+mtor <- future_map(sp_tor, ~ get_mvar(.x, mdat, "Torompupu"), chunks = 1000) |> bind_rows()
 
 tictoc::toc()
 
@@ -460,12 +460,12 @@ rm(mamb, mbaw, mbul, mdak, mgan, mkat, mlat, mnok, mtor)
 
 ### Morpho SES
 ```{r}
-adat <- m_rand %>% group_by(com) %>% 
+adat <- m_rand |> group_by(com) |> 
   summarise(mean = mean(vMorpho),
-            sd = sd(vMorpho)) %>% 
-  as.data.frame() %>% 
-  right_join(adat, by="com") %>%
-  mutate(ses_morpho =  (((cv_wei + dv_wei + vMass + vEar + vHF + vTail + vHB)/ 7) - mean) / sd) %>% 
+            sd = sd(vMorpho)) |> 
+  as.data.frame() |> 
+  right_join(adat, by="com") |>
+  mutate(ses_morpho =  (((cv_wei + dv_wei + vMass + vEar + vHF + vTail + vHB)/ 7) - mean) / sd) |> 
   select(!c(mean, sd))
 
 ```
@@ -473,7 +473,7 @@ adat <- m_rand %>% group_by(com) %>%
 ### write
 ```{r}
 
-adat %>% write_csv(here("All_Traits.csv"))
+adat |> write_csv(here("All_Traits.csv"))
 
 rm(camb, cbaw, cbul, cdak, ckat, cgan, clat, cnok, ctor, c_rand)
 ```
@@ -484,18 +484,18 @@ rm(camb, cbaw, cbul, cdak, ckat, cgan, clat, cnok, ctor, c_rand)
 
 ```{r}
 get_ivar <- function(sp, data, mountain) {
-  data %>% 
-    filter(Species %in% {{sp}}) %>% 
-  split(.$.draw) %>% 
-  map(., ~ .x[ ,-c(1:2)]) %>% 
-  map(~ .x %>%
+  data |> 
+    filter(Species %in% {{sp}}) |> 
+  split(.$.draw) |> 
+  map(., ~ .x[ ,-c(1:2)]) |> 
+  map(~ .x |>
         summarise(
             vC13 = var(sC13), 
             vN15 = var(sN15), 
-            vIso = (var(sC13) +  var(sN15)) / 2)) %>%
-  bind_rows() %>% 
-  as_tibble() %>% 
-  sample_n(., size = 100) %>% 
+            vIso = (var(sC13) +  var(sN15)) / 2)) |>
+  bind_rows() |> 
+  as_tibble() |> 
+  sample_n(., size = 100) |> 
     add_column(com = {{mountain}})
 }
 ```
@@ -505,26 +505,26 @@ get_ivar <- function(sp, data, mountain) {
 ```{r}
 plan(multisession, workers = 16)
 
-iamb <- future_map(sp_amb, ~ get_ivar(.x, ifit, "Ambang"       ), chunks = 1000) %>% bind_rows()
-ibaw <- future_map(sp_baw, ~ get_ivar(.x, ifit, "Bawakaraeng"  ), chunks = 1000) %>% bind_rows()
-ibul <- future_map(sp_bul, ~ get_ivar(.x, ifit, "Buliohuto"    ), chunks = 1000) %>% bind_rows()
-idak <- future_map(sp_dak, ~ get_ivar(.x, ifit, "Dako"         ), chunks = 1000) %>% bind_rows()
-igan <- future_map(sp_gan, ~ get_ivar(.x, ifit, "Gandangdewata"), chunks = 1000) %>% bind_rows()
-ilat <- future_map(sp_lat, ~ get_ivar(.x, ifit, "Latimojong"   ), chunks = 1000) %>% bind_rows()
+iamb <- future_map(sp_amb, ~ get_ivar(.x, ifit, "Ambang"       ), chunks = 1000) |> bind_rows()
+ibaw <- future_map(sp_baw, ~ get_ivar(.x, ifit, "Bawakaraeng"  ), chunks = 1000) |> bind_rows()
+ibul <- future_map(sp_bul, ~ get_ivar(.x, ifit, "Buliohuto"    ), chunks = 1000) |> bind_rows()
+idak <- future_map(sp_dak, ~ get_ivar(.x, ifit, "Dako"         ), chunks = 1000) |> bind_rows()
+igan <- future_map(sp_gan, ~ get_ivar(.x, ifit, "Gandangdewata"), chunks = 1000) |> bind_rows()
+ilat <- future_map(sp_lat, ~ get_ivar(.x, ifit, "Latimojong"   ), chunks = 1000) |> bind_rows()
 
 plan(sequential)
 
 i_rand <- bind_rows(iamb, ibaw, ibul, idak, igan, ilat) 
 
 df2 <- 
-i_rand %>% 
-  group_by(com) %>% 
+i_rand |> 
+  group_by(com) |> 
   summarise(mC = mean(vC13),
             sdC = sd(vC13),
             mN = mean(vN15),
             sdN = sd(vN15),
             mI = mean(vIso),
-            sdI = sd(vIso)) %>% 
+            sdI = sd(vIso)) |> 
   as.data.frame()
 ```
 
@@ -533,26 +533,26 @@ i_rand %>%
 
 ```{r}
 adat <- 
-  i_rand %>% group_by(com) %>% 
-  group_by(com) %>% 
+  i_rand |> group_by(com) |> 
+  group_by(com) |> 
   summarise(mC = mean(vC13),
             sdC = sd(vC13),
             mN = mean(vN15),
             sdN = sd(vN15),
             mI = mean(vIso),
-            sdI = sd(vIso)) %>% 
-  as.data.frame() %>% 
-  right_join(adat, by="com") %>%
+            sdI = sd(vIso)) |> 
+  as.data.frame() |> 
+  right_join(adat, by="com") |>
   mutate(ses_vC13 =  (vC13 - mC) / sdC,
          ses_vN15 =  (vN15 - mN) / sdN,
-         ses_vIso =  (iso_var - mI) / sdI) %>% 
+         ses_vIso =  (iso_var - mI) / sdI) |> 
   select(!c(mC , sdC, mN , sdN, mI , sdI))
 ```
 
 ### write  
 
 ```{r}
-adat  %>% write_csv(here("All_Traits.csv"))
+adat  |> write_csv(here("All_Traits.csv"))
 
 ```
 
@@ -568,34 +568,93 @@ locvar <- read_csv(here("Locomotion_Data", "All_Locomotor_var.csv"))
 #### Locomotion Randomization Function
 ```{r}
 get_lvar <- function(sp, data, mountain) {
-  data %>% 
-    filter(Species %in% {{sp}}) %>% 
-    select(!Species) %>% 
-    summarise(vLoc = var(Loc)) %>%
-    as_tibble() %>% 
+  data |> 
+    filter(Species %in% {{sp}}) |> 
+    select(!Species) |> 
+    summarise(vLoc = var(Loc)) |>
+    as_tibble() |> 
     add_column(com = {{mountain}})
 }
 ```
 
 ### Estimate simulated communities
 ```{r}
-lamb <- map(sp_amb, ~ get_lvar(.x, locdat, "Ambang")) %>% bind_rows()
-lbaw <- map(sp_baw, ~ get_lvar(.x, locdat, "Bawakaraeng")) %>% bind_rows()
-lbul <- map(sp_bul, ~ get_lvar(.x, locdat, "Buliohuto")) %>% bind_rows()
-ldak <- map(sp_dak, ~ get_lvar(.x, locdat, "Dako")) %>% bind_rows()
-lgan <- map(sp_gan, ~ get_lvar(.x, locdat, "Gandangdewata")) %>% bind_rows()
-lkat <- map(sp_kat, ~ get_lvar(.x, locdat, "Katopasa")) %>% bind_rows()
-llat <- map(sp_lat, ~ get_lvar(.x, locdat, "Latimojong")) %>% bind_rows()
-lnok <- map(sp_nok, ~ get_lvar(.x, locdat, "Nokilalaki")) %>% bind_rows()
-ltor <- map(sp_tor, ~ get_lvar(.x, locdat, "Torompupu")) %>% bind_rows()
+lamb <- map(sp_amb, ~ get_lvar(.x, locdat, "Ambang")) |> bind_rows()
+lbaw <- map(sp_baw, ~ get_lvar(.x, locdat, "Bawakaraeng")) |> bind_rows()
+lbul <- map(sp_bul, ~ get_lvar(.x, locdat, "Buliohuto")) |> bind_rows()
+ldak <- map(sp_dak, ~ get_lvar(.x, locdat, "Dako")) |> bind_rows()
+lgan <- map(sp_gan, ~ get_lvar(.x, locdat, "Gandangdewata")) |> bind_rows()
+lkat <- map(sp_kat, ~ get_lvar(.x, locdat, "Katopasa")) |> bind_rows()
+llat <- map(sp_lat, ~ get_lvar(.x, locdat, "Latimojong")) |> bind_rows()
+lnok <- map(sp_nok, ~ get_lvar(.x, locdat, "Nokilalaki")) |> bind_rows()
+ltor <- map(sp_tor, ~ get_lvar(.x, locdat, "Torompupu")) |> bind_rows()
 
 l_rand <- bind_rows(lamb, lbaw, lbul, ldak, lgan, lkat, llat, lnok, ltor) 
 
 df5 <- 
-l_rand %>% 
-  group_by(com) %>% 
+l_rand |> 
+  group_by(com) |> 
   summarise(m = mean(vLoc),
-            sd = sd(vLoc)) %>% 
+            sd = sd(vLoc)) |> 
+  as.data.frame()
+```
+
+### write locomotion data
+Simple calculations!
+```{r}
+df5$var = locvar$vloc
+df5$ses_loc= ((df5$var - df5$m) / df5$sd)
+locvar$ses_loc = df5$ses_loc
+write_csv(locvar, here("Locomotion_Data", "All_Locomotor_var.csv"))
+locvar2 <- locvar
+```
+
+
+# Locomotion Diversity
+
+## Locomotion Randomization
+```{r}
+locdat <- read_csv(here("Locomotion_Data", "Locomotion_List.csv"))
+locvar <- read_csv(here("Locomotion_Data", "All_Locomotor_var.csv"))
+
+d_locdat <- read_csv(here("Locomotion_Data", "Locomotion_Dummy.csv"))
+
+d1 <- d_locdat |> select(!Species)|> rda()
+r.d1  <- d1$CA$u |> as_tibble() |> bind_cols(d_locdat[,1])
+locdat <- r.d1
+```
+
+#### Locomotion Randomization Function
+```{r}
+get_lvar <- function(sp, data, mountain) {
+  data |> 
+    filter(Species %in% {{sp}}) |> 
+    select(!Species) |> 
+    summarise(vLoc = var(PC1) + var(PC2) + var(PC3)) |>
+    as_tibble() |> 
+    add_column(com = {{mountain}})
+}
+```
+
+### Estimate simulated communities
+```{r}
+lamb <- map(sp_amb, ~ get_lvar(.x, locdat, "Ambang")) |> bind_rows()
+lbaw <- map(sp_baw, ~ get_lvar(.x, locdat, "Bawakaraeng")) |> bind_rows()
+lbul <- map(sp_bul, ~ get_lvar(.x, locdat, "Buliohuto")) |> bind_rows()
+ldak <- map(sp_dak, ~ get_lvar(.x, locdat, "Dako")) |> bind_rows()
+lgan <- map(sp_gan, ~ get_lvar(.x, locdat, "Gandangdewata")) |> bind_rows()
+lkat <- map(sp_kat, ~ get_lvar(.x, locdat, "Katopasa")) |> bind_rows()
+llat <- map(sp_lat, ~ get_lvar(.x, locdat, "Latimojong")) |> bind_rows()
+lnok <- map(sp_nok, ~ get_lvar(.x, locdat, "Nokilalaki")) |> bind_rows()
+ltor <- map(sp_tor, ~ get_lvar(.x, locdat, "Torompupu")) |> bind_rows()
+
+l_rand <- bind_rows(lamb, lbaw, lbul, ldak, lgan, lkat, llat, lnok, ltor) 
+
+df5 <- 
+l_rand |> 
+  group_by(com) |> 
+  summarise(m = mean(vLoc),
+            sd = sd(vLoc)) |> 
   as.data.frame()
 ```
 

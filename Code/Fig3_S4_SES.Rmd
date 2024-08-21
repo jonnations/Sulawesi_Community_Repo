@@ -31,7 +31,7 @@ dat <- read_csv(here("All_Traits.csv")) %>%
   mutate(nspec = rep(c(7, 10, 11.9, 12.1, 12.9, 13.1, 15, 17, 23 ), 
                      each = 4000)) 
 
-ldat <- read_csv(here("Locomotion_Data", "All_Locomotor_Var.csv")) %>%
+ldat <- read_csv(here("Locomotion_Data", "All_Locomotor_var.csv")) %>%
   arrange(factor(com, levels = level_order)) %>% 
   mutate(nspec=replace(nsp, com == "Katopasa", 12.3),
          nspec=replace(nsp, com == "Dako", 11.7),

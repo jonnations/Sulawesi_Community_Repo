@@ -14,7 +14,7 @@ All of these scripts rely heavily on the **tidyverse**, **tidybayes**, and the B
 
 Load some general packages and write some common functions
 ```{r}
-pacman::p_load(here, tidyverse, brms, tidybayes, patchwork, modelr, cmdstanr)
+pacman::p_load(here, tidyverse, brms, tidybayes, patchwork, modelr, cmdstanr, vegan)
 
 options(backend = 'cmdstanr')
 
@@ -37,7 +37,7 @@ Cranium data
 Data
  ***DO NOT SCALE PCA DATA***
 ```{r}
-pdat <- read_csv(here("Cranial_Data", "Cranial_PCA_Data_36axes.csv")) %>% 
+pdat <- read_csv(here("Cranial_Data", "Cranial_PCA_Data_36axes.csv")) |>  
   mutate(Csize = scale2(Csize))
 ```
 
@@ -100,12 +100,12 @@ mvcPC2<- brm(mvcmod,
 Fitted values for PC1-36 and centroid size for each species.
 In short this means re running the original data through the model output to get the "fitted" values. So using the data as both a training and testing set. 
 ```{r}
-pre.cranium_t <- pdat %>%
-  data_grid(Species) %>%
-  add_epred_draws(mvcPC2) %>% 
-  spread(.category, .epred) %>% 
-  rename_with(~ gsub("PC", "cPC", .x)) %>% 
-  rename(cCsize = Csize) %>% 
+pre.cranium_t <- pdat |> 
+  data_grid(Species) |> 
+  add_epred_draws(mvcPC2) |>  
+  spread(.category, .epred) |>  
+  rename_with(~ gsub("PC", "cPC", .x)) |>  
+  rename(cCsize = Csize) |>  
   select(!c(.chain, .iteration)) 
 
 write_csv(pre.cranium_t, here("Cranial_Data","Cranial_36axes_Fitted.csv"))
@@ -117,15 +117,15 @@ write_csv(pre.cranium_t, here("Cranial_Data","Cranial_36axes_Fitted.csv"))
 ```{r}
 
 get_cran <- function(sp, data, mountain) {
-  data %>%
-    filter(Species %in% {{sp}}) %>%
-    select(!Species) %>%
-    select(!.row) %>%
-    group_by(.draw) %>% 
-    summarise_at(vars(cPC1:cCsize), var) %>% 
-    mutate(cv_wei = select(., cPC1:cPC36) %>% rowSums(na.rm = TRUE),
-           vcCsize = cCsize) %>% 
-    select(.draw, vcCsize, cv_wei) %>% 
+  data |> 
+    filter(Species %in% {{sp}}) |> 
+    select(!Species) |> 
+    select(!.row) |> 
+    group_by(.draw) |>  
+    summarise_at(vars(cPC1:cCsize), var) |>  
+    mutate(cv_wei = select(., cPC1:cPC36) |>  rowSums(na.rm = TRUE),
+           vcCsize = cCsize) |>  
+    select(.draw, vcCsize, cv_wei) |>  
     add_column(com = {{mountain}})
 }
 
@@ -147,7 +147,7 @@ write_csv(cct, here("Cranial_Data","Community_Cranial_Variance_Weighted.csv"))
 #### Cranium Plot
 test plot
 ```{r}
-cct %>% mutate(com = factor(com, level = level_order)) %>% 
+cct |>  mutate(com = factor(com, level = level_order)) |>  
 ggplot(aes(y = com, x = cv_wei)) +
   stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
    labs(title="Cranial Shape Disparity",
@@ -163,7 +163,7 @@ Looks Good. Move on to Dentary
 
 First load some data and remove the previous data to save RAM
 ```{r}
-ddat <- read_csv(here("Dentary_Data", "Dentary_PCA_Data_20axes.csv")) %>% 
+ddat <- read_csv(here("Dentary_Data", "Dentary_PCA_Data_20axes.csv")) |>  
   mutate(Csize = scale2(Csize))
 rm(cct, pre.cranium_t, mvcPC2, mvcmod)
 ```
@@ -213,12 +213,12 @@ mvdPC2<- brm(mvdmod,
 
 Fitted values for PC1-20 and centroid size for each species
 ```{r}
-pre.dentary_t <- ddat %>%
-  data_grid(Species) %>%
-  add_epred_draws(mvdPC2) %>% 
-  spread(.category, .epred) %>% 
-  rename_with(~ gsub("PC", "dPC", .x)) %>% 
-  rename(dCsize = Csize) %>% 
+pre.dentary_t <- ddat |> 
+  data_grid(Species) |> 
+  add_epred_draws(mvdPC2) |>  
+  spread(.category, .epred) |>  
+  rename_with(~ gsub("PC", "dPC", .x)) |>  
+  rename(dCsize = Csize) |>  
   select(!c(.chain, .iteration))
 
 write_csv(pre.dentary_t, here("Dentary_Data", "Dentary_20axes_Fitted.csv"))
@@ -228,15 +228,15 @@ write_csv(pre.dentary_t, here("Dentary_Data", "Dentary_20axes_Fitted.csv"))
 
 ```{r}
 get_dent <- function(sp, data, mountain) {
-data %>% 
-  filter(Species %in% {{sp}}) %>%
-  select(!Species) %>%
-  select(!.row) %>%
-  group_by(.draw) %>% 
-    summarise_at(vars(dPC1:dCsize), var) %>% 
-    mutate(dv_wei = select(., dPC1:dPC20) %>% rowSums(na.rm = TRUE),
-           vdCsize = dCsize) %>%  
-    select(.draw, vdCsize, dv_wei) %>% 
+data |>  
+  filter(Species %in% {{sp}}) |> 
+  select(!Species) |> 
+  select(!.row) |> 
+  group_by(.draw) |>  
+    summarise_at(vars(dPC1:dCsize), var) |>  
+    mutate(dv_wei = select(., dPC1:dPC20) |>  rowSums(na.rm = TRUE),
+           vdCsize = dCsize) |>   
+    select(.draw, vdCsize, dv_wei) |>  
     add_column(com = {{mountain}})
 }
 ```
@@ -261,7 +261,7 @@ write_csv(dct, here("Dentary_Data","Community_Dental_Variance_Weighted.csv"))
 ### Dentary Plot
 test plot
 ```{r}
-dct %>% mutate(com = factor(com, level = level_order)) %>% 
+dct |>  mutate(com = factor(com, level = level_order)) |>  
 ggplot(aes(y = com, x = dv_wei)) +
   stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
    labs(title="Dentary Shape Disparity",
@@ -276,12 +276,12 @@ ggplot(aes(y = com, x = dv_wei)) +
 
 This is the introduction to the external measurment data. These are measurements from over 600 museum specimens. See text for more info. This reads in the data, then generates the size-corrected ratios for each measurement (i.e. relative tail length).
 ```{r}
-dat <- read_csv(here("External_Measurement_Data", "Measurement_Data_Museum.csv")) %>% 
+dat <- read_csv(here("External_Measurement_Data", "Measurement_Data_Museum.csv")) |>  
   mutate(loc_state = as_factor(loc_state),
          lMass = log(Mass),
          rHF = HF / HB,
          rEar = Ear / HB,
-         rTail = Tail / Total) %>% 
+         rTail = Tail / Total) |>  
   mutate_if(is.numeric, scale2, na.rm = TRUE) 
 
 rm(mvdPC2, pre.dentary_t, dct, ddat, mvdmod)
@@ -312,10 +312,10 @@ m.ex1<- brm(exmod,
 ### External Fitted
 Fitted values for external measurements for each species
 ```{r}
-ext_fit <- dat %>%
-  data_grid(Species) %>%
-  add_epred_draws(m.ex1) %>% 
-  spread(.category, .epred) %>% 
+ext_fit <- dat |> 
+  data_grid(Species) |> 
+  add_epred_draws(m.ex1) |>  
+  spread(.category, .epred) |>  
   select(!c(.chain, .iteration))
 
 write_csv(ext_fit , here("External_Measurement_Data", "External_Fitted.csv"))
@@ -325,18 +325,18 @@ write_csv(ext_fit , here("External_Measurement_Data", "External_Fitted.csv"))
 estimate the variance of each community for each measurement. Each of the 1000 draws will have a variance measurement. 
 ```{r}
 get_ext <- function(sp, data, mountain) {
-data %>% 
-  filter(Species %in% {{sp}}) %>%
-  select(!Species) %>%
-  select(!.row) %>%
-  group_by(.draw) %>%  
+data |>  
+  filter(Species %in% {{sp}}) |> 
+  select(!Species) |> 
+  select(!.row) |> 
+  group_by(.draw) |>   
   summarise(vHB = var(HB),
             vTail = var(rTail),
             vHF = var(rHF),
             vEar = var(rEar),
-            vMass = var(lMass)) %>% 
-  mutate(ext_sum = vHB + vTail + vHF + vEar) %>% 
-  mutate(ext_scaled = ext_sum/5) %>% 
+            vMass = var(lMass)) |>  
+  mutate(ext_sum = vHB + vTail + vHF + vEar) |>  
+  mutate(ext_scaled = ext_sum/5) |>  
   add_column(com = {{mountain}})
 }
 ```
@@ -360,7 +360,7 @@ write_csv(ext, here("External_Measurement_Data", "Community_External_Variance_Fi
 #### External Plot
 test plot
 ```{r}
-ext %>% mutate(com = factor(com, level = level_order)) %>% 
+ext |>  mutate(com = factor(com, level = level_order)) |>  
 ggplot(aes(y = com, x = vTail)) +
   stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
    labs(title="Tail Length",x="Trait Volume", y = "", fill = "Mountain") +
@@ -374,7 +374,7 @@ ggplot(aes(y = com, x = vTail)) +
 This is inherently a bit trickier as each community has it's own unique isotopic signature. So here I am using a model that includes a second predictor term: The community itself. This generates a isotopic signature for each species, conditioned on the community. So these values work between communities, so we can do randomization (later on).
 
 ```{r}
-idat <- read_csv(here("Isotope_Data", "Isotope_Data.csv")) %>% 
+idat <- read_csv(here("Isotope_Data", "Isotope_Data.csv")) |>  
   mutate(sN15 = scale2(Corrected_15N),
          sC13 = scale2(Corrected_13C)) 
 rm(ext, m.ex1, exmod, ext_fit, dat)
@@ -407,10 +407,10 @@ m.iso <- brm(imod,
 
 re_formula is important here. 
 ```{r}
-iso_fit <- idat %>%
-  data_grid(Species) %>%
-  add_epred_draws(m.iso,  re_formula = ~ (1|Species) ) %>% 
-  spread(.category, .epred) %>% 
+iso_fit <- idat |> 
+  data_grid(Species) |> 
+  add_epred_draws(m.iso,  re_formula = ~ (1|Species) ) |>  
+  spread(.category, .epred) |>  
   select(!c(.chain, .iteration))
 
 write_csv(iso_fit , here("Isotope_Data", "Isotope_Group_Level_Fitted.csv"))
@@ -420,13 +420,13 @@ write_csv(iso_fit , here("Isotope_Data", "Isotope_Group_Level_Fitted.csv"))
 Same thing, the variance for each community for N and C
 ```{r}
 get_iso <- function(sp, data, mountain) {
-data %>% 
-  filter(Species %in% {{sp}}) %>%
-  select(!Species) %>%
-  select(!.row) %>%
-  group_by(.draw) %>%  
+data |>  
+  filter(Species %in% {{sp}}) |> 
+  select(!Species) |> 
+  select(!.row) |> 
+  group_by(.draw) |>   
   summarise(vN15 = var(sN15),
-            vC13 = var(sC13)) %>% 
+            vC13 = var(sC13)) |>  
   add_column(com = {{mountain}})
 }
 ```
@@ -446,7 +446,7 @@ write_csv(ivar, here("Isotope_Data", "Isotope_Group_Level_Variance.csv"))
 #### Isotope Plot
 test plot
 ```{r}
-ivar %>% mutate(com = factor(com, level = level_order)) %>% 
+ivar |>  mutate(com = factor(com, level = level_order)) |>  
 ggplot(aes(y = com, x = vN15)) +
   stat_halfeye(.width = c(0.74, 0.89),  alpha = 0.7) +
    labs(title="N15",x="N15", y = "", fill = "Mountain") +
@@ -464,11 +464,11 @@ ddat <- read_csv(here("Dentary_Data", "Community_Dental_Variance_3Axes.csv"))
 ddat2 <- read_csv(here("Dentary_Data", "Community_Dental_Variance_Weighted.csv"))
 edat <- read_csv(here("External_Measurement_Data", "Community_External_Variance_Fitted.csv"))
 idat <- read_csv(here("Isotope_Data", "Isotope_Group_Level_Variance.csv"))
-all_var <- cdat %>% right_join(ddat,by = c(".draw", "com")) %>% 
-  right_join(cdat2,by = c(".draw", "com")) %>% 
-  right_join(ddat2,by = c(".draw", "com")) %>% 
-  right_join(edat,by = c(".draw", "com")) %>% 
-  full_join(idat,by = c(".draw", "com")) %>% 
+all_var <- cdat |>  right_join(ddat,by = c(".draw", "com")) |>  
+  right_join(cdat2,by = c(".draw", "com")) |>  
+  right_join(ddat2,by = c(".draw", "com")) |>  
+  right_join(edat,by = c(".draw", "com")) |>  
+  full_join(idat,by = c(".draw", "com")) |>  
   mutate(sk_var = (cv_wei + dv_wei) / 2,
          iso_var = (vN15 + vC13) / 2,
          morpho_var = (vMass + vEar + vHF + vTail + vHB + dv_wei + cv_wei) / 7
@@ -482,14 +482,19 @@ write_csv(all_var, here("All_Traits.csv"))
 This is a little different because there is one categorical (ordinal) value for each species. Hence, there is no distribution to model. 
 ```{r}
 locdat <- read_csv(here("Locomotion_Data", "Locomotion_List.csv"))
+d_locdat <- read_csv(here("Locomotion_Data", "Locomotion_Dummy.csv"))
+
+d1 <- d_locdat |>  select(!Species)  |>  rda()
+r.d1  <- d1$CA$u |>  as_tibble() |>  bind_cols(d_locdat[,1])
+locdat <- r.d1
 ```
 
 ```{r}
 get_loc <- function(sp, data, mountain) {
-data %>% 
-  filter(Species %in% {{sp}}) %>%
-  select(!Species) %>%
-  summarise(vloc = var(Loc)) %>% 
+data |>  
+  filter(Species %in% {{sp}}) |> 
+  select(!Species) |> 
+  summarise(vloc = var(PC1) + var(PC2) + var(PC3)) |> 
   add_column(com = {{mountain}})
 }
 ```
@@ -505,7 +510,7 @@ lockat <- get_loc(spkat, locdat, "Katopasa")
 loclat <- get_loc(splat, locdat, "Latimojong")
 locnok <- get_loc(spnok, locdat, "Nokilalaki")
 loctor <- get_loc(sptor, locdat, "Torompupu")
-vLoc <- bind_rows(locamb, locbaw, locbul, locdak, locgan, lockat, loclat, locnok, loctor) %>% 
-  mutate(nsp = c(13,7,10,12,23,12,13,17,15)) %>% 
+vLoc <- bind_rows(locamb, locbaw, locbul, locdak, locgan, lockat, loclat, locnok, loctor) |>  
+  mutate(nsp = c(13,7,10,12,23,12,13,17,15)) |>  
 write_csv(here("Locomotion_Data", "All_Locomotor_var.csv"))
 ```
